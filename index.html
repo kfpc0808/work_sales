@@ -25,19 +25,19 @@
         
         /* CSS 변수 (다크모드 대응) */
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --primary-color: #667eea;
-            --primary-dark: #5568d3;
-            --secondary-color: #764ba2;
-            --bg-color: #f5f7fa;
+            --primary-gradient: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            --primary-color: #4a90e2;
+            --primary-dark: #357abd;
+            --secondary-color: #5e9ed6;
+            --bg-color: #f7f9fc;
             --card-bg: #ffffff;
             --text-primary: #1a1a1a;
             --text-secondary: #666666;
             --text-tertiary: #999999;
-            --border-color: #e8e8e8;
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --border-color: #e8eef5;
+            --shadow-sm: 0 2px 8px rgba(74, 144, 226, 0.08);
+            --shadow-md: 0 4px 16px rgba(74, 144, 226, 0.12);
+            --shadow-lg: 0 8px 24px rgba(74, 144, 226, 0.16);
             --header-height: 140px;
             --safe-area-top: env(safe-area-inset-top, 0px);
             --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -98,8 +98,9 @@
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
             
-            /* iOS Safari 고무줄 효과 방지 */
-            overscroll-behavior-y: none;
+            /* iOS Safari 스크롤 개선 */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             
             min-height: 100vh;
             min-height: -webkit-fill-available;
@@ -538,11 +539,54 @@
             font-weight: 500;
         }
 
+        /* 모바일 전용 - 업무내용 2줄 표시 */
+        .call-desc-block {
+            display: none;
+            font-size: clamp(12px, 3vw, 15px);
+            color: var(--text-secondary);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        /* 모바일 (768px 이하) - 최근 업무기록 2줄 레이아웃 */
+        @media (max-width: 768px) {
+            .call-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .call-left {
+                width: 100%;
+            }
+
+            .call-separator,
+            .call-desc-inline {
+                display: none !important;
+            }
+
+            .call-desc-block {
+                display: block;
+            }
+
+            .call-time {
+                align-self: flex-end;
+                margin-top: -4px;
+            }
+        }
+
         /* 공지 현황 */
         .notice-summary {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: clamp(12px, 3vw, 16px);
+        }
+
+        /* 모바일 작은 화면에서는 1개씩 */
+        @media (max-width: 480px) {
+            .notice-summary {
+                grid-template-columns: 1fr;
+            }
         }
 
         .notice-item {
