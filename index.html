@@ -295,21 +295,6 @@
             }
         }
 
-        /* 공지 관리 탭 - 카드 2개씩 배치 */
-        .notices-group-cards,
-        .notices-completion-cards {
-            grid-template-columns: repeat(2, 1fr);
-            margin-bottom: clamp(16px, 4vw, 24px);
-        }
-
-        @media (max-width: 768px) {
-            .notices-group-cards,
-            .notices-completion-cards {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-
         .card {
             background: var(--card-bg);
             padding: clamp(20px, 5vw, 28px);
@@ -853,26 +838,12 @@
             line-height: 1.3;
         }
 
-        /* 공지 테이블 그룹 열 폭 확대 */
-        #noticesTableHead th:nth-child(2),
-        #noticesTableBody td:nth-child(2) {
-            min-width: 80px;
-        }
-
         @media (max-width: 768px) {
             #noticesTableBody td {
                 padding: 6px 10px;
                 font-size: clamp(11px, 2.5vw, 13px);
             }
-
-            /* 모바일에서 그룹 열 120% 확대 */
-            #noticesTableHead th:nth-child(2),
-            #noticesTableBody td:nth-child(2) {
-                min-width: 96px;
-                width: 96px;
-            }
         }
-
 
         /* 차트 그리드 */
         .chart-grid {
@@ -1437,28 +1408,11 @@
                 </div>
             </div>
 
-            <!-- 그룹별 인원 -->
-            <div class="cards-grid notices-group-cards">
+            <div class="cards-grid">
                 <div class="card">
-                    <div class="card-title">지사장</div>
-                    <div class="card-value" id="noticesGroup1Count">0명</div>
+                    <div class="card-title">전체 인원</div>
+                    <div class="card-value" id="noticesTotalCount">0명</div>
                 </div>
-                <div class="card">
-                    <div class="card-title">이너서클</div>
-                    <div class="card-value" id="noticesGroup2Count">0명</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">기업회원</div>
-                    <div class="card-value" id="noticesGroup3Count">0명</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">컨설턴트회원</div>
-                    <div class="card-value" id="noticesGroup4Count">0명</div>
-                </div>
-            </div>
-
-            <!-- 공지 완료 현황 -->
-            <div class="cards-grid notices-completion-cards">
                 <div class="card">
                     <div class="card-title">공지1 완료</div>
                     <div class="card-value" id="noticesCompleted1">0명</div>
@@ -1571,26 +1525,16 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 if (!data.values || data.values.length === 0) return { headers: [], data: [] };
-                
-                const originalHeaders = data.values[0];
+                const headers = data.values[0];
                 const rows = data.values.slice(1);
-                
-                // 중복된 헤더명 처리 (고유한 키 생성)
-                const headerCounts = {};
-                const uniqueHeaders = originalHeaders.map((header, index) => {
-                    const key = `_col${index}_${header}`;  // 인덱스를 포함한 고유 키
-                    return key;
-                });
-                
                 const mappedData = rows.map(row => {
                     const obj = {};
-                    uniqueHeaders.forEach((uniqueKey, index) => {
-                        obj[uniqueKey] = row[index] || '';
+                    headers.forEach((header, index) => {
+                        obj[header] = row[index] || '';
                     });
                     return obj;
                 });
-                
-                return { headers: originalHeaders, uniqueHeaders, data: mappedData };
+                return { headers, data: mappedData };
             } catch (error) {
                 console.error('Sheets API 오류:', error);
                 throw error;
@@ -1621,22 +1565,20 @@
                 );
                 noticeData = noticesResult.data;
                 
-                // 공지 시트 헤더 저장 (고유 키 사용)
+                // 공지 시트 헤더 저장 (C열~N열)
                 noticeHeaders = {
-                    col3: noticesResult.uniqueHeaders[2] || '_col2_공지1',    // C열
-                    col4: noticesResult.uniqueHeaders[3] || '_col3_완료1',    // D열
-                    col5: noticesResult.uniqueHeaders[4] || '_col4_완료일1',  // E열
-                    col6: noticesResult.uniqueHeaders[5] || '_col5_공지2',    // F열
-                    col7: noticesResult.uniqueHeaders[6] || '_col6_완료2',    // G열
-                    col8: noticesResult.uniqueHeaders[7] || '_col7_완료일2',  // H열
-                    col9: noticesResult.uniqueHeaders[8] || '_col8_공지3',    // I열
-                    col10: noticesResult.uniqueHeaders[9] || '_col9_완료3',   // J열
-                    col11: noticesResult.uniqueHeaders[10] || '_col10_완료일3', // K열
-                    col12: noticesResult.uniqueHeaders[11] || '_col11_공지4',  // L열
-                    col13: noticesResult.uniqueHeaders[12] || '_col12_완료4',  // M열
-                    col14: noticesResult.uniqueHeaders[13] || '_col13_완료일4', // N열
-                    // 원래 헤더명도 저장 (화면 표시용)
-                    displayHeaders: noticesResult.headers
+                    col3: noticesResult.headers[2] || '공지1 내용',  // C열
+                    col4: noticesResult.headers[3] || '완료',        // D열
+                    col5: noticesResult.headers[4] || '완료일',      // E열
+                    col6: noticesResult.headers[5] || '공지2 내용',  // F열
+                    col7: noticesResult.headers[6] || '완료',        // G열
+                    col8: noticesResult.headers[7] || '완료일',      // H열
+                    col9: noticesResult.headers[8] || '공지3 내용',  // I열
+                    col10: noticesResult.headers[9] || '완료',       // J열
+                    col11: noticesResult.headers[10] || '완료일',    // K열
+                    col12: noticesResult.headers[11] || '공지4 내용', // L열
+                    col13: noticesResult.headers[12] || '완료',      // M열
+                    col14: noticesResult.headers[13] || '완료일'     // N열
                 };
 
                 updateDashboard();
@@ -1659,29 +1601,32 @@
         }
 
         function updateNoticeTableHeaders() {
-            // 공지 테이블 헤더를 동적으로 업데이트 (원본 헤더명 사용)
-            if (noticeHeaders.displayHeaders) {
+            // 공지 테이블 헤더를 동적으로 업데이트
+            if (noticeHeaders.col3) {
                 const header1 = document.getElementById('noticeHeader1');
-                if (header1 && noticeHeaders.displayHeaders[2]) {
-                    const text = noticeHeaders.displayHeaders[2].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                if (header1) {
+                    const text = noticeHeaders.col3.replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
                     header1.textContent = text;
                 }
-                
+            }
+            if (noticeHeaders.col6) {
                 const header2 = document.getElementById('noticeHeader2');
-                if (header2 && noticeHeaders.displayHeaders[5]) {
-                    const text = noticeHeaders.displayHeaders[5].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                if (header2) {
+                    const text = noticeHeaders.col6.replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
                     header2.textContent = text;
                 }
-                
+            }
+            if (noticeHeaders.col9) {
                 const header3 = document.getElementById('noticeHeader3');
-                if (header3 && noticeHeaders.displayHeaders[8]) {
-                    const text = noticeHeaders.displayHeaders[8].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                if (header3) {
+                    const text = noticeHeaders.col9.replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
                     header3.textContent = text;
                 }
-                
+            }
+            if (noticeHeaders.col12) {
                 const header4 = document.getElementById('noticeHeader4');
-                if (header4 && noticeHeaders.displayHeaders[11]) {
-                    const text = noticeHeaders.displayHeaders[11].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                if (header4) {
+                    const text = noticeHeaders.col12.replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
                     header4.textContent = text;
                 }
             }
@@ -2473,16 +2418,7 @@
             const col10Name = noticeHeaders.col10 || '컨플공지1_완료';
             const col13Name = noticeHeaders.col13 || '기출공지1_완료';
             
-            // 그룹별 인원 계산
-            const group1Count = noticeData.filter(n => n['그룹'] === '지사장').length;
-            const group2Count = noticeData.filter(n => n['그룹'] === '이너서클').length;
-            const group3Count = noticeData.filter(n => n['그룹'] === '기업회원').length;
-            const group4Count = noticeData.filter(n => n['그룹'] === '컨설턴트회원').length;
-            
-            document.getElementById('noticesGroup1Count').textContent = group1Count + '명';
-            document.getElementById('noticesGroup2Count').textContent = group2Count + '명';
-            document.getElementById('noticesGroup3Count').textContent = group3Count + '명';
-            document.getElementById('noticesGroup4Count').textContent = group4Count + '명';
+            document.getElementById('noticesTotalCount').textContent = noticeData.length + '명';
             
             // 완료율 계산 (대소문자, 공백 무시)
             const completed1 = noticeData.filter(n => {
@@ -2507,11 +2443,10 @@
             document.getElementById('noticesCompleted3').textContent = completed3 + '명';
             document.getElementById('noticesCompleted4').textContent = completed4 + '명';
             
-            const totalCount = noticeData.length || 1; // 0으로 나누기 방지
-            document.getElementById('noticesRate1').textContent = Math.round((completed1 / totalCount) * 100) + '%';
-            document.getElementById('noticesRate2').textContent = Math.round((completed2 / totalCount) * 100) + '%';
-            document.getElementById('noticesRate3').textContent = Math.round((completed3 / totalCount) * 100) + '%';
-            document.getElementById('noticesRate4').textContent = Math.round((completed4 / totalCount) * 100) + '%';
+            document.getElementById('noticesRate1').textContent = Math.round((completed1 / noticeData.length) * 100) + '%';
+            document.getElementById('noticesRate2').textContent = Math.round((completed2 / noticeData.length) * 100) + '%';
+            document.getElementById('noticesRate3').textContent = Math.round((completed3 / noticeData.length) * 100) + '%';
+            document.getElementById('noticesRate4').textContent = Math.round((completed4 / noticeData.length) * 100) + '%';
             
             if (data.length === 0) {
                 document.getElementById('noticesTableBody').innerHTML = 
