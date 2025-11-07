@@ -776,6 +776,38 @@
             white-space: nowrap;
         }
 
+        /* 업무기록 테이블 컬럼 폭 조정 */
+        .col-업무내용 {
+            width: 20%;
+            max-width: 200px;
+        }
+
+        .col-완료 {
+            width: 50px;
+            text-align: center;
+        }
+
+        .col-비고 {
+            width: 30%;
+            min-width: 250px;
+        }
+
+        @media (max-width: 768px) {
+            .col-업무내용 {
+                width: 18%;
+                max-width: none;
+            }
+            
+            .col-완료 {
+                width: 40px;
+            }
+            
+            .col-비고 {
+                width: 25%;
+                min-width: 150px;
+            }
+        }
+
         /* 공지 테이블 행 높이 축소 */
         #noticesTableBody tr {
             height: auto;
@@ -1312,13 +1344,14 @@
                                 <th>회원명</th>
                                 <th>그룹</th>
                                 <th>상품</th>
-                                <th>업무내용</th>
+                                <th class="col-업무내용">업무내용</th>
                                 <th>후속액션</th>
-                                <th>비고</th>
+                                <th class="col-완료 text-center" onclick="sortCalls('완료')" style="cursor: pointer;">완료 <span id="sortArrow완료">↕</span></th>
+                                <th class="col-비고">비고</th>
                             </tr>
                         </thead>
                         <tbody id="callsTableBody">
-                            <tr><td colspan="8" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                            <tr><td colspan="9" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1376,14 +1409,14 @@
                 <div class="section-title">공지 전달 현황</div>
                 <div class="table-container">
                     <table>
-                        <thead>
+                        <thead id="noticesTableHead">
                             <tr>
                                 <th onclick="sortNotices('이름')" style="cursor: pointer;">이름 <span id="sortArrow이름">↕</span></th>
                                 <th>그룹</th>
-                                <th>공지1 내용</th>
+                                <th id="noticeHeader1">공지1 내용</th>
                                 <th class="text-center" onclick="sortNotices('완료1')" style="cursor: pointer;">완료 <span id="sortArrow완료1">↕</span></th>
                                 <th>완료일</th>
-                                <th>공지2 내용</th>
+                                <th id="noticeHeader2">공지2 내용</th>
                                 <th class="text-center" onclick="sortNotices('완료2')" style="cursor: pointer;">완료 <span id="sortArrow완료2">↕</span></th>
                                 <th>완료일</th>
                             </tr>
@@ -1421,12 +1454,15 @@
         let weeklyGoals = [];
         let callHistory = [];
         let noticeData = [];
+        let noticeHeaders = {}; // 공지 시트 헤더 정보
         let chartInstances = {};
         let currentCallPage = 1;
         const CALLS_PER_PAGE = 10;
         let currentTablePage = 1;
         const TABLE_ROWS_PER_PAGE = 20;
         let currentTableData = [];
+        let callsSortField = '';
+        let callsSortOrder = 'asc';
         let currentNoticesPage = 1;
         const NOTICES_PER_PAGE = 20;
         let currentNoticesData = [];
@@ -1451,16 +1487,17 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                if (!data.values || data.values.length === 0) return [];
+                if (!data.values || data.values.length === 0) return { headers: [], data: [] };
                 const headers = data.values[0];
                 const rows = data.values.slice(1);
-                return rows.map(row => {
+                const mappedData = rows.map(row => {
                     const obj = {};
                     headers.forEach((header, index) => {
                         obj[header] = row[index] || '';
                     });
                     return obj;
                 });
+                return { headers, data: mappedData };
             } catch (error) {
                 console.error('Sheets API 오류:', error);
                 throw error;
@@ -1472,7 +1509,7 @@
                 showToast('🔄 데이터 로딩 중...');
                 document.getElementById('statusText').textContent = '로딩 중...';
 
-                const [sales, monthly, weekly, calls, notices] = await Promise.all([
+                const [salesResult, monthlyResult, weeklyResult, callsResult, noticesResult] = await Promise.all([
                     getSheetData(CONFIG.SHEET_NAMES.sales),
                     getSheetData(CONFIG.SHEET_NAMES.monthlyGoals),
                     getSheetData(CONFIG.SHEET_NAMES.weeklyGoals),
@@ -1480,18 +1517,35 @@
                     getSheetData(CONFIG.SHEET_NAMES.notices)
                 ]);
 
-                salesData = sales;
-                monthlyGoals = monthly;
-                weeklyGoals = weekly;
+                salesData = salesResult.data;
+                monthlyGoals = monthlyResult.data;
+                weeklyGoals = weeklyResult.data;
                 // 회원명이 있는 행만 필터링
-                callHistory = calls.filter(call => 
+                callHistory = callsResult.data.filter(call => 
                     call['회원명'] && 
                     call['회원명'].trim() !== '' && 
                     call['회원명'] !== '-'
                 );
-                noticeData = notices;
+                noticeData = noticesResult.data;
+                
+                // 공지 시트 헤더 저장 (C열~N열)
+                noticeHeaders = {
+                    col3: noticesResult.headers[2] || '공지1 내용',  // C열
+                    col4: noticesResult.headers[3] || '완료',        // D열
+                    col5: noticesResult.headers[4] || '완료일',      // E열
+                    col6: noticesResult.headers[5] || '공지2 내용',  // F열
+                    col7: noticesResult.headers[6] || '완료',        // G열
+                    col8: noticesResult.headers[7] || '완료일',      // H열
+                    col9: noticesResult.headers[8] || '공지3 내용',  // I열
+                    col10: noticesResult.headers[9] || '완료',       // J열
+                    col11: noticesResult.headers[10] || '완료일',    // K열
+                    col12: noticesResult.headers[11] || '공지4 내용', // L열
+                    col13: noticesResult.headers[12] || '완료',      // M열
+                    col14: noticesResult.headers[13] || '완료일'     // N열
+                };
 
                 updateDashboard();
+                updateNoticeTableHeaders(); // 헤더 업데이트
                 document.getElementById('statusText').textContent = '연결됨';
                 showToast('✅ 데이터 로딩 완료!');
             } catch (error) {
@@ -1507,6 +1561,26 @@
             updateDashboardChart();
             updateRecentCalls();
             updateNoticeSummary();
+        }
+
+        function updateNoticeTableHeaders() {
+            // 공지 테이블 헤더를 동적으로 업데이트
+            if (noticeHeaders.col3) {
+                const header1 = document.getElementById('noticeHeader1');
+                if (header1) {
+                    // "지사공지1_KMI안내" → "KMI안내"로 간소화
+                    const text = noticeHeaders.col3.replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                    header1.textContent = text;
+                }
+            }
+            if (noticeHeaders.col6) {
+                const header2 = document.getElementById('noticeHeader2');
+                if (header2) {
+                    // "이너공지1_이너선발" → "이너선발"로 간소화
+                    const text = noticeHeaders.col6.replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                    header2.textContent = text;
+                }
+            }
         }
 
         function updateDateDisplay() {
@@ -2088,7 +2162,7 @@
             
             if (data.length === 0) {
                 document.getElementById('callsTableBody').innerHTML = 
-                    '<tr><td colspan="8" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
+                    '<tr><td colspan="9" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
                 document.getElementById('callsTablePagination').innerHTML = '';
                 return;
             }
@@ -2151,6 +2225,10 @@
                     window.dateTimeMap[dateKey]++;
                 }
                 
+                const checkComplete = (call['완료'] === 'TRUE' || call['완료'] === 'O') ? 
+                    '<span class="status-check completed">✓</span>' : 
+                    '<span class="status-check pending">✗</span>';
+                
                 return `
                 <tr>
                     <td>${call['일자'] || '-'}</td>
@@ -2158,9 +2236,10 @@
                     <td class="text-bold">${call['회원명'] || '-'}</td>
                     <td>${call['그룹'] || '-'}</td>
                     <td>${call['상품'] || '-'}</td>
-                    <td>${call['업무내용'] || '-'}</td>
+                    <td class="col-업무내용">${call['업무내용'] || '-'}</td>
                     <td>${call['후속액션'] || '-'}</td>
-                    <td>${call['비고'] || '-'}</td>
+                    <td class="checkbox-cell">${checkComplete}</td>
+                    <td class="col-비고">${call['비고'] || '-'}</td>
                 </tr>
             `;
             }).join('');
@@ -2211,14 +2290,53 @@
             }
         }
 
+        function sortCalls(field) {
+            // 정렬 방향 토글
+            if (callsSortField === field) {
+                callsSortOrder = callsSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                callsSortField = field;
+                callsSortOrder = 'asc';
+            }
+            
+            // 모든 화살표 초기화
+            document.querySelectorAll('[id^="sortArrow"]').forEach(arrow => {
+                if (arrow.id === 'sortArrow완료') {
+                    arrow.textContent = '↕';
+                }
+            });
+            
+            // 현재 정렬 필드 화살표 업데이트
+            const arrowElement = document.getElementById('sortArrow' + field);
+            if (arrowElement) {
+                arrowElement.textContent = callsSortOrder === 'asc' ? '↑' : '↓';
+            }
+            
+            // 데이터 정렬
+            let sortedData = [...currentTableData];
+            
+            if (field === '완료') {
+                sortedData.sort((a, b) => {
+                    const statusA = (a['완료'] === 'TRUE' || a['완료'] === 'O') ? 1 : 0;
+                    const statusB = (b['완료'] === 'TRUE' || b['완료'] === 'O') ? 1 : 0;
+                    return callsSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
+                });
+            }
+            
+            currentTableData = sortedData;
+            displayCallsPage(currentTablePage);
+        }
+
         function filterNotices() {
             const group = document.getElementById('noticesGroup').value;
             const status = document.getElementById('noticesStatus').value;
             const search = document.getElementById('noticesSearch').value.toLowerCase();
+            const col4Name = noticeHeaders.col4 || '지사공지1_완료';
+            
             let filtered = [...noticeData];
             if (group) filtered = filtered.filter(n => n['그룹'] === group);
-            if (status === 'completed') filtered = filtered.filter(n => n['지사공지1_완료'] === 'TRUE' || n['지사공지1_완료'] === 'O');
-            else if (status === 'pending') filtered = filtered.filter(n => n['지사공지1_완료'] !== 'TRUE' && n['지사공지1_완료'] !== 'O');
+            if (status === 'completed') filtered = filtered.filter(n => n[col4Name] === 'TRUE' || n[col4Name] === 'O');
+            else if (status === 'pending') filtered = filtered.filter(n => n[col4Name] !== 'TRUE' && n[col4Name] !== 'O');
             if (search) filtered = filtered.filter(n => (n['회원명'] || '').toLowerCase().includes(search));
             displayNotices(filtered);
         }
@@ -2227,9 +2345,13 @@
             currentNoticesData = data;
             currentNoticesPage = 1;
             
+            // 실제 컬럼명 사용
+            const col4Name = noticeHeaders.col4 || '지사공지1_완료';
+            const col7Name = noticeHeaders.col7 || '이너공지1_완료';
+            
             document.getElementById('noticesTotalCount').textContent = noticeData.length + '명';
-            const completed1 = noticeData.filter(n => n['지사공지1_완료'] === 'TRUE' || n['지사공지1_완료'] === 'O').length;
-            const completed2 = noticeData.filter(n => n['이너공지1_완료'] === 'TRUE' || n['이너공지1_완료'] === 'O').length;
+            const completed1 = noticeData.filter(n => n[col4Name] === 'TRUE' || n[col4Name] === 'O').length;
+            const completed2 = noticeData.filter(n => n[col7Name] === 'TRUE' || n[col7Name] === 'O').length;
             document.getElementById('noticesCompleted1').textContent = completed1 + '명';
             document.getElementById('noticesCompleted2').textContent = completed2 + '명';
             document.getElementById('noticesRate1').textContent = Math.round((completed1 / noticeData.length) * 100) + '%';
@@ -2258,20 +2380,28 @@
             
             // 테이블 데이터 표시
             document.getElementById('noticesTableBody').innerHTML = currentPageData.map(notice => {
-                const check1 = (notice['지사공지1_완료'] === 'TRUE' || notice['지사공지1_완료'] === 'O') ? 
+                // 실제 컬럼명 사용 (구글 시트 헤더에서 가져옴)
+                const col3Name = noticeHeaders.col3 || '지사공지1_제목';  // 공지1 내용 컬럼명
+                const col4Name = noticeHeaders.col4 || '지사공지1_완료';  // 공지1 완료 컬럼명
+                const col5Name = noticeHeaders.col5 || '지사공지1_일자';  // 공지1 일자 컬럼명
+                const col6Name = noticeHeaders.col6 || '이너공지1_제목';  // 공지2 내용 컬럼명
+                const col7Name = noticeHeaders.col7 || '이너공지1_완료';  // 공지2 완료 컬럼명
+                const col8Name = noticeHeaders.col8 || '이너공지1_일자';  // 공지2 일자 컬럼명
+                
+                const check1 = (notice[col4Name] === 'TRUE' || notice[col4Name] === 'O') ? 
                     '<span class="status-check completed">✓</span>' : '<span class="status-check pending">✗</span>';
-                const check2 = (notice['이너공지1_완료'] === 'TRUE' || notice['이너공지1_완료'] === 'O') ? 
+                const check2 = (notice[col7Name] === 'TRUE' || notice[col7Name] === 'O') ? 
                     '<span class="status-check completed">✓</span>' : '<span class="status-check pending">✗</span>';
                 return `
                     <tr>
                         <td class="text-bold">${notice['회원명'] || '-'}</td>
                         <td>${notice['그룹'] || '-'}</td>
-                        <td>${notice['지사공지1_제목'] || '-'}</td>
+                        <td>${notice[col3Name] || '-'}</td>
                         <td class="checkbox-cell">${check1}</td>
-                        <td>${notice['지사공지1_일자'] || '-'}</td>
-                        <td>${notice['이너공지1_제목'] || '-'}</td>
+                        <td>${notice[col5Name] || '-'}</td>
+                        <td>${notice[col6Name] || '-'}</td>
                         <td class="checkbox-cell">${check2}</td>
-                        <td>${notice['이너공지1_일자'] || '-'}</td>
+                        <td>${notice[col8Name] || '-'}</td>
                     </tr>
                 `;
             }).join('');
@@ -2344,6 +2474,8 @@
             
             // 데이터 정렬
             let sortedData = [...currentNoticesData];
+            const col4Name = noticeHeaders.col4 || '지사공지1_완료';
+            const col7Name = noticeHeaders.col7 || '이너공지1_완료';
             
             if (field === '이름') {
                 sortedData.sort((a, b) => {
@@ -2355,14 +2487,14 @@
                 });
             } else if (field === '완료1') {
                 sortedData.sort((a, b) => {
-                    const statusA = (a['지사공지1_완료'] === 'TRUE' || a['지사공지1_완료'] === 'O') ? 1 : 0;
-                    const statusB = (b['지사공지1_완료'] === 'TRUE' || b['지사공지1_완료'] === 'O') ? 1 : 0;
+                    const statusA = (a[col4Name] === 'TRUE' || a[col4Name] === 'O') ? 1 : 0;
+                    const statusB = (b[col4Name] === 'TRUE' || b[col4Name] === 'O') ? 1 : 0;
                     return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
                 });
             } else if (field === '완료2') {
                 sortedData.sort((a, b) => {
-                    const statusA = (a['이너공지1_완료'] === 'TRUE' || a['이너공지1_완료'] === 'O') ? 1 : 0;
-                    const statusB = (b['이너공지1_완료'] === 'TRUE' || b['이너공지1_완료'] === 'O') ? 1 : 0;
+                    const statusA = (a[col7Name] === 'TRUE' || a[col7Name] === 'O') ? 1 : 0;
+                    const statusB = (b[col7Name] === 'TRUE' || b[col7Name] === 'O') ? 1 : 0;
                     return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
                 });
             }
