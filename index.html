@@ -292,6 +292,26 @@
         @media (max-width: 768px) {
             .cards-grid {
                 grid-template-columns: repeat(3, 1fr);
+                gap: 8px; /* 간격 줄여서 3개가 확실히 들어가도록 */
+            }
+            
+            /* 모바일에서 카드 패딩 축소 */
+            .cards-grid .card {
+                padding: clamp(12px, 3vw, 16px);
+            }
+            
+            .cards-grid .card-title {
+                font-size: clamp(10px, 2.5vw, 12px);
+                margin-bottom: 6px;
+            }
+            
+            .cards-grid .card-value {
+                font-size: clamp(20px, 5vw, 24px);
+                margin-bottom: 4px;
+            }
+            
+            .cards-grid .card-sub {
+                font-size: clamp(9px, 2.2vw, 11px);
             }
         }
 
@@ -1031,6 +1051,24 @@
             gap: clamp(8px, 2vw, 12px);
             margin-top: clamp(16px, 4vw, 24px);
             padding: clamp(12px, 3vw, 16px);
+            flex-wrap: wrap;
+        }
+        
+        /* 모바일 페이지네이션 스크롤 */
+        @media (max-width: 768px) {
+            .pagination {
+                justify-content: flex-start;
+                overflow-x: auto;
+                overflow-y: hidden;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                padding-bottom: 16px;
+            }
+            
+            .pagination::-webkit-scrollbar {
+                display: none;
+            }
         }
 
         .pagination-btn {
@@ -2824,8 +2862,9 @@
                 // 이전 버튼
                 paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>◀</button>`;
                 
-                // 페이지 번호
-                const maxButtons = 7;
+                // 페이지 번호 - 모바일/데스크톱 구분
+                const isMobile = window.innerWidth <= 768;
+                const maxButtons = isMobile ? 5 : 7;
                 let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
                 let endPage = Math.min(totalPages, startPage + maxButtons - 1);
                 
@@ -2833,6 +2872,7 @@
                     startPage = Math.max(1, endPage - maxButtons + 1);
                 }
                 
+                // 첫 페이지 항상 표시
                 if (startPage > 1) {
                     paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(1)">1</button>`;
                     if (startPage > 2) {
@@ -2844,6 +2884,7 @@
                     paginationHTML += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="displayNoticesPage(${i})">${i}</button>`;
                 }
                 
+                // 마지막 페이지 항상 표시
                 if (endPage < totalPages) {
                     if (endPage < totalPages - 1) {
                         paginationHTML += `<span class="pagination-info">...</span>`;
