@@ -2,1269 +2,2801 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    
+    <!-- iOS Safari 최적화 메타 태그 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>카드사별 키인 한도 관리</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KFPC Dashboard">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- PWA 지원 -->
+    <meta name="theme-color" content="#667eea">
+    
+    <title>KFPC 업무 대시보드</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
     <style>
+        /* ============================================
+           iOS Safari 최적화 + 프리미엄 디자인
+           ============================================ */
+        
+        /* CSS 변수 (다크모드 대응) */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            --primary-color: #4a90e2;
+            --primary-dark: #357abd;
+            --secondary-color: #5e9ed6;
+            --bg-color: #f7f9fc;
+            --card-bg: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --border-color: #e8eef5;
+            --shadow-sm: 0 2px 8px rgba(74, 144, 226, 0.08);
+            --shadow-md: 0 4px 16px rgba(74, 144, 226, 0.12);
+            --shadow-lg: 0 8px 24px rgba(74, 144, 226, 0.16);
+            --header-height: 140px;
+            --safe-area-top: env(safe-area-inset-top, 0px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-area-left: env(safe-area-inset-left, 0px);
+            --safe-area-right: env(safe-area-inset-right, 0px);
+        }
+
+        /* 리셋 + iOS 최적화 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            /* iOS Safari 부드러운 스크롤 */
+            -webkit-overflow-scrolling: touch;
+            -webkit-text-size-adjust: 100%;
+            scroll-behavior: smooth;
+            height: 100%;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            
+            /* iOS Safe Area 대응 */
+            padding-top: calc(var(--header-height) + var(--safe-area-top));
+            padding-bottom: var(--safe-area-bottom);
+            padding-left: var(--safe-area-left);
+            padding-right: var(--safe-area-right);
+            
+            /* iOS 폰트 렌더링 최적화 */
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            
+            /* iOS Safari 스크롤 개선 */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .header h1 {
-            color: #333;
-            font-size: 20px;
-            margin-bottom: 8px;
-            font-weight: 700;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 12px;
-        }
-
-        .month-selector {
-            background: white;
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .month-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .month-selector label {
-            font-weight: 600;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-
-        .month-selector select {
-            padding: 10px 15px;
-            font-size: 14px;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            background: white;
-            color: #333;
-            cursor: pointer;
-            min-width: 80px;
+        /* iOS input 스타일 초기화 */
+        input,
+        select,
+        textarea,
+        button {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            padding-right: 35px;
+            border-radius: 0;
+            font-family: inherit;
         }
 
-        .btn {
-            padding: 10px 15px;
-            font-size: 13px;
-            border: none;
-            border-radius: 8px;
+        /* 헤더 - iOS Safe Area 대응 */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            
+            /* iOS Safe Area */
+            padding-top: var(--safe-area-top);
+            
+            /* iOS Safari 블러 효과 */
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+        }
+
+        .header-top {
+            padding: clamp(12px, 3vw, 20px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 {
+            font-size: clamp(18px, 4.5vw, 26px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: clamp(10px, 2.5vw, 16px);
+            flex-shrink: 0;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: clamp(11px, 2.8vw, 14px);
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.95); }
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: clamp(8px, 2vw, 10px) clamp(14px, 3.5vw, 18px);
+            border-radius: 10px;
             cursor: pointer;
+            font-size: clamp(12px, 3vw, 15px);
             font-weight: 600;
-            white-space: nowrap;
-            touch-action: manipulation;
-            -webkit-touch-callout: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* iOS 터치 최적화 */
+            -webkit-user-select: none;
+            user-select: none;
             min-height: 44px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
         }
 
-        .btn-primary {
-            background: #667eea;
-            color: white;
-            border: none;
+        .refresh-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.96);
         }
 
-        .btn-secondary {
-            background: white;
-            border: 2px solid #667eea;
-            color: #667eea;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .card-item {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-
-        .card-name {
-            font-size: 18px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #667eea;
+        /* 탭 네비게이션 */
+        .tab-nav {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 0 clamp(12px, 3vw, 20px);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .card-installment-badge {
-            background: #667eea;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .card-info {
-            margin-bottom: 8px;
-        }
-
-        .card-info-label {
-            font-size: 11px;
-            color: #888;
-            margin-bottom: 4px;
-        }
-
-        .card-info-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .limit-amount {
-            color: #667eea;
-        }
-
-        .used-amount {
-            color: #f5576c;
-        }
-
-        .balance-amount {
-            font-size: 22px;
-            font-weight: 700;
-            color: #4caf50;
-            margin-top: 10px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4caf50 0%, #f5576c 100%);
-            transition: width 0.3s;
-        }
-
-        .table-container {
-            background: white;
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            gap: 4px;
             overflow-x: auto;
+            overflow-y: hidden;
+            
+            /* iOS 스크롤 최적화 */
             -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
         }
 
-        .table-container table {
-            width: 100%;
-            min-width: 800px;
-            border-collapse: collapse;
-        }
-
-        .table-container th {
-            padding: 12px 8px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 12px;
-            white-space: nowrap;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .table-container td {
-            padding: 12px 8px;
-            font-size: 13px;
-            white-space: nowrap;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .table-container tbody tr:hover {
-            background: #f5f5f5;
-        }
-
-        .hidden {
+        .tab-nav::-webkit-scrollbar {
             display: none;
         }
 
-        /* iOS Safari 특정 스타일 */
-        @supports (-webkit-touch-callout: none) {
-            body {
-                min-height: -webkit-fill-available;
-            }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 14px clamp(16px, 4vw, 26px);
+            cursor: pointer;
+            font-size: clamp(13px, 3.2vw, 16px);
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
             
-            .month-selector select {
-                font-size: 16px; /* iOS 자동 줌 방지 */
+            /* iOS 터치 최적화 */
+            -webkit-user-select: none;
+            user-select: none;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .tab-btn:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn.active {
+            color: white;
+            border-bottom-color: white;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* 컨테이너 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: clamp(16px, 4vw, 24px);
+        }
+
+        /* 탭 컨텐츠 */
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        /* 모바일 최적화 (768px 이하) */
+        /* 날짜 표시 */
+        .date-display {
+            background: var(--card-bg);
+            padding: clamp(14px, 3.5vw, 18px);
+            border-radius: 16px;
+            margin-bottom: clamp(16px, 4vw, 24px);
+            box-shadow: var(--shadow-sm);
+            font-size: clamp(14px, 3.5vw, 17px);
+            color: var(--text-primary);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        /* 카드 그리드 - iOS 반응형 최적화 */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+            gap: clamp(14px, 3.5vw, 20px);
+            margin-bottom: clamp(20px, 5vw, 32px);
+        }
+
+        /* 모바일 전용 - 카드 3개씩 한 행 */
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
-            .header {
-                padding: 15px;
-                margin-bottom: 10px;
-            }
-
-            .header h1 {
-                font-size: 18px;
-                margin-bottom: 6px;
-            }
-
-            .header p {
-                font-size: 11px;
-            }
-
-            .month-selector {
-                padding: 12px;
-                margin-bottom: 10px;
-            }
-
-            .month-controls {
-                width: 100%;
-            }
-
-            .month-selector select {
-                flex: 1;
-                min-width: 70px;
-            }
-
-            .btn {
-                flex: 1;
-                min-width: 100px;
-                padding: 10px 12px;
-                font-size: 12px;
-            }
-
             .cards-grid {
-                grid-template-columns: 1fr;
-                gap: 10px;
-                margin-bottom: 10px;
-            }
-
-            .card-item {
-                padding: 15px;
-            }
-
-            .card-name {
-                font-size: 16px;
-                margin-bottom: 10px;
-            }
-
-            .card-installment-badge {
-                font-size: 10px;
-                padding: 3px 8px;
-            }
-
-            .card-info-value {
-                font-size: 14px;
-            }
-
-            .balance-amount {
-                font-size: 20px;
-            }
-
-            .table-container {
-                padding: 10px;
-                margin: 0 -5px;
-            }
-
-            .table-container th {
-                padding: 10px 6px;
-                font-size: 11px;
-            }
-
-            .table-container td {
-                padding: 10px 6px;
-                font-size: 12px;
+                grid-template-columns: repeat(3, 1fr);
             }
         }
 
-        /* iPhone SE 및 소형 기기 (375px 이하) */
-        @media (max-width: 375px) {
-            .header h1 {
-                font-size: 16px;
-            }
-
-            .header p {
-                font-size: 10px;
-            }
-
-            .month-selector label {
-                font-size: 12px;
-            }
-
-            .btn {
-                font-size: 11px;
-                padding: 8px 10px;
-            }
-
-            .card-name {
-                font-size: 15px;
-            }
-
-            .card-info-value {
-                font-size: 13px;
-            }
-
-            .balance-amount {
-                font-size: 18px;
-            }
-
-            .table-container th {
-                padding: 8px 4px;
-                font-size: 10px;
-            }
-
-            .table-container td {
-                padding: 8px 4px;
-                font-size: 11px;
-            }
+        /* 공지 관리 탭 - 카드 2개씩 배치 */
+        .notices-group-cards,
+        .notices-completion-cards {
+            grid-template-columns: repeat(2, 1fr);
+            margin-bottom: clamp(16px, 4vw, 24px);
         }
 
-        /* 가로 모드 최적화 */
-        @media (max-width: 768px) and (orientation: landscape) {
-            .cards-grid {
+        @media (max-width: 768px) {
+            .notices-group-cards,
+            .notices-completion-cards {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
 
-        /* 로딩 메시지 스타일 */
-        #loadingMessage {
-            text-align: center;
-            padding: 30px 20px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+
+        .card {
+            background: var(--card-bg);
+            padding: clamp(20px, 5vw, 28px);
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-color);
         }
 
-        #loadingMessage > div:first-child {
-            font-size: 40px;
-            margin-bottom: 15px;
+        .card:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-sm);
         }
 
-        #loadingMessage > div:last-child {
-            font-size: 16px;
+        .card-title {
+            font-size: clamp(12px, 3vw, 15px);
+            color: var(--text-secondary);
+            margin-bottom: clamp(8px, 2vw, 12px);
             font-weight: 600;
-            color: #667eea;
+            letter-spacing: -0.01em;
         }
 
-        @media (max-width: 768px) {
-            #loadingMessage {
-                padding: 25px 15px;
-            }
-
-            #loadingMessage > div:first-child {
-                font-size: 36px;
-                margin-bottom: 12px;
-            }
-
-            #loadingMessage > div:last-child {
-                font-size: 14px;
-            }
+        .card-value {
+            font-size: clamp(28px, 7vw, 36px);
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: clamp(6px, 1.5vw, 10px);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
         }
 
-        /* ========================================
-           월별 결제 내역 섹션 스타일
-           ======================================== */
-        .payment-history-section {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            margin-top: 20px;
+        .card-sub {
+            font-size: clamp(12px, 3vw, 14px);
+            color: var(--text-tertiary);
+            font-weight: 500;
         }
 
-        .payment-history-header {
+        .card-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: clamp(11px, 2.8vw, 13px);
+            font-weight: 700;
+            margin-top: clamp(8px, 2vw, 12px);
+            letter-spacing: -0.01em;
+        }
+
+        .badge-success {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            color: #2e7d32;
+        }
+
+        .badge-warning {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            color: #f57c00;
+        }
+
+        .badge-danger {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            color: #c62828;
+        }
+
+        /* 섹션 */
+        .section {
+            background: var(--card-bg);
+            padding: clamp(20px, 5vw, 28px);
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: clamp(20px, 5vw, 32px);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: clamp(16px, 4vw, 20px);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: clamp(16px, 4vw, 24px);
+            padding-bottom: clamp(12px, 3vw, 16px);
+            border-bottom: 2px solid var(--border-color);
+            letter-spacing: -0.02em;
+        }
+
+        /* 진행률 바 */
+        .progress-list {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #667eea;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: clamp(14px, 3.5vw, 18px);
+        }
+
+        .progress-item {
+            display: flex;
+            flex-direction: column;
             gap: 10px;
         }
 
-        .payment-history-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #333;
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
         }
 
-        .payment-count {
-            background: #667eea;
+        .progress-label {
+            font-size: clamp(13px, 3.2vw, 16px);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .progress-percent {
+            font-size: clamp(13px, 3.2vw, 16px);
+            font-weight: 700;
+            color: var(--primary-color);
+            flex-shrink: 0;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 10px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-bar.low {
+            background: linear-gradient(90deg, #f44336 0%, #e91e63 100%);
+        }
+
+        .progress-bar.medium {
+            background: linear-gradient(90deg, #ff9800 0%, #ffc107 100%);
+        }
+
+        .progress-bar.high {
+            background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+        }
+
+        /* 최근 업무 기록 - iOS 최적화 */
+        .call-list {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(10px, 2.5vw, 14px);
+        }
+
+        .call-item {
+            display: flex;
+            align-items: center;
+            padding: clamp(12px, 3vw, 16px);
+            background: var(--bg-color);
+            border-radius: 16px;
+            border-left: 4px solid var(--primary-color);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* iOS 터치 최적화 */
+            -webkit-user-select: none;
+            user-select: none;
+            min-height: 60px;
+        }
+
+        .call-item:active {
+            transform: translateX(8px) scale(0.98);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .call-icon {
+            width: clamp(36px, 9vw, 44px);
+            height: clamp(36px, 9vw, 44px);
+            background: var(--primary-gradient);
             color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(16px, 4vw, 20px);
+            margin-right: clamp(12px, 3vw, 16px);
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .call-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .call-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .call-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .call-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: clamp(13px, 3.2vw, 16px);
+            flex-shrink: 0;
+        }
+
+        .call-separator {
+            color: var(--text-tertiary);
+            font-size: clamp(13px, 3.2vw, 16px);
+            flex-shrink: 0;
+        }
+
+        .call-desc-inline {
+            font-size: clamp(12px, 3vw, 15px);
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .call-time {
+            font-size: clamp(11px, 2.8vw, 13px);
+            color: var(--text-tertiary);
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+
+        /* 모바일 전용 - 업무내용 2줄 표시 */
+        .call-desc-block {
+            display: none;
+            font-size: clamp(12px, 3vw, 15px);
+            color: var(--text-secondary);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        /* 모바일 (768px 이하) - 최근 업무기록 2줄 레이아웃 */
+        @media (max-width: 768px) {
+            .call-header {
+                flex-direction: row;  /* 이름과 일자 같은 행 */
+                justify-content: space-between;
+                align-items: center;  /* 수직 중앙 정렬 */
+                gap: 8px;
+            }
+
+            .call-left {
+                flex: 0 0 auto;  /* 이름 너비 자동 */
+            }
+
+            .call-separator,
+            .call-desc-inline {
+                display: none !important;
+            }
+
+            .call-desc-block {
+                display: block;
+                margin-top: 3px;  /* 간격 좁힘 (6px → 3px) */
+            }
+
+            .call-time {
+                flex-shrink: 0;
+                margin-top: 0;  /* 정렬 초기화 */
+            }
+
+            .call-item {
+                min-height: auto;  /* 최소 높이 제거 */
+                padding: clamp(10px, 2.5vw, 14px);  /* 패딩 축소 */
+            }
+        }
+
+        /* 공지 현황 */
+        .notice-summary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: clamp(12px, 3vw, 16px);
+        }
+
+        .notice-item {
+            padding: clamp(14px, 3.5vw, 18px);
+            background: var(--bg-color);
+            border-radius: 16px;
+            border-left: 4px solid var(--secondary-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .notice-item:active {
+            transform: scale(0.96);
+        }
+
+        .notice-group {
+            font-size: clamp(12px, 3vw, 14px);
+            color: var(--text-secondary);
+            margin-bottom: 8px;
             font-weight: 600;
         }
 
-        .payment-history-table {
-            width: 100%;
+        .notice-stats {
+            font-size: clamp(18px, 4.5vw, 22px);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+
+        .notice-rate {
+            font-size: clamp(11px, 2.8vw, 13px);
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        /* 필터 섹션 */
+        .filter-section {
+            background: var(--card-bg);
+            padding: clamp(16px, 4vw, 22px);
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: clamp(16px, 4vw, 24px);
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+            gap: clamp(12px, 3vw, 16px);
+            align-items: end;
+        }
+
+        /* 모바일 전용 - 필터 2개씩 (검색은 전체 너비) */
+        @media (max-width: 768px) {
+            .filter-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            /* 검색 필드만 전체 너비 */
+            .filter-grid .filter-group:nth-child(3) {
+                grid-column: 1 / -1;
+            }
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: clamp(12px, 3vw, 14px);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .filter-input,
+        .filter-select {
+            padding: clamp(10px, 2.5vw, 14px);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: clamp(13px, 3.2vw, 16px);
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            
+            /* iOS 최적화 */
+            min-height: 44px;
+        }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: clamp(10px, 2.5vw, 14px) clamp(16px, 4vw, 24px);
+            border: none;
+            border-radius: 12px;
+            font-size: clamp(13px, 3.2vw, 16px);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* iOS 터치 최적화 */
+            -webkit-user-select: none;
+            user-select: none;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: -0.01em;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.96);
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-color);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:active {
+            background: var(--border-color);
+            transform: scale(0.96);
+        }
+
+        /* 테이블 - iOS 스크롤 최적화 */
+        .table-container {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+            margin: 0 calc(clamp(16px, 4vw, 24px) * -1);
+            padding: 0 clamp(16px, 4vw, 24px);
         }
 
-        .payment-history-table table {
+        table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: clamp(12px, 3vw, 15px);
+            min-width: 600px;
         }
 
-        .payment-history-table th {
-            background: #f8f9fa;
-            color: #333;
-            padding: 12px 8px;
-            font-weight: 600;
-            text-align: center;
-            border-bottom: 2px solid #667eea;
+        th {
+            background: var(--bg-color);
+            padding: clamp(12px, 3vw, 16px);
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
             white-space: nowrap;
         }
 
-        .payment-history-table td {
-            padding: 12px 8px;
-            border-bottom: 1px solid #eee;
+        td {
+            padding: clamp(12px, 3vw, 16px);
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        tbody tr:active {
+            background: var(--bg-color);
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
             text-align: center;
         }
 
-        .payment-history-table tr:hover {
-            background: #f8f9fa;
-        }
-
-        .payment-row-date {
-            color: #666;
-            font-size: 12px;
-        }
-
-        .payment-row-card {
-            font-weight: 600;
-            color: #667eea;
-        }
-
-        .payment-row-amount {
+        .text-bold {
             font-weight: 700;
-            color: #333;
+            color: var(--text-primary);
         }
 
-        .payment-row-installment {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
+        .time-cell {
+            color: var(--primary-color);
             font-weight: 600;
+            font-size: clamp(12px, 3vw, 14px);
+            white-space: nowrap;
         }
 
-        .payment-row-installment.lumpsum {
-            background: #e3f2fd;
-            color: #1976d2;
+        /* 업무기록 테이블 컬럼 폭 조정 */
+        .col-상품 {
+            width: 12%;
+            min-width: 100px;
         }
 
-        .payment-row-installment.installment {
-            background: #fce4ec;
-            color: #c2185b;
+        .col-업무내용 {
+            width: 24%;
+            min-width: 180px;
         }
 
-        .payment-row-name {
-            font-weight: 600;
-            color: #333;
+        .col-후속액션 {
+            width: 14%;
+            min-width: 120px;
         }
 
-        .payment-summary {
-            margin-top: 15px;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 10px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            color: white;
-        }
-
-        .payment-summary-item {
+        .col-완료 {
+            width: 50px;
             text-align: center;
         }
 
-        .payment-summary-label {
-            font-size: 12px;
-            opacity: 0.9;
-            margin-bottom: 5px;
-        }
-
-        .payment-summary-value {
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        .empty-history {
-            text-align: center;
-            padding: 40px 20px;
-            color: #999;
-        }
-
-        .empty-history-icon {
-            font-size: 48px;
-            margin-bottom: 10px;
+        .col-비고 {
+            width: 12%;
+            min-width: 100px;
         }
 
         @media (max-width: 768px) {
-            .payment-history-table table {
-                font-size: 11px;
+            .col-상품 {
+                width: 11%;
+                min-width: 80px;
             }
 
-            .payment-history-table th,
-            .payment-history-table td {
-                padding: 8px 4px;
+            .col-업무내용 {
+                width: 22%;
+                min-width: 120px;
             }
-
-            .payment-summary {
-                grid-template-columns: 1fr;
-                gap: 10px;
+            
+            .col-후속액션 {
+                width: 13%;
+                min-width: 90px;
             }
-
-            .payment-summary-value {
-                font-size: 18px;
+            
+            .col-완료 {
+                width: 40px;
+            }
+            
+            .col-비고 {
+                width: 10%;
+                min-width: 80px;
             }
         }
 
-        @media (max-width: 480px) {
-            .payment-history-section {
-                padding: 15px;
+        /* 공지 테이블 행 높이 축소 */
+        #noticesTableBody tr {
+            height: auto;
+        }
+
+        #noticesTableBody td {
+            padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 16px);
+            line-height: 1.3;
+        }
+
+        /* 공지 테이블 그룹 열 폭 확대 */
+        #noticesTableHead th:nth-child(2),
+        #noticesTableBody td:nth-child(2) {
+            min-width: 80px;
+        }
+
+        @media (max-width: 768px) {
+            #noticesTableBody td {
+                padding: 6px 10px;
+                font-size: clamp(11px, 2.5vw, 13px);
             }
 
-            .payment-history-title {
-                font-size: 16px;
+            /* 모바일에서 그룹 열 120% 확대 */
+            #noticesTableHead th:nth-child(2),
+            #noticesTableBody td:nth-child(2) {
+                min-width: 96px;
+                width: 96px;
+            }
+        }
+
+
+        /* 차트 그리드 */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(20px, 5vw, 32px);
+            margin-bottom: clamp(20px, 5vw, 32px);
+        }
+
+        /* 검색바 */
+        .search-bar {
+            display: flex;
+            gap: clamp(8px, 2vw, 12px);
+            margin-bottom: clamp(16px, 4vw, 24px);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: clamp(12px, 3vw, 16px);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: clamp(13px, 3.2vw, 16px);
+            outline: none;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            min-height: 44px;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        /* 공지 테이블 특수 스타일 */
+        .checkbox-cell {
+            text-align: center;
+        }
+
+        .status-check {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            line-height: 24px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .status-check.completed {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            color: #2e7d32;
+        }
+
+        .status-check.pending {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            color: #c62828;
+        }
+
+        /* 로딩 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: clamp(150px, 30vw, 200px);
+            font-size: clamp(14px, 3.5vw, 17px);
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .spinner {
+            width: clamp(32px, 8vw, 44px);
+            height: clamp(32px, 8vw, 44px);
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: clamp(12px, 3vw, 16px);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 에러 메시지 */
+        .error-message {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            color: #c62828;
+            padding: clamp(14px, 3.5vw, 18px);
+            border-radius: 16px;
+            margin: clamp(16px, 4vw, 24px) 0;
+            border-left: 4px solid #c62828;
+            font-size: clamp(13px, 3.2vw, 16px);
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: clamp(32px, 8vw, 48px);
+            color: var(--text-tertiary);
+        }
+
+        .empty-state-icon {
+            font-size: clamp(40px, 10vw, 56px);
+            margin-bottom: clamp(12px, 3vw, 18px);
+            opacity: 0.5;
+        }
+
+        /* 페이지네이션 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: clamp(8px, 2vw, 12px);
+            margin-top: clamp(16px, 4vw, 24px);
+            padding: clamp(12px, 3vw, 16px);
+        }
+
+        .pagination-btn {
+            min-width: clamp(36px, 9vw, 44px);
+            min-height: clamp(36px, 9vw, 44px);
+            padding: clamp(8px, 2vw, 10px);
+            border: 2px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: clamp(13px, 3.2vw, 15px);
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pagination-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .pagination-btn.active {
+            background: var(--primary-gradient);
+            border-color: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pagination-btn:disabled:hover {
+            background: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+            transform: none;
+        }
+
+        .pagination-info {
+            font-size: clamp(12px, 3vw, 14px);
+            color: var(--text-secondary);
+            padding: 0 clamp(8px, 2vw, 12px);
+            white-space: nowrap;
+        }
+
+        /* 토스트 알림 - iOS Safe Area 대응 */
+        .toast {
+            position: fixed;
+            bottom: calc(clamp(20px, 5vw, 32px) + var(--safe-area-bottom));
+            right: calc(clamp(20px, 5vw, 32px) + var(--safe-area-right));
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: clamp(14px, 3.5vw, 18px) clamp(18px, 4.5vw, 24px);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000;
+            font-size: clamp(13px, 3.2vw, 16px);
+            font-weight: 600;
+            max-width: calc(100vw - clamp(40px, 10vw, 64px));
+            
+            /* iOS 블러 효과 */
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ============================================
+           iPhone 기종별 최적화
+           ============================================ */
+        
+        /* iPhone SE (375px) */
+        @media (max-width: 375px) {
+            .tab-btn {
+                padding: 12px 14px;
+                font-size: 13px;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* iPhone 12 mini ~ iPhone 13/14 (390px ~ 428px) */
+        @media (min-width: 376px) and (max-width: 428px) {
+            .tab-nav {
+                justify-content: flex-start;
+            }
+        }
+
+        /* iPhone 14 Pro Max / 15 Pro Max (430px+) */
+        @media (min-width: 429px) {
+            .tab-nav {
+                justify-content: center;
+            }
+        }
+
+        /* iPad Mini & Air */
+        @media (min-width: 744px) {
+            :root {
+                --header-height: 150px;
+            }
+            
+            .cards-grid {
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            }
+            
+            .tab-nav {
+                justify-content: center;
+            }
+        }
+
+        /* iPad Pro & Desktop */
+        @media (min-width: 1024px) {
+            .cards-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .chart-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* 가로 모드 최적화 */
+        @media (orientation: landscape) and (max-height: 450px) {
+            :root {
+                --header-height: 100px;
+            }
+            
+            .header-top {
+                padding: 8px 16px;
+            }
+            
+            .tab-btn {
+                padding: 10px 16px;
+            }
+            
+            .card {
+                padding: 16px;
+            }
+        }
+
+        /* 터치 디바이스 최적화 */
+        @media (hover: none) and (pointer: coarse) {
+            .call-item:hover {
+                transform: none;
+            }
+            
+            .card:hover {
+                transform: none;
+            }
+        }
+
+        /* 프린트 스타일 */
+        @media print {
+            .header,
+            .tab-nav,
+            .refresh-btn {
+                display: none;
+            }
+            
+            body {
+                padding-top: 0;
+            }
+            
+            .section {
+                page-break-inside: avoid;
             }
         }
     </style>
 </head>
 <body>
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-top">
+            <h1>📊 KFPC 업무 대시보드</h1>
+            <div class="header-controls">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span id="statusText">연결 대기중...</span>
+                </div>
+                <button class="refresh-btn" onclick="loadAllData()">🔄 새로고침</button>
+            </div>
+        </div>
+        
+        <!-- 탭 네비게이션 -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('dashboard')">🏠 대시보드</button>
+            <button class="tab-btn" onclick="switchTab('sales')">📊 매출 분석</button>
+            <button class="tab-btn" onclick="switchTab('calls')">📞 업무 기록</button>
+            <button class="tab-btn" onclick="switchTab('notices')">✅ 공지 관리</button>
+        </div>
+    </div>
+
     <div class="container">
-        <div class="header">
-            <h1>💳 카드사별 키인 한도 관리</h1>
-            <p>월별 / 카드사별 키인현황 확인</p>
-        </div>
+        <!-- 탭 1: 대시보드 -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="date-display" id="dateDisplay">📅 2025년 11월 7일 (목요일)</div>
 
-        <!-- 월 선택 섹션 -->
-        <div class="month-selector" id="monthSelector">
-            <div class="month-controls">
-                <label>조회 월:</label>
-                <select id="monthSelect" onchange="updateDisplay()">
-                    <option value="10">10월</option>
-                    <option value="11">11월</option>
-                    <option value="12">12월</option>
-                </select>
-                <button onclick="reloadSheetData()" class="btn btn-secondary">🔄 새로고침</button>
-                <button onclick="toggleView()" id="viewToggleBtn" class="btn btn-primary">📊 테이블보기</button>
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-title">오늘 실적 (확정)</div>
+                    <div class="card-value" id="todaySales">-원</div>
+                    <div class="card-sub">예상: <span id="todayExpected">-원</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">이번 주 달성률</div>
+                    <div class="card-value" id="weeklyRate">-%</div>
+                    <div class="card-sub">목표: <span id="weeklyGoal">-원</span></div>
+                    <span class="card-badge badge-warning" id="weeklyBadge">진행중</span>
+                </div>
+                <div class="card">
+                    <div class="card-title">이번 달 달성률</div>
+                    <div class="card-value" id="monthlyRate">-%</div>
+                    <div class="card-sub">목표: <span id="monthlyGoal">-원</span></div>
+                    <span class="card-badge badge-warning" id="monthlyBadge">진행중</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📈 이번주 상품별 달성률</div>
+                <div class="progress-list" id="productProgress">
+                    <div class="loading"><div class="spinner"></div>데이터 로딩 중...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📊 주간 매출 추이</div>
+                <canvas id="dashboardChart" height="80"></canvas>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📞 최근 업무 기록</div>
+                <div class="call-list" id="recentCalls">
+                    <div class="loading"><div class="spinner"></div>데이터 로딩 중...</div>
+                </div>
+                <div class="pagination" id="callsPagination"></div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">✅ 공지 전달 현황</div>
+                <div class="notice-summary" id="noticeSummary">
+                    <div class="loading"><div class="spinner"></div>데이터 로딩 중...</div>
+                </div>
             </div>
         </div>
 
-        <!-- 로딩 메시지 -->
-        <div id="loadingMessage">
-            <div>⏳</div>
-            <div>구글시트 데이터 불러오는 중...</div>
-        </div>
-
-        <!-- 카드사별 현황 -->
-        <div class="cards-grid hidden" id="cardsGrid"></div>
-
-        <!-- 테이블 뷰 -->
-        <div class="table-container hidden" id="tableView">
-            <table id="cardTable">
-                <thead>
-                    <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                        <th>카드사</th>
-                        <th>최대<br>할부</th>
-                        <th>월 한도</th>
-                        <th>일시불<br>사용</th>
-                        <th>할부<br>사용</th>
-                        <th>총 사용</th>
-                        <th>잔여한도</th>
-                        <th>사용률</th>
-                    </tr>
-                </thead>
-                <tbody id="cardTableBody">
-                </tbody>
-            </table>
-        </div>
-
-        <!-- 월별 결제 내역 섹션 -->
-        <div id="paymentHistorySection" class="payment-history-section">
-            <div class="payment-history-header">
-                <div class="payment-history-title">📋 월별 결제 내역</div>
-                <div class="payment-count" id="paymentCount">0건</div>
-            </div>
-            
-            <div class="payment-history-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>결제일자</th>
-                            <th>카드사</th>
-                            <th>결제금액</th>
-                            <th>할부개월</th>
-                            <th>성명</th>
-                        </tr>
-                    </thead>
-                    <tbody id="paymentHistoryBody"></tbody>
-                </table>
+        <!-- 탭 2: 매출 분석 -->
+        <div id="tab-sales" class="tab-content">
+            <div class="filter-section">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>조회 기간</label>
+                        <select class="filter-select" id="salesPeriod" onchange="updateSalesDateInputs()">
+                            <option value="today">오늘</option>
+                            <option value="week" selected>이번 주</option>
+                            <option value="month">이번 달</option>
+                            <option value="custom">사용자 지정</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" id="salesStartDateGroup" style="display:none;">
+                        <label>시작일</label>
+                        <input type="date" class="filter-input" id="salesStartDate">
+                    </div>
+                    <div class="filter-group" id="salesEndDateGroup" style="display:none;">
+                        <label>종료일</label>
+                        <input type="date" class="filter-input" id="salesEndDate">
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-primary" onclick="loadSalesData()">조회하기</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="payment-summary" id="paymentSummary">
-                <div class="payment-summary-item">
-                    <div class="payment-summary-label">총 결제 건수</div>
-                    <div class="payment-summary-value" id="totalCount">0건</div>
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-title">예상 매출</div>
+                    <div class="card-value" id="salesTotalExpected">-원</div>
+                    <div class="card-sub">조회 기간 합계</div>
                 </div>
-                <div class="payment-summary-item">
-                    <div class="payment-summary-label">일시불 합계</div>
-                    <div class="payment-summary-value" id="totalLumpSum">0원</div>
+                <div class="card">
+                    <div class="card-title">확정 매출</div>
+                    <div class="card-value" id="salesTotalConfirmed">-원</div>
+                    <div class="card-sub">조회 기간 합계</div>
                 </div>
-                <div class="payment-summary-item">
-                    <div class="payment-summary-label">할부 합계</div>
-                    <div class="payment-summary-value" id="totalInstallment">0원</div>
+                <div class="card">
+                    <div class="card-title">목표 대비 달성률</div>
+                    <div class="card-value" id="salesAchievementRate">-%</div>
+                    <div class="card-sub">목표: <span id="salesGoalAmount">-원</span></div>
+                    <span class="card-badge badge-warning" id="salesAchievementBadge">진행중</span>
                 </div>
-                <div class="payment-summary-item">
-                    <div class="payment-summary-label">전체 합계</div>
-                    <div class="payment-summary-value" id="totalAmount">0원</div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">상품별 매출 현황</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>상품</th>
+                                <th class="text-right">예상</th>
+                                <th class="text-right">확정</th>
+                                <th class="text-right">달성률</th>
+                                <th class="text-right">목표</th>
+                                <th class="text-right">목표 대비</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesTableBody">
+                            <tr><td colspan="6" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="section">
+                    <div class="section-title">일별 매출 추이</div>
+                    <canvas id="salesDailyChart" height="300"></canvas>
+                </div>
+                <div class="section">
+                    <div class="section-title">상품별 매출 비중</div>
+                    <canvas id="salesPieChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">누적 매출 그래프</div>
+                <canvas id="salesCumulativeChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- 탭 3: 업무 기록 -->
+        <div id="tab-calls" class="tab-content">
+            <div class="filter-section">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>기간</label>
+                        <select class="filter-select" id="callsPeriod">
+                            <option value="all">전체</option>
+                            <option value="today">오늘</option>
+                            <option value="week" selected>이번 주</option>
+                            <option value="month">이번 달</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>그룹</label>
+                        <select class="filter-select" id="callsGroup">
+                            <option value="">전체</option>
+                            <option value="지사장">지사장</option>
+                            <option value="이너서클">이너서클</option>
+                            <option value="기업">기업</option>
+                            <option value="컨설턴트">컨설턴트</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>상품</label>
+                        <select class="filter-select" id="callsProduct">
+                            <option value="">전체</option>
+                            <option value="지사">지사</option>
+                            <option value="이너서클">이너서클</option>
+                            <option value="기업홈페이지">기업홈페이지</option>
+                            <option value="컨설턴트">컨설턴트</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-primary" onclick="filterCalls()">조회하기</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" class="search-input" id="callsSearch" placeholder="회원명 또는 업무내용 검색..." onkeyup="searchCalls()">
+            </div>
+
+            <div class="section">
+                <div class="section-title">업무 기록 목록 (총 <span id="callsCount">0</span>건)</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>일자</th>
+                                <th>시간</th>
+                                <th>회원명</th>
+                                <th>그룹</th>
+                                <th class="col-상품">상품</th>
+                                <th class="col-업무내용">업무내용</th>
+                                <th class="col-후속액션">후속액션</th>
+                                <th class="col-완료 text-center" onclick="sortCalls('완료')" style="cursor: pointer;">완료 <span id="sortArrow완료">↕</span></th>
+                                <th class="col-비고">비고</th>
+                            </tr>
+                        </thead>
+                        <tbody id="callsTableBody">
+                            <tr><td colspan="9" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="callsTablePagination"></div>
+            </div>
+        </div>
+
+        <!-- 탭 4: 공지 관리 -->
+        <div id="tab-notices" class="tab-content">
+            <div class="filter-section">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>그룹 선택</label>
+                        <select class="filter-select" id="noticesGroup" onchange="filterNotices()">
+                            <option value="">전체</option>
+                            <option value="지사장">지사장</option>
+                            <option value="이너서클">이너서클</option>
+                            <option value="기업회원">기업회원</option>
+                            <option value="컨설턴트회원">컨설턴트회원</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>완료 상태</label>
+                        <select class="filter-select" id="noticesStatus" onchange="filterNotices()">
+                            <option value="">전체</option>
+                            <option value="completed">완료</option>
+                            <option value="pending">미완료</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>검색</label>
+                        <input type="text" class="filter-input" id="noticesSearch" placeholder="이름 검색..." onkeyup="filterNotices()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 그룹별 인원 -->
+            <div class="cards-grid notices-group-cards">
+                <div class="card">
+                    <div class="card-title">지사장</div>
+                    <div class="card-value" id="noticesGroup1Count">0명</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">이너서클</div>
+                    <div class="card-value" id="noticesGroup2Count">0명</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">기업회원</div>
+                    <div class="card-value" id="noticesGroup3Count">0명</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">컨설턴트회원</div>
+                    <div class="card-value" id="noticesGroup4Count">0명</div>
+                </div>
+            </div>
+
+            <!-- 공지 완료 현황 -->
+            <div class="cards-grid notices-completion-cards">
+                <div class="card">
+                    <div class="card-title">공지1 완료</div>
+                    <div class="card-value" id="noticesCompleted1">0명</div>
+                    <div class="card-sub">완료율: <span id="noticesRate1">0%</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">공지2 완료</div>
+                    <div class="card-value" id="noticesCompleted2">0명</div>
+                    <div class="card-sub">완료율: <span id="noticesRate2">0%</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">공지3 완료</div>
+                    <div class="card-value" id="noticesCompleted3">0명</div>
+                    <div class="card-sub">완료율: <span id="noticesRate3">0%</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">공지4 완료</div>
+                    <div class="card-value" id="noticesCompleted4">0명</div>
+                    <div class="card-sub">완료율: <span id="noticesRate4">0%</span></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">공지 전달 현황</div>
+                <div class="table-container" style="overflow-x: auto;">
+                    <table>
+                        <thead id="noticesTableHead">
+                            <tr>
+                                <th onclick="sortNotices('이름')" style="cursor: pointer;">이름 <span id="sortArrow이름">↕</span></th>
+                                <th>그룹</th>
+                                <th id="noticeHeader1">공지1 내용</th>
+                                <th class="text-center" onclick="sortNotices('완료1')" style="cursor: pointer;">완료 <span id="sortArrow완료1">↕</span></th>
+                                <th>완료일</th>
+                                <th id="noticeHeader2">공지2 내용</th>
+                                <th class="text-center" onclick="sortNotices('완료2')" style="cursor: pointer;">완료 <span id="sortArrow완료2">↕</span></th>
+                                <th>완료일</th>
+                                <th id="noticeHeader3">공지3 내용</th>
+                                <th class="text-center" onclick="sortNotices('완료3')" style="cursor: pointer;">완료 <span id="sortArrow완료3">↕</span></th>
+                                <th>완료일</th>
+                                <th id="noticeHeader4">공지4 내용</th>
+                                <th class="text-center" onclick="sortNotices('완료4')" style="cursor: pointer;">완료 <span id="sortArrow완료4">↕</span></th>
+                                <th>완료일</th>
+                                <th>비고</th>
+                            </tr>
+                        </thead>
+                        <tbody id="noticesTableBody">
+                            <tr><td colspan="15" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="noticesTablePagination"></div>
             </div>
         </div>
     </div>
 
+    <div class="toast" id="toast"></div>
+
     <script>
-        // ========================================
-        // 구글시트 연동 설정 (여기에 정보를 입력하세요)
-        // ========================================
-        const SHEET_CONFIG = {
-            sheetUrl: 'https://docs.google.com/spreadsheets/d/1kdODHkfbibudLz9H-gDZfNViSKRw2zluZeIhvcjca7c/edit',
-            sheetName: '시트1',
-            apiKey: 'AIzaSyAVtAzm9UjgGB1pqChvGvGKH7RpH0KCiVM'
+        // CONFIG
+        const CONFIG = {
+            SHEETS_ID: '1tdta8u_KRIb6enf4XlDVKw5Zg2M613PY71ErvTgeLq0',
+            API_KEY: 'AIzaSyA42ZPQ4Xchkgp_7NGpCrwTrbK0Z_WqV3Y',
+            SHEET_NAMES: {
+                sales: 'sheet1',
+                monthlyGoals: 'sheet2',
+                weeklyGoals: 'sheet3',
+                calls: 'sheet4',
+                notices: 'sheet5'
+            }
         };
-        // ========================================
 
-        // 전역 변수
-        let sheetData = [];
-        let cardLimits = {};
-        let currentMonth = '10';
-        let viewMode = 'cards';
+        const BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
 
-        // 카드사별 한도 초기화
-        function initializeCardLimits() {
-            cardLimits = {
-                '국민': { 
-                    '10': { lumpSum: 30000000, installment: 0, maxInstallmentMonths: 18 },
-                    '11': { lumpSum: 30000000, installment: 0, maxInstallmentMonths: 18 },
-                    '12': { lumpSum: 30000000, installment: 0, maxInstallmentMonths: 18 }
-                },
-                '농협': { 
-                    '10': { lumpSum: 30000000, installment: 0, maxInstallmentMonths: 24 },
-                    '11': { lumpSum: 30000000, installment: 0, maxInstallmentMonths: 24 },
-                    '12': { lumpSum: 30000000, installment: 0, maxInstallmentMonths: 24 }
-                },
-                '롯데': { 
-                    '10': { lumpSum: 5000000, installment: 0, maxInstallmentMonths: 24 },
-                    '11': { lumpSum: 5000000, installment: 0, maxInstallmentMonths: 24 },
-                    '12': { lumpSum: 5000000, installment: 0, maxInstallmentMonths: 24 }
-                },
-                '비씨': { 
-                    '10': { lumpSum: 20000000, installment: 0, maxInstallmentMonths: 6 },
-                    '11': { lumpSum: 20000000, installment: 0, maxInstallmentMonths: 6 },
-                    '12': { lumpSum: 20000000, installment: 0, maxInstallmentMonths: 6 }
-                },
-                '삼성': { 
-                    '10': { lumpSum: 5000000, installment: 5000000, maxInstallmentMonths: 6 },
-                    '11': { lumpSum: 5000000, installment: 5000000, maxInstallmentMonths: 6 },
-                    '12': { lumpSum: 5000000, installment: 5000000, maxInstallmentMonths: 6 }
-                },
-                '신한': { 
-                    '10': { lumpSum: 10000000, installment: 0, maxInstallmentMonths: 6 },
-                    '11': { lumpSum: 10000000, installment: 0, maxInstallmentMonths: 6 },
-                    '12': { lumpSum: 10000000, installment: 0, maxInstallmentMonths: 6 }
-                },
-                '하나': { 
-                    '10': { lumpSum: 5000000, installment: 0, maxInstallmentMonths: 12 },
-                    '11': { lumpSum: 5000000, installment: 0, maxInstallmentMonths: 12 },
-                    '12': { lumpSum: 5000000, installment: 0, maxInstallmentMonths: 12 }
-                },
-                '현대': { 
-                    '10': { lumpSum: 5000000, installment: 0, maxInstallmentMonths: 24 },
-                    '11': { lumpSum: 5000000, installment: 0, maxInstallmentMonths: 24 },
-                    '12': { lumpSum: 5000000, installment: 0, maxInstallmentMonths: 24 }
-                }
-            };
+        let salesData = [];
+        let monthlyGoals = [];
+        let weeklyGoals = [];
+        let callHistory = [];
+        let noticeData = [];
+        let noticeHeaders = {}; // 공지 시트 헤더 정보
+        let chartInstances = {};
+        let currentCallPage = 1;
+        const CALLS_PER_PAGE = 10;
+        let currentTablePage = 1;
+        const TABLE_ROWS_PER_PAGE = 20;
+        let currentTableData = [];
+        let callsSortField = '';
+        let callsSortOrder = 'asc';
+        let currentNoticesPage = 1;
+        const NOTICES_PER_PAGE = 20;
+        let currentNoticesData = [];
+        let noticesSortField = '';
+        let noticesSortOrder = 'asc';
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'sales' && salesData.length > 0) loadSalesData();
+            else if (tabName === 'calls' && callHistory.length > 0) filterCalls();
+            else if (tabName === 'notices' && noticeData.length > 0) filterNotices();
         }
 
-        // 구글시트 자동 연동
-        async function autoConnectSheet() {
-            const sheetUrl = SHEET_CONFIG.sheetUrl;
-            const sheetName = SHEET_CONFIG.sheetName;
-            const apiKey = SHEET_CONFIG.apiKey;
+        async function getSheetData(sheetName, range = '') {
+            try {
+                const fullRange = range ? `${sheetName}!${range}` : sheetName;
+                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${fullRange}?key=${CONFIG.API_KEY}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                if (!data.values || data.values.length === 0) return { headers: [], data: [] };
+                const headers = data.values[0];
+                const rows = data.values.slice(1);
+                const mappedData = rows.map(row => {
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header] = row[index] || '';
+                    });
+                    return obj;
+                });
+                return { headers, data: mappedData };
+            } catch (error) {
+                console.error('Sheets API 오류:', error);
+                throw error;
+            }
+        }
 
-            if (sheetUrl.includes('YOUR_SHEET_ID') || apiKey === 'YOUR_API_KEY') {
-                document.getElementById('loadingMessage').innerHTML = `
-                    <div>⚠️</div>
-                    <div style="color: #f5576c; margin-bottom: 10px;">구글시트 설정이 필요합니다</div>
-                    <div style="font-size: 12px; color: #666;">HTML 파일의 SHEET_CONFIG 설정</div>
-                `;
+        // 공지 시트 전용 함수 (중복 헤더 처리)
+        async function getNoticeSheetData(sheetName) {
+            try {
+                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${sheetName}?key=${CONFIG.API_KEY}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                if (!data.values || data.values.length === 0) return { headers: [], data: [] };
+                
+                const headers = data.values[0];
+                const rows = data.values.slice(1);
+                
+                // 각 행을 인덱스 기반으로 매핑
+                const mappedData = rows.map(row => {
+                    const obj = {};
+                    // 원래 헤더로도 저장 (회원명, 그룹 등)
+                    headers.forEach((header, index) => {
+                        obj[header] = row[index] || '';
+                    });
+                    // 인덱스로도 접근 가능하게
+                    row.forEach((value, index) => {
+                        obj[`col${index}`] = value || '';
+                    });
+                    return obj;
+                });
+                
+                return { headers, data: mappedData };
+            } catch (error) {
+                console.error('Sheets API 오류:', error);
+                throw error;
+            }
+        }
+
+        async function loadAllData() {
+            try {
+                showToast('🔄 데이터 로딩 중...');
+                document.getElementById('statusText').textContent = '로딩 중...';
+
+                const [salesResult, monthlyResult, weeklyResult, callsResult, noticesResult] = await Promise.all([
+                    getSheetData(CONFIG.SHEET_NAMES.sales),
+                    getSheetData(CONFIG.SHEET_NAMES.monthlyGoals),
+                    getSheetData(CONFIG.SHEET_NAMES.weeklyGoals),
+                    getSheetData(CONFIG.SHEET_NAMES.calls),
+                    getNoticeSheetData(CONFIG.SHEET_NAMES.notices)  // 공지 시트만 별도 함수
+                ]);
+
+                salesData = salesResult.data;
+                monthlyGoals = monthlyResult.data;
+                weeklyGoals = weeklyResult.data;
+                // 회원명이 있는 행만 필터링
+                callHistory = callsResult.data.filter(call => 
+                    call['회원명'] && 
+                    call['회원명'].trim() !== '' && 
+                    call['회원명'] !== '-'
+                );
+                noticeData = noticesResult.data;
+                
+                // 공지 시트 컬럼 인덱스 저장 (중복 헤더 문제 해결)
+                noticeHeaders = {
+                    col2: 'col2',    // C열 - 공지1 내용
+                    col3: 'col3',    // D열 - 공지1 완료
+                    col4: 'col4',    // E열 - 공지1 완료일
+                    col5: 'col5',    // F열 - 공지2 내용
+                    col6: 'col6',    // G열 - 공지2 완료
+                    col7: 'col7',    // H열 - 공지2 완료일
+                    col8: 'col8',    // I열 - 공지3 내용
+                    col9: 'col9',    // J열 - 공지3 완료
+                    col10: 'col10',  // K열 - 공지3 완료일
+                    col11: 'col11',  // L열 - 공지4 내용
+                    col12: 'col12',  // M열 - 공지4 완료
+                    col13: 'col13',  // N열 - 공지4 완료일
+                    // 화면 표시용 헤더
+                    displayHeaders: noticesResult.headers
+                };
+
+                updateDashboard();
+                updateNoticeTableHeaders(); // 헤더 업데이트
+                document.getElementById('statusText').textContent = '연결됨';
+                showToast('✅ 데이터 로딩 완료!');
+            } catch (error) {
+                document.getElementById('statusText').textContent = '연결 실패';
+                showError('데이터 로딩 실패: ' + error.message);
+            }
+        }
+
+        function updateDashboard() {
+            updateDateDisplay();
+            updateSummaryCards();
+            updateProductProgress();
+            updateDashboardChart();
+            updateRecentCalls();
+            updateNoticeSummary();
+        }
+
+        function updateNoticeTableHeaders() {
+            // 공지 테이블 헤더를 동적으로 업데이트 (원본 헤더명 사용)
+            if (noticeHeaders.displayHeaders) {
+                const header1 = document.getElementById('noticeHeader1');
+                if (header1 && noticeHeaders.displayHeaders[2]) {
+                    const text = noticeHeaders.displayHeaders[2].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                    header1.textContent = text;
+                }
+                
+                const header2 = document.getElementById('noticeHeader2');
+                if (header2 && noticeHeaders.displayHeaders[5]) {
+                    const text = noticeHeaders.displayHeaders[5].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                    header2.textContent = text;
+                }
+                
+                const header3 = document.getElementById('noticeHeader3');
+                if (header3 && noticeHeaders.displayHeaders[8]) {
+                    const text = noticeHeaders.displayHeaders[8].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                    header3.textContent = text;
+                }
+                
+                const header4 = document.getElementById('noticeHeader4');
+                if (header4 && noticeHeaders.displayHeaders[11]) {
+                    const text = noticeHeaders.displayHeaders[11].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                    header4.textContent = text;
+                }
+            }
+        }
+
+        function updateDateDisplay() {
+            const today = new Date();
+            const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            document.getElementById('dateDisplay').textContent = 
+                `📅 ${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일 (${days[today.getDay()]})`;
+        }
+
+        function updateSummaryCards() {
+            // 데이터 체크
+            if (!salesData || salesData.length === 0) {
+                console.log('매출 데이터가 없습니다.');
                 return;
             }
+            
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            
+            // 오늘 매출 계산
+            const todayData = salesData.find(row => row['날짜'] === todayStr);
+            let todayConfirmed = 0, todayExpected = 0;
+            if (todayData) {
+                todayConfirmed = parseNumber(todayData['컨홈확정']) + parseNumber(todayData['기홈확정']) + 
+                                parseNumber(todayData['지사확정']) + parseNumber(todayData['이너확정']);
+                todayExpected = parseNumber(todayData['컨홈예상']) + parseNumber(todayData['기홈예상']) + 
+                               parseNumber(todayData['지사예상']) + parseNumber(todayData['이너예상']);
+            }
+            
+            // 이번 주 계산
+            const weekStart = getWeekStart(today);
+            const weekData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= weekStart && rowDate <= today;
+            });
+            
+            let weekConfirmed = 0;
+            weekData.forEach(row => {
+                weekConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+            });
+            
+            // 주간 목표
+            const weekGoalData = weeklyGoals[0] || {};
+            const weekGoal = parseNumber(weekGoalData['컨홈목표']) + parseNumber(weekGoalData['기홈목표']) + 
+                            parseNumber(weekGoalData['지사목표']) + parseNumber(weekGoalData['이너목표']);
+            const weekRate = weekGoal > 0 ? Math.round((weekConfirmed / weekGoal) * 100) : 0;
+            
+            // 이번 달 계산
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            const monthData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= monthStart && rowDate <= today;
+            });
+            
+            let monthConfirmed = 0;
+            monthData.forEach(row => {
+                monthConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+            });
+            
+            // 월간 목표
+            const monthGoalData = monthlyGoals[0] || {};
+            const monthGoal = parseNumber(monthGoalData['컨홈목표']) + parseNumber(monthGoalData['기홈목표']) + 
+                             parseNumber(monthGoalData['지사목표']) + parseNumber(monthGoalData['이너목표']);
+            const monthRate = monthGoal > 0 ? Math.round((monthConfirmed / monthGoal) * 100) : 0;
+            
+            // UI 업데이트
+            document.getElementById('todaySales').textContent = formatNumber(todayConfirmed) + '원';
+            document.getElementById('todayExpected').textContent = formatNumber(todayExpected) + '원';
+            document.getElementById('weeklyRate').textContent = weekRate + '%';
+            document.getElementById('weeklyGoal').textContent = formatNumber(weekGoal) + '원';
+            document.getElementById('monthlyRate').textContent = monthRate + '%';
+            document.getElementById('monthlyGoal').textContent = formatNumber(monthGoal) + '원';
+            
+            // 배지 업데이트
+            updateBadge('weeklyBadge', weekRate);
+            updateBadge('monthlyBadge', monthRate);
+        }
 
-            try {
-                const sheetId = extractSheetId(sheetUrl);
-                const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?key=${apiKey}`;
+        function updateProductProgress() {
+            // 데이터 체크
+            if (!salesData || salesData.length === 0 || !weeklyGoals || weeklyGoals.length === 0) {
+                console.log('매출 또는 목표 데이터가 없습니다.');
+                document.getElementById('productProgress').innerHTML = 
+                    '<div class="empty-state"><div class="empty-state-icon">📊</div><div>데이터를 불러오는 중입니다...</div></div>';
+                return;
+            }
+            
+            const today = new Date();
+            const weekStart = getWeekStart(today);
+            const weekData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= weekStart && rowDate <= today;
+            });
+            
+            // 주간 실적 계산
+            let weekConfirmed = {
+                '컨홈': 0,
+                '기홈': 0,
+                '지사': 0,
+                '이너': 0
+            };
+            
+            weekData.forEach(row => {
+                weekConfirmed['컨홈'] += parseNumber(row['컨홈확정']);
+                weekConfirmed['기홈'] += parseNumber(row['기홈확정']);
+                weekConfirmed['지사'] += parseNumber(row['지사확정']);
+                weekConfirmed['이너'] += parseNumber(row['이너확정']);
+            });
+            
+            // 주간 목표
+            const weekGoalData = weeklyGoals[0] || {};
+            const weekGoals = {
+                '컨홈': parseNumber(weekGoalData['컨홈목표']),
+                '기홈': parseNumber(weekGoalData['기홈목표']),
+                '지사': parseNumber(weekGoalData['지사목표']),
+                '이너': parseNumber(weekGoalData['이너목표'])
+            };
+            
+            // 달성률 계산
+            const products = [
+                { name: '컨홈목표', key: '컨홈' },
+                { name: '기홈목표', key: '기홈' },
+                { name: '지사목표', key: '지사' },
+                { name: '이너목표', key: '이너' }
+            ].map(p => {
+                const confirmed = weekConfirmed[p.key];
+                const goal = weekGoals[p.key];
+                const rate = goal > 0 ? Math.round((confirmed / goal) * 100) : 0;
+                const color = rate >= 90 ? 'high' : rate >= 70 ? 'medium' : 'low';
+                return { name: p.name, rate, color };
+            });
+            
+            document.getElementById('productProgress').innerHTML = products.map(p => `
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span class="progress-label">${p.name}</span>
+                        <span class="progress-percent">${p.rate}%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar ${p.color}" style="width: ${p.rate}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.error) {
-                    throw new Error(data.error.message || '시트 연동 실패');
-                }
-
-                if (data.values && data.values.length > 0) {
-                    processSheetData(data.values);
-                    
-                    document.getElementById('loadingMessage').classList.add('hidden');
-                    if (viewMode === 'table') {
-                        document.getElementById('tableView').classList.remove('hidden');
-                    } else {
-                        document.getElementById('cardsGrid').classList.remove('hidden');
+        function updateDashboardChart() {
+            const ctx = document.getElementById('dashboardChart');
+            if (!ctx) return;
+            if (chartInstances.dashboard) chartInstances.dashboard.destroy();
+            
+            // 이번 주 데이터
+            const today = new Date();
+            const weekStart = getWeekStart(today);
+            const weekData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= weekStart && rowDate <= today;
+            });
+            
+            // 요일별 데이터
+            const days = ['월', '화', '수', '목', '금'];
+            const goalData = weeklyGoals[0] || {};
+            const dailyGoal = (parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
+                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표'])) / 5;
+            
+            const goalValues = [];
+            const actualValues = [];
+            let cumulative = 0;
+            
+            weekData.slice(0, 5).forEach((row, idx) => {
+                const daily = parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                             parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                cumulative += daily;
+                goalValues.push(dailyGoal * (idx + 1));
+                actualValues.push(cumulative);
+            });
+            
+            // 빈 날짜는 0으로
+            while (goalValues.length < 5) {
+                goalValues.push(dailyGoal * goalValues.length);
+                actualValues.push(cumulative);
+            }
+            
+            chartInstances.dashboard = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: days.slice(0, actualValues.length),
+                    datasets: [{
+                        label: '목표',
+                        data: goalValues,
+                        borderColor: '#667eea',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: '실적',
+                        data: actualValues,
+                        borderColor: '#764ba2',
+                        backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: v => formatNumber(v) + '원' }
+                        }
                     }
-                    
-                    updateDisplay();
-                } else {
-                    document.getElementById('loadingMessage').innerHTML = `
-                        <div>📭</div>
-                        <div style="color: #f5576c;">시트에 데이터가 없습니다</div>
-                    `;
                 }
-            } catch (error) {
-                document.getElementById('loadingMessage').innerHTML = `
-                    <div>❌</div>
-                    <div style="color: #f5576c; margin-bottom: 10px;">연동 실패</div>
-                    <div style="font-size: 12px; color: #666; margin-bottom: 15px;">${error.message}</div>
-                    <button onclick="reloadSheetData()" class="btn btn-primary">다시 시도</button>
-                `;
+            });
+        }
+
+        function updateRecentCalls(page = 1) {
+            currentCallPage = page;
+            
+            if (callHistory.length === 0) {
+                document.getElementById('recentCalls').innerHTML = 
+                    '<div class="empty-state"><div class="empty-state-icon">📭</div><div>기록된 업무 내역이 없습니다</div></div>';
+                document.getElementById('callsPagination').innerHTML = '';
+                return;
             }
-        }
-
-        // 데이터 새로고침
-        async function reloadSheetData() {
-            document.getElementById('loadingMessage').classList.remove('hidden');
-            document.getElementById('loadingMessage').innerHTML = `
-                <div>⏳</div>
-                <div>구글시트 데이터 불러오는 중...</div>
-            `;
-            document.getElementById('cardsGrid').classList.add('hidden');
-            document.getElementById('tableView').classList.add('hidden');
             
-            await autoConnectSheet();
-        }
-
-        // 시트 ID 추출
-        function extractSheetId(url) {
-            const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-            return match ? match[1] : null;
-        }
-
-        // 시트 데이터 처리
-        function processSheetData(values) {
-            sheetData = [];
-            initializeCardLimits();
+            // 페이지네이션 계산
+            const totalItems = callHistory.length;
+            const totalPages = Math.ceil(totalItems / CALLS_PER_PAGE);
+            const startIndex = (page - 1) * CALLS_PER_PAGE;
+            const endIndex = startIndex + CALLS_PER_PAGE;
+            const currentPageData = callHistory.slice(startIndex, endIndex);
             
-            for (let i = 1; i < values.length; i++) {
-                const row = values[i];
-                if (row.length >= 5) {
-                    sheetData.push({
-                        date: row[0],
-                        card: row[1],
-                        amount: parseInt(row[2].toString().replace(/,/g, '')),
-                        installment: row[3],
-                        type: row[4],
-                        name: row[5] || ''  // F열: 성명
-                    });
+            // 업무 기록 표시
+            document.getElementById('recentCalls').innerHTML = currentPageData.map(call => `
+                <div class="call-item">
+                    <div class="call-icon">📞</div>
+                    <div class="call-content">
+                        <div class="call-header">
+                            <div class="call-left">
+                                <span class="call-name">${call['회원명'] || '-'} (${call['그룹'] || '-'})</span>
+                                <span class="call-separator"> - </span>
+                                <span class="call-desc-inline">${call['업무내용'] || '-'}</span>
+                            </div>
+                            <span class="call-time">${call['일자'] || '-'}</span>
+                        </div>
+                        <div class="call-desc-block">${call['업무내용'] || '-'}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // 페이지네이션 버튼 생성
+            if (totalPages > 1) {
+                let paginationHTML = '';
+                
+                // 이전 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="updateRecentCalls(${page - 1})" ${page === 1 ? 'disabled' : ''}>◀</button>`;
+                
+                // 페이지 번호
+                const maxButtons = 5;
+                let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+                let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+                
+                if (endPage - startPage < maxButtons - 1) {
+                    startPage = Math.max(1, endPage - maxButtons + 1);
                 }
-            }
-        }
-
-        // 뷰 모드 전환
-        function toggleView() {
-            if (viewMode === 'cards') {
-                viewMode = 'table';
-                document.getElementById('cardsGrid').classList.add('hidden');
-                document.getElementById('tableView').classList.remove('hidden');
-                document.getElementById('viewToggleBtn').innerHTML = '💳 카드보기';
-                updateTableDisplay();
+                
+                if (startPage > 1) {
+                    paginationHTML += `<button class="pagination-btn" onclick="updateRecentCalls(1)">1</button>`;
+                    if (startPage > 2) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHTML += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="updateRecentCalls(${i})">${i}</button>`;
+                }
+                
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                    paginationHTML += `<button class="pagination-btn" onclick="updateRecentCalls(${totalPages})">${totalPages}</button>`;
+                }
+                
+                // 다음 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="updateRecentCalls(${page + 1})" ${page === totalPages ? 'disabled' : ''}>▶</button>`;
+                
+                // 페이지 정보
+                paginationHTML += `<span class="pagination-info">${startIndex + 1}-${Math.min(endIndex, totalItems)} / ${totalItems}개</span>`;
+                
+                document.getElementById('callsPagination').innerHTML = paginationHTML;
             } else {
-                viewMode = 'cards';
-                document.getElementById('tableView').classList.add('hidden');
-                document.getElementById('cardsGrid').classList.remove('hidden');
-                document.getElementById('viewToggleBtn').innerHTML = '📊 테이블보기';
+                document.getElementById('callsPagination').innerHTML = '';
             }
         }
 
-        // 화면 업데이트
-        function updateDisplay() {
-            currentMonth = document.getElementById('monthSelect').value;
-            const cardsGrid = document.getElementById('cardsGrid');
-            cardsGrid.innerHTML = '';
-
-            const cardUsage = {};
-            
-            sheetData.forEach(item => {
-                const monthMatch = item.date.match(/(\d+)월/);
-                if (!monthMatch) return;
-                
-                const month = monthMatch[1];
-                
-                if (month === currentMonth && item.type === '키인') {
-                    if (!cardUsage[item.card]) {
-                        cardUsage[item.card] = { lumpSum: 0, installment: 0 };
-                    }
-                    
-                    if (item.installment === '일시불') {
-                        cardUsage[item.card].lumpSum += item.amount;
-                    } else {
-                        cardUsage[item.card].installment += item.amount;
-                    }
-                }
-            });
-
-            Object.keys(cardLimits).forEach(cardName => {
-                const limits = cardLimits[cardName][currentMonth];
-                const usage = cardUsage[cardName] || { lumpSum: 0, installment: 0 };
-                const isSamsung = cardName === '삼성';
-                
-                let cardHtml = '';
-                
-                if (isSamsung) {
-                    const lumpSumBalance = limits.lumpSum - usage.lumpSum;
-                    const installmentBalance = limits.installment - usage.installment;
-                    const lumpSumPercent = limits.lumpSum > 0 ? (usage.lumpSum / limits.lumpSum * 100).toFixed(1) : 0;
-                    const installmentPercent = limits.installment > 0 ? (usage.installment / limits.installment * 100).toFixed(1) : 0;
-                    
-                    cardHtml = `
-                        <div class="card-item">
-                            <div class="card-name">
-                                <span>${cardName}</span>
-                                <span class="card-installment-badge">최대 ${limits.maxInstallmentMonths}개월</span>
-                            </div>
-                            
-                            <div style="background: #f8f9fa; padding: 12px; border-radius: 10px; margin-bottom: 12px;">
-                                <div style="font-weight: 700; color: #667eea; margin-bottom: 8px; font-size: 13px;">일시불</div>
-                                <div class="card-info">
-                                    <div class="card-info-label">한도</div>
-                                    <div class="card-info-value limit-amount">${formatNumber(limits.lumpSum)}원</div>
-                                </div>
-                                <div class="card-info">
-                                    <div class="card-info-label">사용</div>
-                                    <div class="card-info-value used-amount">${formatNumber(usage.lumpSum)}원</div>
-                                </div>
-                                <div class="card-info">
-                                    <div class="card-info-label">잔액</div>
-                                    <div class="balance-amount" style="font-size: 18px;">${formatNumber(lumpSumBalance)}원</div>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${Math.min(lumpSumPercent, 100)}%"></div>
-                                </div>
-                                <div style="text-align: center; margin-top: 5px; font-size: 11px; color: #666;">
-                                    사용률: ${lumpSumPercent}%
-                                </div>
-                            </div>
-
-                            <div style="background: #f8f9fa; padding: 12px; border-radius: 10px;">
-                                <div style="font-weight: 700; color: #f5576c; margin-bottom: 8px; font-size: 13px;">할부</div>
-                                <div class="card-info">
-                                    <div class="card-info-label">한도</div>
-                                    <div class="card-info-value limit-amount">${formatNumber(limits.installment)}원</div>
-                                </div>
-                                <div class="card-info">
-                                    <div class="card-info-label">사용</div>
-                                    <div class="card-info-value used-amount">${formatNumber(usage.installment)}원</div>
-                                </div>
-                                <div class="card-info">
-                                    <div class="card-info-label">잔액</div>
-                                    <div class="balance-amount" style="font-size: 18px;">${formatNumber(installmentBalance)}원</div>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${Math.min(installmentPercent, 100)}%"></div>
-                                </div>
-                                <div style="text-align: center; margin-top: 5px; font-size: 11px; color: #666;">
-                                    사용률: ${installmentPercent}%
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    const totalLimit = limits.lumpSum + limits.installment;
-                    const totalUsed = usage.lumpSum + usage.installment;
-                    const balance = totalLimit - totalUsed;
-                    const usagePercent = totalLimit > 0 ? (totalUsed / totalLimit * 100).toFixed(1) : 0;
-                    
-                    cardHtml = `
-                        <div class="card-item">
-                            <div class="card-name">
-                                <span>${cardName}</span>
-                                <span class="card-installment-badge">최대 ${limits.maxInstallmentMonths}개월</span>
-                            </div>
-                            
-                            <div class="card-info">
-                                <div class="card-info-label">월 키인 한도 (일시불+할부)</div>
-                                <div class="card-info-value limit-amount">${formatNumber(totalLimit)}원</div>
-                            </div>
-
-                            <div class="card-info">
-                                <div class="card-info-label">사용금액</div>
-                                <div class="card-info-value used-amount">${formatNumber(totalUsed)}원</div>
-                            </div>
-                            
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; font-size: 11px;">
-                                <div style="background: #e3f2fd; padding: 6px; border-radius: 5px;">
-                                    <div style="color: #666;">일시불</div>
-                                    <div style="font-weight: 700; color: #1976d2; font-size: 12px;">${formatNumber(usage.lumpSum)}원</div>
-                                </div>
-                                <div style="background: #fce4ec; padding: 6px; border-radius: 5px;">
-                                    <div style="color: #666;">할부</div>
-                                    <div style="font-weight: 700; color: #c2185b; font-size: 12px;">${formatNumber(usage.installment)}원</div>
-                                </div>
-                            </div>
-
-                            <div class="card-info">
-                                <div class="card-info-label">잔여한도</div>
-                                <div class="balance-amount">${formatNumber(balance)}원</div>
-                            </div>
-
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${Math.min(usagePercent, 100)}%"></div>
-                            </div>
-                            <div style="text-align: center; margin-top: 5px; font-size: 11px; color: #666;">
-                                사용률: ${usagePercent}%
-                            </div>
-                        </div>
-                    `;
-                }
-
-                cardsGrid.innerHTML += cardHtml;
-            });
-
-            if (viewMode === 'table') {
-                updateTableDisplay();
+        function updateNoticeSummary() {
+            if (noticeData.length === 0) {
+                document.getElementById('noticeSummary').innerHTML = 
+                    '<div class="empty-state"><div class="empty-state-icon">📭</div><div>공지 데이터가 없습니다</div></div>';
+                return;
             }
-            
-            // 월별 결제 내역 업데이트
-            updatePaymentHistory();
+            const groups = {};
+            noticeData.forEach(row => {
+                const group = row['그룹'];
+                if (!groups[group]) groups[group] = { total: 0, completed: 0 };
+                groups[group].total++;
+                if (row['지사공지1_완료'] === 'TRUE' || row['지사공지1_완료'] === 'O') groups[group].completed++;
+            });
+            document.getElementById('noticeSummary').innerHTML = Object.keys(groups).map(group => {
+                const data = groups[group];
+                const rate = Math.round((data.completed / data.total) * 100);
+                return `
+                    <div class="notice-item">
+                        <div class="notice-group">${group}</div>
+                        <div class="notice-stats">${data.completed}/${data.total}</div>
+                        <div class="notice-rate">${rate}% 완료</div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        // 테이블 화면 업데이트
-        function updateTableDisplay() {
-            const tableBody = document.getElementById('cardTableBody');
-            tableBody.innerHTML = '';
+        function updateSalesDateInputs() {
+            const period = document.getElementById('salesPeriod').value;
+            const isCustom = period === 'custom';
+            document.getElementById('salesStartDateGroup').style.display = isCustom ? 'block' : 'none';
+            document.getElementById('salesEndDateGroup').style.display = isCustom ? 'block' : 'none';
+        }
 
-            const cardUsage = {};
+        function loadSalesData() {
+            const period = document.getElementById('salesPeriod').value;
+            let startDate, endDate = new Date();
             
-            sheetData.forEach(item => {
-                const monthMatch = item.date.match(/(\d+)월/);
-                if (!monthMatch) return;
-                
-                const month = monthMatch[1];
-                
-                if (month === currentMonth && item.type === '키인') {
-                    if (!cardUsage[item.card]) {
-                        cardUsage[item.card] = { lumpSum: 0, installment: 0 };
-                    }
-                    
-                    if (item.installment === '일시불') {
-                        cardUsage[item.card].lumpSum += item.amount;
-                    } else {
-                        cardUsage[item.card].installment += item.amount;
-                    }
-                }
+            if (period === 'today') {
+                startDate = new Date();
+            } else if (period === 'week') {
+                startDate = getWeekStart(endDate);
+            } else if (period === 'month') {
+                startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+            } else if (period === 'custom') {
+                startDate = new Date(document.getElementById('salesStartDate').value);
+                endDate = new Date(document.getElementById('salesEndDate').value);
+            }
+            
+            // 기간 내 데이터 필터링
+            const periodData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= startDate && rowDate <= endDate;
             });
-
-            Object.keys(cardLimits).forEach((cardName, index) => {
-                const limits = cardLimits[cardName][currentMonth];
-                const usage = cardUsage[cardName] || { lumpSum: 0, installment: 0 };
-                
-                const isSamsung = cardName === '삼성';
-                let totalLimit, totalUsed, balance, usagePercent;
-                
-                totalLimit = limits.lumpSum + limits.installment;
-                totalUsed = usage.lumpSum + usage.installment;
-                balance = totalLimit - totalUsed;
-                usagePercent = totalLimit > 0 ? (totalUsed / totalLimit * 100).toFixed(1) : 0;
-
-                const bgColor = index % 2 === 0 ? '#f8f9fa' : 'white';
-                const balanceColor = balance > totalLimit * 0.3 ? '#4caf50' : (balance > 0 ? '#ff9800' : '#f44336');
-                
-                let balanceDisplay = '';
-                if (isSamsung) {
-                    const lumpSumBalance = limits.lumpSum - usage.lumpSum;
-                    const installmentBalance = limits.installment - usage.installment;
-                    const lumpSumColor = lumpSumBalance > limits.lumpSum * 0.3 ? '#1976d2' : (lumpSumBalance > 0 ? '#ff9800' : '#f44336');
-                    const installmentColor = installmentBalance > limits.installment * 0.3 ? '#c2185b' : (installmentBalance > 0 ? '#ff9800' : '#f44336');
-                    
-                    balanceDisplay = `
-                        <div style="display: flex; flex-direction: column; gap: 3px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; background: #e3f2fd; padding: 4px 6px; border-radius: 3px;">
-                                <span style="font-size: 9px; color: #666;">일시불:</span>
-                                <span style="font-weight: 700; color: ${lumpSumColor}; font-size: 11px;">${formatNumberShort(lumpSumBalance)}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; background: #fce4ec; padding: 4px 6px; border-radius: 3px;">
-                                <span style="font-size: 9px; color: #666;">할부:</span>
-                                <span style="font-weight: 700; color: ${installmentColor}; font-size: 11px;">${formatNumberShort(installmentBalance)}</span>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    balanceDisplay = `<span style="font-weight: 700; font-size: 13px; color: ${balanceColor};">${formatNumberShort(balance)}</span>`;
-                }
-                
-                const row = `
-                    <tr style="background: ${bgColor};">
-                        <td style="text-align: center; font-weight: 700; color: #333;">${cardName}</td>
-                        <td style="text-align: center;">
-                            <span style="background: #667eea; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; white-space: nowrap;">
-                                ${limits.maxInstallmentMonths}개월
-                            </span>
-                        </td>
-                        <td style="text-align: right; font-weight: 600; color: #667eea;">${formatNumberShort(totalLimit)}</td>
-                        <td style="text-align: right; color: #1976d2;">${formatNumberShort(usage.lumpSum)}</td>
-                        <td style="text-align: right; color: #c2185b;">${formatNumberShort(usage.installment)}</td>
-                        <td style="text-align: right; font-weight: 600; color: #f5576c;">${formatNumberShort(totalUsed)}</td>
-                        <td style="text-align: right;">${balanceDisplay}</td>
-                        <td style="text-align: center;">
-                            <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-                                <div style="flex: 1; height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; min-width: 40px;">
-                                    <div style="height: 100%; background: linear-gradient(90deg, #4caf50 0%, #f5576c 100%); width: ${Math.min(usagePercent, 100)}%;"></div>
-                                </div>
-                                <span style="font-weight: 600; color: #666; font-size: 11px; white-space: nowrap;">${usagePercent}%</span>
-                            </div>
-                        </td>
+            
+            // 상품별 합계 계산
+            let totals = {
+                '컨홈': { expected: 0, confirmed: 0 },
+                '기홈': { expected: 0, confirmed: 0 },
+                '지사': { expected: 0, confirmed: 0 },
+                '이너': { expected: 0, confirmed: 0 }
+            };
+            
+            periodData.forEach(row => {
+                totals['컨홈'].expected += parseNumber(row['컨홈예상']);
+                totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
+                totals['기홈'].expected += parseNumber(row['기홈예상']);
+                totals['기홈'].confirmed += parseNumber(row['기홈확정']);
+                totals['지사'].expected += parseNumber(row['지사예상']);
+                totals['지사'].confirmed += parseNumber(row['지사확정']);
+                totals['이너'].expected += parseNumber(row['이너예상']);
+                totals['이너'].confirmed += parseNumber(row['이너확정']);
+            });
+            
+            // 전체 합계
+            let totalExpected = 0, totalConfirmed = 0;
+            Object.values(totals).forEach(t => {
+                totalExpected += t.expected;
+                totalConfirmed += t.confirmed;
+            });
+            
+            // 목표 (주간 또는 월간)
+            const goalData = period === 'month' ? (monthlyGoals[0] || {}) : (weeklyGoals[0] || {});
+            const totalGoal = parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
+                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']);
+            const achievementRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
+            
+            // UI 업데이트
+            document.getElementById('salesTotalExpected').textContent = formatNumber(totalExpected) + '원';
+            document.getElementById('salesTotalConfirmed').textContent = formatNumber(totalConfirmed) + '원';
+            document.getElementById('salesAchievementRate').textContent = achievementRate + '%';
+            document.getElementById('salesGoalAmount').textContent = formatNumber(totalGoal) + '원';
+            updateBadge('salesAchievementBadge', achievementRate);
+            
+            // 상품별 테이블
+            const products = [
+                { name: '컨홈목표', key: '컨홈', goalKey: '컨홈목표' },
+                { name: '기홈목표', key: '기홈', goalKey: '기홈목표' },
+                { name: '지사목표', key: '지사', goalKey: '지사목표' },
+                { name: '이너목표', key: '이너', goalKey: '이너목표' }
+            ];
+            
+            document.getElementById('salesTableBody').innerHTML = products.map(p => {
+                const data = totals[p.key];
+                const goal = parseNumber(goalData[p.goalKey]);
+                const rate = data.expected > 0 ? Math.round((data.confirmed / data.expected) * 100) : 0;
+                const goalRate = goal > 0 ? Math.round((data.confirmed / goal) * 100) : 0;
+                const badgeClass = goalRate >= 90 ? 'badge-success' : goalRate >= 70 ? 'badge-warning' : 'badge-danger';
+                return `
+                    <tr>
+                        <td class="text-bold">${p.name}</td>
+                        <td class="text-right">${formatNumber(data.expected)}원</td>
+                        <td class="text-right">${formatNumber(data.confirmed)}원</td>
+                        <td class="text-right">${rate}%</td>
+                        <td class="text-right">${formatNumber(goal)}원</td>
+                        <td class="text-right"><span class="card-badge ${badgeClass}">${goalRate}%</span></td>
                     </tr>
                 `;
+            }).join('');
+            
+            updateSalesCharts(periodData, totals);
+        }
+
+        function updateSalesCharts(periodData, totals) {
+            // 일별 매출 추이
+            const dailyCtx = document.getElementById('salesDailyChart');
+            if (dailyCtx) {
+                if (chartInstances.salesDaily) chartInstances.salesDaily.destroy();
                 
-                tableBody.innerHTML += row;
-            });
-
-            // 합계 행
-            let totalAllLimit = 0;
-            let totalAllLumpSum = 0;
-            let totalAllInstallment = 0;
-            let totalAllUsed = 0;
-
-            Object.keys(cardLimits).forEach(cardName => {
-                const limits = cardLimits[cardName][currentMonth];
-                const usage = cardUsage[cardName] || { lumpSum: 0, installment: 0 };
+                const labels = periodData.map(row => {
+                    const date = parseKoreanDate(row['날짜']);
+                    return `${date.getMonth()+1}/${date.getDate()}`;
+                });
+                const expectedData = periodData.map(row => 
+                    parseNumber(row['컨홈예상']) + parseNumber(row['기홈예상']) + 
+                    parseNumber(row['지사예상']) + parseNumber(row['이너예상'])
+                );
+                const confirmedData = periodData.map(row => 
+                    parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                    parseNumber(row['지사확정']) + parseNumber(row['이너확정'])
+                );
                 
-                totalAllLimit += limits.lumpSum + limits.installment;
-                totalAllLumpSum += usage.lumpSum;
-                totalAllInstallment += usage.installment;
-                totalAllUsed += usage.lumpSum + usage.installment;
-            });
+                chartInstances.salesDaily = new Chart(dailyCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '예상',
+                            data: expectedData,
+                            backgroundColor: 'rgba(102, 126, 234, 0.5)',
+                            borderColor: '#667eea',
+                            borderWidth: 2,
+                            borderRadius: 8
+                        }, {
+                            label: '확정',
+                            data: confirmedData,
+                            backgroundColor: 'rgba(118, 75, 162, 0.5)',
+                            borderColor: '#764ba2',
+                            borderWidth: 2,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { callback: v => formatNumber(v) + '원' }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 상품별 매출 비중
+            const pieCtx = document.getElementById('salesPieChart');
+            if (pieCtx) {
+                if (chartInstances.salesPie) chartInstances.salesPie.destroy();
+                chartInstances.salesPie = new Chart(pieCtx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['컨홈', '기업홈', '지사', '이너서클'],
+                        datasets: [{
+                            data: [
+                                totals['컨홈'].confirmed,
+                                totals['기홈'].confirmed,
+                                totals['지사'].confirmed,
+                                totals['이너'].confirmed
+                            ],
+                            backgroundColor: [
+                                'rgba(102, 126, 234, 0.8)',
+                                'rgba(118, 75, 162, 0.8)',
+                                'rgba(244, 67, 54, 0.8)',
+                                'rgba(76, 175, 80, 0.8)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { 
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + formatNumber(context.raw) + '원';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 누적 매출 그래프
+            const cumulativeCtx = document.getElementById('salesCumulativeChart');
+            if (cumulativeCtx) {
+                if (chartInstances.salesCumulative) chartInstances.salesCumulative.destroy();
+                
+                let cumulative = 0;
+                const cumulativeData = periodData.map(row => {
+                    cumulative += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                    return cumulative;
+                });
+                
+                const labels = periodData.map(row => {
+                    const date = parseKoreanDate(row['날짜']);
+                    return `${date.getMonth()+1}/${date.getDate()}`;
+                });
+                
+                chartInstances.salesCumulative = new Chart(cumulativeCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '누적 실적',
+                            data: cumulativeData,
+                            borderColor: '#764ba2',
+                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { callback: v => formatNumber(v) + '원' }
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
-            const totalAllBalance = totalAllLimit - totalAllUsed;
-            const totalUsagePercent = totalAllLimit > 0 ? (totalAllUsed / totalAllLimit * 100).toFixed(1) : 0;
+        function filterCalls() {
+            const period = document.getElementById('callsPeriod').value;
+            const group = document.getElementById('callsGroup').value;
+            const product = document.getElementById('callsProduct').value;
+            let filtered = [...callHistory];
+            if (group) filtered = filtered.filter(c => c['그룹'] === group);
+            if (product) filtered = filtered.filter(c => c['상품'] === product);
+            displayCalls(filtered);
+        }
 
-            const summaryRow = `
-                <tr style="background: #667eea; color: white; font-weight: 700; border-top: 3px solid #764ba2;">
-                    <td style="text-align: center;" colspan="2">전체 합계</td>
-                    <td style="text-align: right;">${formatNumberShort(totalAllLimit)}</td>
-                    <td style="text-align: right;">${formatNumberShort(totalAllLumpSum)}</td>
-                    <td style="text-align: right;">${formatNumberShort(totalAllInstallment)}</td>
-                    <td style="text-align: right;">${formatNumberShort(totalAllUsed)}</td>
-                    <td style="text-align: right; font-size: 14px;">${formatNumberShort(totalAllBalance)}</td>
-                    <td style="text-align: center;">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-                            <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; overflow: hidden; min-width: 40px;">
-                                <div style="height: 100%; background: white; width: ${Math.min(totalUsagePercent, 100)}%;"></div>
-                            </div>
-                            <span style="font-size: 11px; white-space: nowrap;">${totalUsagePercent}%</span>
-                        </div>
-                    </td>
+        function searchCalls() {
+            const keyword = document.getElementById('callsSearch').value.toLowerCase();
+            let filtered = callHistory.filter(c => 
+                (c['회원명'] || '').toLowerCase().includes(keyword) ||
+                (c['업무내용'] || '').toLowerCase().includes(keyword)
+            );
+            displayCalls(filtered);
+        }
+
+        function displayCalls(data) {
+            currentTableData = data;
+            currentTablePage = 1;
+            document.getElementById('callsCount').textContent = data.length;
+            
+            if (data.length === 0) {
+                document.getElementById('callsTableBody').innerHTML = 
+                    '<tr><td colspan="9" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
+                document.getElementById('callsTablePagination').innerHTML = '';
+                return;
+            }
+            
+            displayCallsPage(1);
+        }
+
+        function displayCallsPage(page) {
+            currentTablePage = page;
+            const data = currentTableData;
+            
+            // 페이지네이션 계산
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / TABLE_ROWS_PER_PAGE);
+            const startIndex = (page - 1) * TABLE_ROWS_PER_PAGE;
+            const endIndex = startIndex + TABLE_ROWS_PER_PAGE;
+            const currentPageData = data.slice(startIndex, endIndex);
+            
+            // 테이블 데이터 표시
+            document.getElementById('callsTableBody').innerHTML = currentPageData.map((call, index) => {
+                // 디버깅: 첫 번째 항목의 모든 키 출력
+                if (index === 0 && currentTablePage === 1) {
+                    console.log('첫 번째 업무기록 데이터:', call);
+                    console.log('사용 가능한 컬럼들:', Object.keys(call));
+                    console.log('시간 값:', call['시간'], '타입:', typeof call['시간']);
+                }
+                
+                // 구글 시트에 "시간" 컬럼이 있으면 그 값 사용
+                let timeStr = call['시간'] || call[' 시간'] || call['시간 '] || '';
+                
+                // 시간 데이터 처리
+                if (timeStr) {
+                    timeStr = String(timeStr).trim();
+                    
+                    // Google Sheets의 시리얼 시간 형식 처리 (0.4375 = 10:30)
+                    if (!isNaN(timeStr) && timeStr.indexOf(':') === -1) {
+                        const decimal = parseFloat(timeStr);
+                        if (decimal >= 0 && decimal < 1) {
+                            const totalMinutes = Math.round(decimal * 24 * 60);
+                            const hours = Math.floor(totalMinutes / 60);
+                            const minutes = totalMinutes % 60;
+                            timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                        }
+                    }
+                }
+                
+                // 시간 데이터가 없거나 비어있으면 자동 생성
+                if (!timeStr || timeStr === '-') {
+                    const dateKey = call['일자'] || 'unknown';
+                    if (!window.dateTimeMap) window.dateTimeMap = {};
+                    if (!window.dateTimeMap[dateKey]) {
+                        window.dateTimeMap[dateKey] = 0;
+                    }
+                    
+                    const totalMinutes = 9 * 60 + (window.dateTimeMap[dateKey] * 20);
+                    const hour = Math.floor(totalMinutes / 60) % 24;
+                    const minute = totalMinutes % 60;
+                    timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    
+                    window.dateTimeMap[dateKey]++;
+                }
+                
+                // 완료 체크 표시 로직
+                let checkComplete = '-';
+                const followUp = call['후속액션'] || '';
+                
+                // 후속액션이 있을 때만 완료 표시
+                if (followUp && followUp.trim() !== '' && followUp !== '-') {
+                    checkComplete = (call['완료'] === 'TRUE' || call['완료'] === 'O') ? 
+                        '<span class="status-check completed">✓</span>' : 
+                        '<span class="status-check pending">✗</span>';
+                }
+                
+                return `
+                <tr>
+                    <td>${call['일자'] || '-'}</td>
+                    <td class="time-cell">${timeStr}</td>
+                    <td class="text-bold">${call['회원명'] || '-'}</td>
+                    <td>${call['그룹'] || '-'}</td>
+                    <td class="col-상품">${call['상품'] || '-'}</td>
+                    <td class="col-업무내용">${call['업무내용'] || '-'}</td>
+                    <td class="col-후속액션">${call['후속액션'] || '-'}</td>
+                    <td class="checkbox-cell">${checkComplete}</td>
+                    <td class="col-비고">${call['비고'] || '-'}</td>
                 </tr>
             `;
-
-            tableBody.innerHTML += summaryRow;
-        }
-
-        // 숫자 포맷 (천단위 구분)
-        function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
-
-        // 숫자 포맷 짧게 (만원 단위)
-        function formatNumberShort(num) {
-            if (num >= 10000) {
-                return (num / 10000).toFixed(0) + '만';
-            }
-            return formatNumber(num) + '원';
-        }
-
-        // ========================================
-        // 월별 결제 내역 업데이트 함수
-        // ========================================
-        function updatePaymentHistory() {
-            const historyBody = document.getElementById('paymentHistoryBody');
-            const paymentCount = document.getElementById('paymentCount');
+            }).join('');
             
-            // 현재 월의 키인 결제 내역만 필터링
-            const monthPayments = sheetData.filter(item => {
-                const monthMatch = item.date.match(/(\d+)월/);
-                if (!monthMatch) return false;
-                const month = monthMatch[1];
-                return month === currentMonth && item.type === '키인';
-            });
-
-            // 날짜순 정렬
-            monthPayments.sort((a, b) => {
-                const dateA = a.date.match(/(\d+)월(\d+)일/);
-                const dateB = b.date.match(/(\d+)월(\d+)일/);
-                if (!dateA || !dateB) return 0;
+            // 페이지네이션 버튼 생성
+            if (totalPages > 1) {
+                let paginationHTML = '';
                 
-                const monthA = parseInt(dateA[1]);
-                const dayA = parseInt(dateA[2]);
-                const monthB = parseInt(dateB[1]);
-                const dayB = parseInt(dateB[2]);
+                // 이전 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="displayCallsPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>◀</button>`;
                 
-                if (monthA !== monthB) return monthA - monthB;
-                return dayA - dayB;
-            });
-
-            // 결제 건수 표시
-            paymentCount.textContent = `${monthPayments.length}건`;
-
-            // 테이블 내용 생성
-            if (monthPayments.length === 0) {
-                historyBody.innerHTML = `
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding: 40px; color: #999;">
-                            <div class="empty-history">
-                                <div class="empty-history-icon">📭</div>
-                                <div>${currentMonth}월 결제 내역이 없습니다.</div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                // 페이지 번호
+                const maxButtons = 7;
+                let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+                let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+                
+                if (endPage - startPage < maxButtons - 1) {
+                    startPage = Math.max(1, endPage - maxButtons + 1);
+                }
+                
+                if (startPage > 1) {
+                    paginationHTML += `<button class="pagination-btn" onclick="displayCallsPage(1)">1</button>`;
+                    if (startPage > 2) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHTML += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="displayCallsPage(${i})">${i}</button>`;
+                }
+                
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                    paginationHTML += `<button class="pagination-btn" onclick="displayCallsPage(${totalPages})">${totalPages}</button>`;
+                }
+                
+                // 다음 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="displayCallsPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>▶</button>`;
+                
+                // 페이지 정보
+                paginationHTML += `<span class="pagination-info">${startIndex + 1}-${Math.min(endIndex, totalItems)} / ${totalItems}개</span>`;
+                
+                document.getElementById('callsTablePagination').innerHTML = paginationHTML;
             } else {
-                historyBody.innerHTML = monthPayments.map((payment, index) => {
-                    const bgColor = index % 2 === 0 ? 'white' : '#f8f9fa';
-                    const installmentClass = payment.installment === '일시불' ? 'lumpsum' : 'installment';
-                    
-                    return `
-                        <tr style="background: ${bgColor};">
-                            <td class="payment-row-date">${payment.date}</td>
-                            <td class="payment-row-card">${payment.card}</td>
-                            <td class="payment-row-amount">${formatNumber(payment.amount)}원</td>
-                            <td>
-                                <span class="payment-row-installment ${installmentClass}">
-                                    ${payment.installment}
-                                </span>
-                            </td>
-                            <td class="payment-row-name">${payment.name}</td>
-                        </tr>
-                    `;
-                }).join('');
+                document.getElementById('callsTablePagination').innerHTML = '';
             }
+        }
 
-            // 합계 계산
-            let totalCount = monthPayments.length;
-            let totalLumpSum = 0;
-            let totalInstallment = 0;
-            let totalAmount = 0;
-
-            monthPayments.forEach(payment => {
-                totalAmount += payment.amount;
-                if (payment.installment === '일시불') {
-                    totalLumpSum += payment.amount;
-                } else {
-                    totalInstallment += payment.amount;
+        function sortCalls(field) {
+            // 정렬 방향 토글
+            if (callsSortField === field) {
+                callsSortOrder = callsSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                callsSortField = field;
+                callsSortOrder = 'asc';
+            }
+            
+            // 모든 화살표 초기화
+            document.querySelectorAll('[id^="sortArrow"]').forEach(arrow => {
+                if (arrow.id === 'sortArrow완료') {
+                    arrow.textContent = '↕';
                 }
             });
-
-            // 합계 표시
-            document.getElementById('totalCount').textContent = `${totalCount}건`;
-            document.getElementById('totalLumpSum').textContent = formatNumber(totalLumpSum) + '원';
-            document.getElementById('totalInstallment').textContent = formatNumber(totalInstallment) + '원';
-            document.getElementById('totalAmount').textContent = formatNumber(totalAmount) + '원';
+            
+            // 현재 정렬 필드 화살표 업데이트
+            const arrowElement = document.getElementById('sortArrow' + field);
+            if (arrowElement) {
+                arrowElement.textContent = callsSortOrder === 'asc' ? '↑' : '↓';
+            }
+            
+            // 데이터 정렬
+            let sortedData = [...currentTableData];
+            
+            if (field === '완료') {
+                sortedData.sort((a, b) => {
+                    const statusA = (a['완료'] === 'TRUE' || a['완료'] === 'O') ? 1 : 0;
+                    const statusB = (b['완료'] === 'TRUE' || b['완료'] === 'O') ? 1 : 0;
+                    return callsSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
+                });
+            }
+            
+            currentTableData = sortedData;
+            displayCallsPage(currentTablePage);
         }
 
-        // 페이지 로드 시
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('카드사별 키인 한도 관리 시스템 로드 완료');
-            autoConnectSheet();
+        function filterNotices() {
+            const group = document.getElementById('noticesGroup').value;
+            const status = document.getElementById('noticesStatus').value;
+            const search = document.getElementById('noticesSearch').value.toLowerCase();
+            const col3Name = noticeHeaders.col3 || 'col3';  // D열 - 공지1 완료
+            
+            let filtered = [...noticeData];
+            if (group) filtered = filtered.filter(n => n['그룹'] === group);
+            
+            if (status === 'completed') {
+                filtered = filtered.filter(n => {
+                    const val = (n[col3Name] || '').toString().trim().toUpperCase();
+                    return val === 'TRUE' || val === 'O';
+                });
+            } else if (status === 'pending') {
+                filtered = filtered.filter(n => {
+                    const val = (n[col3Name] || '').toString().trim().toUpperCase();
+                    return val !== 'TRUE' && val !== 'O';
+                });
+            }
+            
+            if (search) filtered = filtered.filter(n => (n['회원명'] || '').toLowerCase().includes(search));
+            displayNotices(filtered);
+        }
+
+        function displayNotices(data) {
+            currentNoticesData = data;
+            currentNoticesPage = 1;
+            
+            // 인덱스 기반 컬럼명 (중복 헤더 문제 해결)
+            const col3Name = noticeHeaders.col3 || 'col3';  // D열 - 공지1 완료
+            const col6Name = noticeHeaders.col6 || 'col6';  // G열 - 공지2 완료  
+            const col9Name = noticeHeaders.col9 || 'col9';  // J열 - 공지3 완료
+            const col12Name = noticeHeaders.col12 || 'col12'; // M열 - 공지4 완료
+            
+            // 그룹별 인원 계산
+            const group1Count = noticeData.filter(n => n['그룹'] === '지사장').length;
+            const group2Count = noticeData.filter(n => n['그룹'] === '이너서클').length;
+            const group3Count = noticeData.filter(n => n['그룹'] === '기업회원').length;
+            const group4Count = noticeData.filter(n => n['그룹'] === '컨설턴트회원').length;
+            
+            document.getElementById('noticesGroup1Count').textContent = group1Count + '명';
+            document.getElementById('noticesGroup2Count').textContent = group2Count + '명';
+            document.getElementById('noticesGroup3Count').textContent = group3Count + '명';
+            document.getElementById('noticesGroup4Count').textContent = group4Count + '명';
+            
+            // 완료율 계산 (대소문자, 공백 무시)
+            const completed1 = noticeData.filter(n => {
+                const val = (n[col3Name] || '').toString().trim().toUpperCase();
+                return val === 'TRUE' || val === 'O';
+            }).length;
+            const completed2 = noticeData.filter(n => {
+                const val = (n[col6Name] || '').toString().trim().toUpperCase();
+                return val === 'TRUE' || val === 'O';
+            }).length;
+            const completed3 = noticeData.filter(n => {
+                const val = (n[col9Name] || '').toString().trim().toUpperCase();
+                return val === 'TRUE' || val === 'O';
+            }).length;
+            const completed4 = noticeData.filter(n => {
+                const val = (n[col12Name] || '').toString().trim().toUpperCase();
+                return val === 'TRUE' || val === 'O';
+            }).length;
+            
+            document.getElementById('noticesCompleted1').textContent = completed1 + '명';
+            document.getElementById('noticesCompleted2').textContent = completed2 + '명';
+            document.getElementById('noticesCompleted3').textContent = completed3 + '명';
+            document.getElementById('noticesCompleted4').textContent = completed4 + '명';
+            
+            const totalCount = noticeData.length || 1; // 0으로 나누기 방지
+            document.getElementById('noticesRate1').textContent = Math.round((completed1 / totalCount) * 100) + '%';
+            document.getElementById('noticesRate2').textContent = Math.round((completed2 / totalCount) * 100) + '%';
+            document.getElementById('noticesRate3').textContent = Math.round((completed3 / totalCount) * 100) + '%';
+            document.getElementById('noticesRate4').textContent = Math.round((completed4 / totalCount) * 100) + '%';
+            
+            if (data.length === 0) {
+                document.getElementById('noticesTableBody').innerHTML = 
+                    '<tr><td colspan="15" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
+                document.getElementById('noticesTablePagination').innerHTML = '';
+                return;
+            }
+            
+            displayNoticesPage(1);
+        }
+
+        function displayNoticesPage(page) {
+            currentNoticesPage = page;
+            const data = currentNoticesData;
+            
+            // 페이지네이션 계산
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / NOTICES_PER_PAGE);
+            const startIndex = (page - 1) * NOTICES_PER_PAGE;
+            const endIndex = startIndex + NOTICES_PER_PAGE;
+            const currentPageData = data.slice(startIndex, endIndex);
+            
+            // 테이블 데이터 표시
+            document.getElementById('noticesTableBody').innerHTML = currentPageData.map(notice => {
+                // 인덱스 기반 컬럼명 (중복 헤더 문제 해결)
+                const col2Name = noticeHeaders.col2 || 'col2';    // C열 - 공지1 내용
+                const col3Name = noticeHeaders.col3 || 'col3';    // D열 - 공지1 완료
+                const col4Name = noticeHeaders.col4 || 'col4';    // E열 - 공지1 일자
+                const col5Name = noticeHeaders.col5 || 'col5';    // F열 - 공지2 내용
+                const col6Name = noticeHeaders.col6 || 'col6';    // G열 - 공지2 완료
+                const col7Name = noticeHeaders.col7 || 'col7';    // H열 - 공지2 일자
+                const col8Name = noticeHeaders.col8 || 'col8';    // I열 - 공지3 내용
+                const col9Name = noticeHeaders.col9 || 'col9';    // J열 - 공지3 완료
+                const col10Name = noticeHeaders.col10 || 'col10'; // K열 - 공지3 일자
+                const col11Name = noticeHeaders.col11 || 'col11'; // L열 - 공지4 내용
+                const col12Name = noticeHeaders.col12 || 'col12'; // M열 - 공지4 완료
+                const col13Name = noticeHeaders.col13 || 'col13'; // N열 - 공지4 일자
+                
+                // 완료 표시: O 있으면 ✓, 없으면 빈칸
+                const value1 = (notice[col3Name] || '').toString().trim().toUpperCase();
+                const check1 = (value1 === 'TRUE' || value1 === 'O') ? 
+                    '<span class="status-check completed">✓</span>' : '-';
+                
+                const value2 = (notice[col6Name] || '').toString().trim().toUpperCase();
+                const check2 = (value2 === 'TRUE' || value2 === 'O') ? 
+                    '<span class="status-check completed">✓</span>' : '-';
+                
+                const value3 = (notice[col9Name] || '').toString().trim().toUpperCase();
+                const check3 = (value3 === 'TRUE' || value3 === 'O') ? 
+                    '<span class="status-check completed">✓</span>' : '-';
+                
+                const value4 = (notice[col12Name] || '').toString().trim().toUpperCase();
+                const check4 = (value4 === 'TRUE' || value4 === 'O') ? 
+                    '<span class="status-check completed">✓</span>' : '-';
+                
+                return `
+                    <tr>
+                        <td class="text-bold">${notice['회원명'] || '-'}</td>
+                        <td>${notice['그룹'] || '-'}</td>
+                        <td>${notice[col2Name] || '-'}</td>
+                        <td class="checkbox-cell">${check1}</td>
+                        <td>${notice[col4Name] || '-'}</td>
+                        <td>${notice[col5Name] || '-'}</td>
+                        <td class="checkbox-cell">${check2}</td>
+                        <td>${notice[col7Name] || '-'}</td>
+                        <td>${notice[col8Name] || '-'}</td>
+                        <td class="checkbox-cell">${check3}</td>
+                        <td>${notice[col10Name] || '-'}</td>
+                        <td>${notice[col11Name] || '-'}</td>
+                        <td class="checkbox-cell">${check4}</td>
+                        <td>${notice[col13Name] || '-'}</td>
+                        <td>${notice['비고'] || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // 페이지네이션 버튼 생성
+            if (totalPages > 1) {
+                let paginationHTML = '';
+                
+                // 이전 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>◀</button>`;
+                
+                // 페이지 번호
+                const maxButtons = 7;
+                let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+                let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+                
+                if (endPage - startPage < maxButtons - 1) {
+                    startPage = Math.max(1, endPage - maxButtons + 1);
+                }
+                
+                if (startPage > 1) {
+                    paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(1)">1</button>`;
+                    if (startPage > 2) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHTML += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="displayNoticesPage(${i})">${i}</button>`;
+                }
+                
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                    paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(${totalPages})">${totalPages}</button>`;
+                }
+                
+                // 다음 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>▶</button>`;
+                
+                // 페이지 정보
+                paginationHTML += `<span class="pagination-info">${startIndex + 1}-${Math.min(endIndex, totalItems)} / ${totalItems}명</span>`;
+                
+                document.getElementById('noticesTablePagination').innerHTML = paginationHTML;
+            } else {
+                document.getElementById('noticesTablePagination').innerHTML = '';
+            }
+        }
+
+        function sortNotices(field) {
+            // 정렬 방향 토글
+            if (noticesSortField === field) {
+                noticesSortOrder = noticesSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                noticesSortField = field;
+                noticesSortOrder = 'asc';
+            }
+            
+            // 모든 화살표 초기화
+            document.querySelectorAll('[id^="sortArrow"]').forEach(arrow => {
+                arrow.textContent = '↕';
+            });
+            
+            // 현재 정렬 필드 화살표 업데이트
+            const arrowElement = document.getElementById('sortArrow' + field);
+            if (arrowElement) {
+                arrowElement.textContent = noticesSortOrder === 'asc' ? '↑' : '↓';
+            }
+            
+            // 데이터 정렬
+            let sortedData = [...currentNoticesData];
+            const col3Name = noticeHeaders.col3 || 'col3';   // D열 - 공지1 완료
+            const col6Name = noticeHeaders.col6 || 'col6';   // G열 - 공지2 완료
+            const col9Name = noticeHeaders.col9 || 'col9';   // J열 - 공지3 완료
+            const col12Name = noticeHeaders.col12 || 'col12'; // M열 - 공지4 완료
+            
+            if (field === '이름') {
+                sortedData.sort((a, b) => {
+                    const nameA = (a['회원명'] || '').toLowerCase();
+                    const nameB = (b['회원명'] || '').toLowerCase();
+                    return noticesSortOrder === 'asc' ? 
+                        nameA.localeCompare(nameB, 'ko') : 
+                        nameB.localeCompare(nameA, 'ko');
+                });
+            } else if (field === '완료1') {
+                sortedData.sort((a, b) => {
+                    const valA = (a[col3Name] || '').toString().trim().toUpperCase();
+                    const valB = (b[col3Name] || '').toString().trim().toUpperCase();
+                    const statusA = (valA === 'TRUE' || valA === 'O') ? 1 : 0;
+                    const statusB = (valB === 'TRUE' || valB === 'O') ? 1 : 0;
+                    return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
+                });
+            } else if (field === '완료2') {
+                sortedData.sort((a, b) => {
+                    const valA = (a[col6Name] || '').toString().trim().toUpperCase();
+                    const valB = (b[col6Name] || '').toString().trim().toUpperCase();
+                    const statusA = (valA === 'TRUE' || valA === 'O') ? 1 : 0;
+                    const statusB = (valB === 'TRUE' || valB === 'O') ? 1 : 0;
+                    return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
+                });
+            } else if (field === '완료3') {
+                sortedData.sort((a, b) => {
+                    const valA = (a[col9Name] || '').toString().trim().toUpperCase();
+                    const valB = (b[col9Name] || '').toString().trim().toUpperCase();
+                    const statusA = (valA === 'TRUE' || valA === 'O') ? 1 : 0;
+                    const statusB = (valB === 'TRUE' || valB === 'O') ? 1 : 0;
+                    return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
+                });
+            } else if (field === '완료4') {
+                sortedData.sort((a, b) => {
+                    const valA = (a[col12Name] || '').toString().trim().toUpperCase();
+                    const valB = (b[col12Name] || '').toString().trim().toUpperCase();
+                    const statusA = (valA === 'TRUE' || valA === 'O') ? 1 : 0;
+                    const statusB = (valB === 'TRUE' || valB === 'O') ? 1 : 0;
+                    return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
+                });
+            }
+            
+            currentNoticesData = sortedData;
+            displayNoticesPage(currentNoticesPage);
+        }
+
+        function formatNumber(num) {
+            return Math.round(num).toLocaleString('ko-KR');
+        }
+
+        function parseNumber(str) {
+            if (!str) return 0;
+            // 쉼표 제거 후 숫자로 변환
+            const cleaned = String(str).replace(/,/g, '').replace(/[^0-9.-]/g, '');
+            return parseFloat(cleaned) || 0;
+        }
+
+        function parseKoreanDate(dateStr) {
+            if (!dateStr) return new Date();
+            // "2025년 11월 7일" 형식 파싱
+            const match = dateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+            if (match) {
+                return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            }
+            return new Date();
+        }
+
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = day === 0 ? -6 : 1 - day; // 월요일을 주 시작으로
+            d.setDate(d.getDate() + diff);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        function updateBadge(elementId, rate) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            if (rate >= 100) {
+                element.className = 'card-badge badge-success';
+                element.textContent = '달성';
+            } else if (rate >= 90) {
+                element.className = 'card-badge badge-success';
+                element.textContent = '우수';
+            } else if (rate >= 70) {
+                element.className = 'card-badge badge-warning';
+                element.textContent = '진행중';
+            } else {
+                element.className = 'card-badge badge-danger';
+                element.textContent = '부진';
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function showError(message) {
+            const container = document.querySelector('.container');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = '⚠️ ' + message;
+            container.insertBefore(errorDiv, container.firstChild);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadAllData();
+            setInterval(loadAllData, 30000);
         });
     </script>
 </body>
