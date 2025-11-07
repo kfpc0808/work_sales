@@ -326,14 +326,39 @@
         .call-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 4px;
+            align-items: center;
             gap: 10px;
+        }
+
+        .call-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
         }
 
         .call-name {
             font-weight: 600;
             color: #333;
             font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .call-separator {
+            color: #999;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .call-desc-inline {
+            font-size: 13px;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
         }
 
         .call-time {
@@ -1255,10 +1280,13 @@
                     <div class="call-icon">📞</div>
                     <div class="call-content">
                         <div class="call-header">
-                            <span class="call-name">${call['회원명'] || '-'} (${call['그룹'] || '-'})</span>
+                            <div class="call-left">
+                                <span class="call-name">${call['회원명'] || '-'} (${call['그룹'] || '-'})</span>
+                                <span class="call-separator"> - </span>
+                                <span class="call-desc-inline">${call['업무내용'] || '-'}</span>
+                            </div>
                             <span class="call-time">${call['일자'] || '-'}</span>
                         </div>
-                        <div class="call-desc">${call['업무내용'] || '-'}</div>
                     </div>
                 </div>
             `).join('');
