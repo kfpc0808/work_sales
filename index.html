@@ -877,6 +877,67 @@
             opacity: 0.5;
         }
 
+        /* 페이지네이션 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: clamp(8px, 2vw, 12px);
+            margin-top: clamp(16px, 4vw, 24px);
+            padding: clamp(12px, 3vw, 16px);
+        }
+
+        .pagination-btn {
+            min-width: clamp(36px, 9vw, 44px);
+            min-height: clamp(36px, 9vw, 44px);
+            padding: clamp(8px, 2vw, 10px);
+            border: 2px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: clamp(13px, 3.2vw, 15px);
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pagination-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .pagination-btn.active {
+            background: var(--primary-gradient);
+            border-color: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pagination-btn:disabled:hover {
+            background: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+            transform: none;
+        }
+
+        .pagination-info {
+            font-size: clamp(12px, 3vw, 14px);
+            color: var(--text-secondary);
+            padding: 0 clamp(8px, 2vw, 12px);
+            white-space: nowrap;
+        }
+
         /* 토스트 알림 - iOS Safe Area 대응 */
         .toast {
             position: fixed;
@@ -1078,6 +1139,7 @@
                 <div class="call-list" id="recentCalls">
                     <div class="loading"><div class="spinner"></div>데이터 로딩 중...</div>
                 </div>
+                <div class="pagination" id="callsPagination"></div>
             </div>
 
             <div class="section">
@@ -1333,6 +1395,8 @@
         let callHistory = [];
         let noticeData = [];
         let chartInstances = {};
+        let currentCallPage = 1;
+        const CALLS_PER_PAGE = 10;
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -1620,14 +1684,25 @@
             });
         }
 
-        function updateRecentCalls() {
+        function updateRecentCalls(page = 1) {
+            currentCallPage = page;
+            
             if (callHistory.length === 0) {
                 document.getElementById('recentCalls').innerHTML = 
                     '<div class="empty-state"><div class="empty-state-icon">📭</div><div>기록된 업무 내역이 없습니다</div></div>';
+                document.getElementById('callsPagination').innerHTML = '';
                 return;
             }
-            const recent = callHistory.slice(0, 5);
-            document.getElementById('recentCalls').innerHTML = recent.map(call => `
+            
+            // 페이지네이션 계산
+            const totalItems = callHistory.length;
+            const totalPages = Math.ceil(totalItems / CALLS_PER_PAGE);
+            const startIndex = (page - 1) * CALLS_PER_PAGE;
+            const endIndex = startIndex + CALLS_PER_PAGE;
+            const currentPageData = callHistory.slice(startIndex, endIndex);
+            
+            // 업무 기록 표시
+            document.getElementById('recentCalls').innerHTML = currentPageData.map(call => `
                 <div class="call-item">
                     <div class="call-icon">📞</div>
                     <div class="call-content">
@@ -1643,6 +1718,51 @@
                     </div>
                 </div>
             `).join('');
+            
+            // 페이지네이션 버튼 생성
+            if (totalPages > 1) {
+                let paginationHTML = '';
+                
+                // 이전 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="updateRecentCalls(${page - 1})" ${page === 1 ? 'disabled' : ''}>◀</button>`;
+                
+                // 페이지 번호
+                const maxButtons = 5;
+                let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+                let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+                
+                if (endPage - startPage < maxButtons - 1) {
+                    startPage = Math.max(1, endPage - maxButtons + 1);
+                }
+                
+                if (startPage > 1) {
+                    paginationHTML += `<button class="pagination-btn" onclick="updateRecentCalls(1)">1</button>`;
+                    if (startPage > 2) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHTML += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="updateRecentCalls(${i})">${i}</button>`;
+                }
+                
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                    paginationHTML += `<button class="pagination-btn" onclick="updateRecentCalls(${totalPages})">${totalPages}</button>`;
+                }
+                
+                // 다음 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="updateRecentCalls(${page + 1})" ${page === totalPages ? 'disabled' : ''}>▶</button>`;
+                
+                // 페이지 정보
+                paginationHTML += `<span class="pagination-info">${startIndex + 1}-${Math.min(endIndex, totalItems)} / ${totalItems}개</span>`;
+                
+                document.getElementById('callsPagination').innerHTML = paginationHTML;
+            } else {
+                document.getElementById('callsPagination').innerHTML = '';
+            }
         }
 
         function updateNoticeSummary() {
