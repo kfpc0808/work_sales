@@ -2391,8 +2391,19 @@
             
             let filtered = [...noticeData];
             if (group) filtered = filtered.filter(n => n['그룹'] === group);
-            if (status === 'completed') filtered = filtered.filter(n => n[col4Name] === 'TRUE' || n[col4Name] === 'O');
-            else if (status === 'pending') filtered = filtered.filter(n => n[col4Name] !== 'TRUE' && n[col4Name] !== 'O');
+            
+            if (status === 'completed') {
+                filtered = filtered.filter(n => {
+                    const val = (n[col4Name] || '').toString().trim().toUpperCase();
+                    return val === 'TRUE' || val === 'O';
+                });
+            } else if (status === 'pending') {
+                filtered = filtered.filter(n => {
+                    const val = (n[col4Name] || '').toString().trim().toUpperCase();
+                    return val !== 'TRUE' && val !== 'O';
+                });
+            }
+            
             if (search) filtered = filtered.filter(n => (n['회원명'] || '').toLowerCase().includes(search));
             displayNotices(filtered);
         }
@@ -2408,10 +2419,24 @@
             const col13Name = noticeHeaders.col13 || '기출공지1_완료';
             
             document.getElementById('noticesTotalCount').textContent = noticeData.length + '명';
-            const completed1 = noticeData.filter(n => n[col4Name] === 'TRUE' || n[col4Name] === 'O').length;
-            const completed2 = noticeData.filter(n => n[col7Name] === 'TRUE' || n[col7Name] === 'O').length;
-            const completed3 = noticeData.filter(n => n[col10Name] === 'TRUE' || n[col10Name] === 'O').length;
-            const completed4 = noticeData.filter(n => n[col13Name] === 'TRUE' || n[col13Name] === 'O').length;
+            
+            // 완료율 계산 (대소문자, 공백 무시)
+            const completed1 = noticeData.filter(n => {
+                const val = (n[col4Name] || '').toString().trim().toUpperCase();
+                return val === 'TRUE' || val === 'O';
+            }).length;
+            const completed2 = noticeData.filter(n => {
+                const val = (n[col7Name] || '').toString().trim().toUpperCase();
+                return val === 'TRUE' || val === 'O';
+            }).length;
+            const completed3 = noticeData.filter(n => {
+                const val = (n[col10Name] || '').toString().trim().toUpperCase();
+                return val === 'TRUE' || val === 'O';
+            }).length;
+            const completed4 = noticeData.filter(n => {
+                const val = (n[col13Name] || '').toString().trim().toUpperCase();
+                return val === 'TRUE' || val === 'O';
+            }).length;
             
             document.getElementById('noticesCompleted1').textContent = completed1 + '명';
             document.getElementById('noticesCompleted2').textContent = completed2 + '명';
@@ -2460,14 +2485,22 @@
                 const col13Name = noticeHeaders.col13 || '기출공지1_완료';  // 공지4 완료
                 const col14Name = noticeHeaders.col14 || '기출공지1_일자';  // 공지4 일자
                 
-                const check1 = (notice[col4Name] === 'TRUE' || notice[col4Name] === 'O') ? 
-                    '<span class="status-check completed">✓</span>' : '<span class="status-check pending">✗</span>';
-                const check2 = (notice[col7Name] === 'TRUE' || notice[col7Name] === 'O') ? 
-                    '<span class="status-check completed">✓</span>' : '<span class="status-check pending">✗</span>';
-                const check3 = (notice[col10Name] === 'TRUE' || notice[col10Name] === 'O') ? 
-                    '<span class="status-check completed">✓</span>' : '<span class="status-check pending">✗</span>';
-                const check4 = (notice[col13Name] === 'TRUE' || notice[col13Name] === 'O') ? 
-                    '<span class="status-check completed">✓</span>' : '<span class="status-check pending">✗</span>';
+                // 완료 표시: O 있으면 ✓, 없으면 빈칸
+                const value1 = (notice[col4Name] || '').toString().trim().toUpperCase();
+                const check1 = (value1 === 'TRUE' || value1 === 'O') ? 
+                    '<span class="status-check completed">✓</span>' : '-';
+                
+                const value2 = (notice[col7Name] || '').toString().trim().toUpperCase();
+                const check2 = (value2 === 'TRUE' || value2 === 'O') ? 
+                    '<span class="status-check completed">✓</span>' : '-';
+                
+                const value3 = (notice[col10Name] || '').toString().trim().toUpperCase();
+                const check3 = (value3 === 'TRUE' || value3 === 'O') ? 
+                    '<span class="status-check completed">✓</span>' : '-';
+                
+                const value4 = (notice[col13Name] || '').toString().trim().toUpperCase();
+                const check4 = (value4 === 'TRUE' || value4 === 'O') ? 
+                    '<span class="status-check completed">✓</span>' : '-';
                 
                 return `
                     <tr>
@@ -2573,26 +2606,34 @@
                 });
             } else if (field === '완료1') {
                 sortedData.sort((a, b) => {
-                    const statusA = (a[col4Name] === 'TRUE' || a[col4Name] === 'O') ? 1 : 0;
-                    const statusB = (b[col4Name] === 'TRUE' || b[col4Name] === 'O') ? 1 : 0;
+                    const valA = (a[col4Name] || '').toString().trim().toUpperCase();
+                    const valB = (b[col4Name] || '').toString().trim().toUpperCase();
+                    const statusA = (valA === 'TRUE' || valA === 'O') ? 1 : 0;
+                    const statusB = (valB === 'TRUE' || valB === 'O') ? 1 : 0;
                     return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
                 });
             } else if (field === '완료2') {
                 sortedData.sort((a, b) => {
-                    const statusA = (a[col7Name] === 'TRUE' || a[col7Name] === 'O') ? 1 : 0;
-                    const statusB = (b[col7Name] === 'TRUE' || b[col7Name] === 'O') ? 1 : 0;
+                    const valA = (a[col7Name] || '').toString().trim().toUpperCase();
+                    const valB = (b[col7Name] || '').toString().trim().toUpperCase();
+                    const statusA = (valA === 'TRUE' || valA === 'O') ? 1 : 0;
+                    const statusB = (valB === 'TRUE' || valB === 'O') ? 1 : 0;
                     return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
                 });
             } else if (field === '완료3') {
                 sortedData.sort((a, b) => {
-                    const statusA = (a[col10Name] === 'TRUE' || a[col10Name] === 'O') ? 1 : 0;
-                    const statusB = (b[col10Name] === 'TRUE' || b[col10Name] === 'O') ? 1 : 0;
+                    const valA = (a[col10Name] || '').toString().trim().toUpperCase();
+                    const valB = (b[col10Name] || '').toString().trim().toUpperCase();
+                    const statusA = (valA === 'TRUE' || valA === 'O') ? 1 : 0;
+                    const statusB = (valB === 'TRUE' || valB === 'O') ? 1 : 0;
                     return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
                 });
             } else if (field === '완료4') {
                 sortedData.sort((a, b) => {
-                    const statusA = (a[col13Name] === 'TRUE' || a[col13Name] === 'O') ? 1 : 0;
-                    const statusB = (b[col13Name] === 'TRUE' || b[col13Name] === 'O') ? 1 : 0;
+                    const valA = (a[col13Name] || '').toString().trim().toUpperCase();
+                    const valB = (b[col13Name] || '').toString().trim().toUpperCase();
+                    const statusA = (valA === 'TRUE' || valA === 'O') ? 1 : 0;
+                    const statusB = (valB === 'TRUE' || valB === 'O') ? 1 : 0;
                     return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
                 });
             }
