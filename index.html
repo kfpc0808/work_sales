@@ -303,6 +303,13 @@
             margin-bottom: clamp(20px, 5vw, 32px);
         }
 
+        /* 모바일 전용 - 카드 2개씩 */
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         .card {
             background: var(--card-bg);
             padding: clamp(20px, 5vw, 28px);
@@ -582,13 +589,6 @@
             gap: clamp(12px, 3vw, 16px);
         }
 
-        /* 모바일 작은 화면에서는 1개씩 */
-        @media (max-width: 480px) {
-            .notice-summary {
-                grid-template-columns: 1fr;
-            }
-        }
-
         .notice-item {
             padding: clamp(14px, 3.5vw, 18px);
             background: var(--bg-color);
@@ -637,6 +637,13 @@
             grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
             gap: clamp(12px, 3vw, 16px);
             align-items: end;
+        }
+
+        /* 모바일 전용 - 필터 2개씩 */
+        @media (max-width: 768px) {
+            .filter-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         .filter-group {
