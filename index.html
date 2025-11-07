@@ -295,17 +295,54 @@
             }
         }
 
-        /* 공지 관리 탭 - 카드 2개씩 배치 */
+        /* 공지 관리 탭 - PC: 4개씩, 모바일: 2개씩 */
         .notices-group-cards,
         .notices-completion-cards {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(4, 1fr);
+            gap: clamp(10px, 2.5vw, 16px);
             margin-bottom: clamp(16px, 4vw, 24px);
+        }
+
+        /* 공지 카드 크기 축소 */
+        #tab-notices .card {
+            padding: clamp(14px, 3.5vw, 20px);
+        }
+
+        #tab-notices .card-title {
+            font-size: clamp(12px, 2.8vw, 14px);
+            margin-bottom: 8px;
+        }
+
+        #tab-notices .card-value {
+            font-size: clamp(18px, 4.5vw, 22px);
+        }
+
+        #tab-notices .card-sub {
+            font-size: clamp(11px, 2.5vw, 12px);
+            margin-top: 6px;
         }
 
         @media (max-width: 768px) {
             .notices-group-cards,
             .notices-completion-cards {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px;
+            }
+
+            #tab-notices .card {
+                padding: 16px;
+            }
+
+            #tab-notices .card-title {
+                font-size: 12px;
+            }
+
+            #tab-notices .card-value {
+                font-size: 20px;
+            }
+
+            #tab-notices .card-sub {
+                font-size: 11px;
             }
         }
 
