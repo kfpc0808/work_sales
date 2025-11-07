@@ -2081,12 +2081,24 @@
             
             // 테이블 데이터 표시
             document.getElementById('callsTableBody').innerHTML = currentPageData.map((call, index) => {
-                // 구글 시트에 "시간" 컬럼이 있으면 그 값 사용
-                // 없으면 자동 생성 (이전 방식)
-                let timeStr = call['시간'] || '';
+                // 디버깅: 첫 번째 항목의 모든 키 출력
+                if (index === 0) {
+                    console.log('첫 번째 업무기록 데이터:', call);
+                    console.log('사용 가능한 컬럼들:', Object.keys(call));
+                }
                 
-                // 시간 데이터가 없으면 자동 생성
-                if (!timeStr) {
+                // 구글 시트에 "시간" 컬럼이 있으면 그 값 사용
+                // 여러 가능한 헤더 이름 시도
+                let timeStr = call['시간'] || call[' 시간'] || call['시간 '] || 
+                              call['Time'] || call['time'] || '';
+                
+                // 공백 제거 및 유효성 검사
+                if (timeStr) {
+                    timeStr = String(timeStr).trim();
+                }
+                
+                // 시간 데이터가 없거나 비어있으면 자동 생성
+                if (!timeStr || timeStr === '-') {
                     const dateKey = call['일자'] || 'unknown';
                     if (!window.dateTimeMap) window.dateTimeMap = {};
                     if (!window.dateTimeMap[dateKey]) {
