@@ -776,6 +776,23 @@
             white-space: nowrap;
         }
 
+        /* 공지 테이블 행 높이 축소 */
+        #noticesTableBody tr {
+            height: auto;
+        }
+
+        #noticesTableBody td {
+            padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 16px);
+            line-height: 1.3;
+        }
+
+        @media (max-width: 768px) {
+            #noticesTableBody td {
+                padding: 6px 10px;
+                font-size: clamp(11px, 2.5vw, 13px);
+            }
+        }
+
         /* 차트 그리드 */
         .chart-grid {
             display: grid;
@@ -1356,18 +1373,18 @@
             </div>
 
             <div class="section">
-                <div class="section-title">공지 전달 현황 (표시: <span id="noticesDisplayCount">0</span>명)</div>
+                <div class="section-title">공지 전달 현황</div>
                 <div class="table-container">
                     <table>
                         <thead>
                             <tr>
-                                <th>이름</th>
+                                <th onclick="sortNotices('이름')" style="cursor: pointer;">이름 <span id="sortArrow이름">↕</span></th>
                                 <th>그룹</th>
                                 <th>공지1 내용</th>
-                                <th class="text-center">완료</th>
+                                <th class="text-center" onclick="sortNotices('완료1')" style="cursor: pointer;">완료 <span id="sortArrow완료1">↕</span></th>
                                 <th>완료일</th>
                                 <th>공지2 내용</th>
-                                <th class="text-center">완료</th>
+                                <th class="text-center" onclick="sortNotices('완료2')" style="cursor: pointer;">완료 <span id="sortArrow완료2">↕</span></th>
                                 <th>완료일</th>
                             </tr>
                         </thead>
@@ -1376,6 +1393,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination" id="noticesTablePagination"></div>
             </div>
         </div>
     </div>
@@ -1409,6 +1427,11 @@
         let currentTablePage = 1;
         const TABLE_ROWS_PER_PAGE = 20;
         let currentTableData = [];
+        let currentNoticesPage = 1;
+        const NOTICES_PER_PAGE = 20;
+        let currentNoticesData = [];
+        let noticesSortField = '';
+        let noticesSortOrder = 'asc';
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -2201,6 +2224,9 @@
         }
 
         function displayNotices(data) {
+            currentNoticesData = data;
+            currentNoticesPage = 1;
+            
             document.getElementById('noticesTotalCount').textContent = noticeData.length + '명';
             const completed1 = noticeData.filter(n => n['지사공지1_완료'] === 'TRUE' || n['지사공지1_완료'] === 'O').length;
             const completed2 = noticeData.filter(n => n['이너공지1_완료'] === 'TRUE' || n['이너공지1_완료'] === 'O').length;
@@ -2208,14 +2234,30 @@
             document.getElementById('noticesCompleted2').textContent = completed2 + '명';
             document.getElementById('noticesRate1').textContent = Math.round((completed1 / noticeData.length) * 100) + '%';
             document.getElementById('noticesRate2').textContent = Math.round((completed2 / noticeData.length) * 100) + '%';
-            document.getElementById('noticesDisplayCount').textContent = data.length;
             
             if (data.length === 0) {
                 document.getElementById('noticesTableBody').innerHTML = 
                     '<tr><td colspan="8" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
+                document.getElementById('noticesTablePagination').innerHTML = '';
                 return;
             }
-            document.getElementById('noticesTableBody').innerHTML = data.map(notice => {
+            
+            displayNoticesPage(1);
+        }
+
+        function displayNoticesPage(page) {
+            currentNoticesPage = page;
+            const data = currentNoticesData;
+            
+            // 페이지네이션 계산
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / NOTICES_PER_PAGE);
+            const startIndex = (page - 1) * NOTICES_PER_PAGE;
+            const endIndex = startIndex + NOTICES_PER_PAGE;
+            const currentPageData = data.slice(startIndex, endIndex);
+            
+            // 테이블 데이터 표시
+            document.getElementById('noticesTableBody').innerHTML = currentPageData.map(notice => {
                 const check1 = (notice['지사공지1_완료'] === 'TRUE' || notice['지사공지1_완료'] === 'O') ? 
                     '<span class="status-check completed">✓</span>' : '<span class="status-check pending">✗</span>';
                 const check2 = (notice['이너공지1_완료'] === 'TRUE' || notice['이너공지1_완료'] === 'O') ? 
@@ -2233,6 +2275,100 @@
                     </tr>
                 `;
             }).join('');
+            
+            // 페이지네이션 버튼 생성
+            if (totalPages > 1) {
+                let paginationHTML = '';
+                
+                // 이전 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>◀</button>`;
+                
+                // 페이지 번호
+                const maxButtons = 7;
+                let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+                let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+                
+                if (endPage - startPage < maxButtons - 1) {
+                    startPage = Math.max(1, endPage - maxButtons + 1);
+                }
+                
+                if (startPage > 1) {
+                    paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(1)">1</button>`;
+                    if (startPage > 2) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHTML += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="displayNoticesPage(${i})">${i}</button>`;
+                }
+                
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                    paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(${totalPages})">${totalPages}</button>`;
+                }
+                
+                // 다음 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="displayNoticesPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>▶</button>`;
+                
+                // 페이지 정보
+                paginationHTML += `<span class="pagination-info">${startIndex + 1}-${Math.min(endIndex, totalItems)} / ${totalItems}명</span>`;
+                
+                document.getElementById('noticesTablePagination').innerHTML = paginationHTML;
+            } else {
+                document.getElementById('noticesTablePagination').innerHTML = '';
+            }
+        }
+
+        function sortNotices(field) {
+            // 정렬 방향 토글
+            if (noticesSortField === field) {
+                noticesSortOrder = noticesSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                noticesSortField = field;
+                noticesSortOrder = 'asc';
+            }
+            
+            // 모든 화살표 초기화
+            document.querySelectorAll('[id^="sortArrow"]').forEach(arrow => {
+                arrow.textContent = '↕';
+            });
+            
+            // 현재 정렬 필드 화살표 업데이트
+            const arrowElement = document.getElementById('sortArrow' + field);
+            if (arrowElement) {
+                arrowElement.textContent = noticesSortOrder === 'asc' ? '↑' : '↓';
+            }
+            
+            // 데이터 정렬
+            let sortedData = [...currentNoticesData];
+            
+            if (field === '이름') {
+                sortedData.sort((a, b) => {
+                    const nameA = (a['회원명'] || '').toLowerCase();
+                    const nameB = (b['회원명'] || '').toLowerCase();
+                    return noticesSortOrder === 'asc' ? 
+                        nameA.localeCompare(nameB, 'ko') : 
+                        nameB.localeCompare(nameA, 'ko');
+                });
+            } else if (field === '완료1') {
+                sortedData.sort((a, b) => {
+                    const statusA = (a['지사공지1_완료'] === 'TRUE' || a['지사공지1_완료'] === 'O') ? 1 : 0;
+                    const statusB = (b['지사공지1_완료'] === 'TRUE' || b['지사공지1_완료'] === 'O') ? 1 : 0;
+                    return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
+                });
+            } else if (field === '완료2') {
+                sortedData.sort((a, b) => {
+                    const statusA = (a['이너공지1_완료'] === 'TRUE' || a['이너공지1_완료'] === 'O') ? 1 : 0;
+                    const statusB = (b['이너공지1_완료'] === 'TRUE' || b['이너공지1_완료'] === 'O') ? 1 : 0;
+                    return noticesSortOrder === 'asc' ? statusB - statusA : statusA - statusB;
+                });
+            }
+            
+            currentNoticesData = sortedData;
+            displayNoticesPage(currentNoticesPage);
         }
 
         function formatNumber(num) {
