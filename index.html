@@ -1378,6 +1378,41 @@
                 <div class="section-title">누적 매출 그래프</div>
                 <canvas id="salesCumulativeChart" height="100"></canvas>
             </div>
+
+            <div class="section">
+                <div class="section-title">일자별 매출 상세</div>
+                <div class="table-container" style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th rowspan="2">일자</th>
+                                <th rowspan="2">회원명</th>
+                                <th colspan="3" class="text-center">컨홀</th>
+                                <th colspan="3" class="text-center">기홀</th>
+                                <th colspan="3" class="text-center">지사</th>
+                                <th colspan="3" class="text-center">이너</th>
+                            </tr>
+                            <tr>
+                                <th class="text-right">진행</th>
+                                <th class="text-right">예상</th>
+                                <th class="text-right">확정</th>
+                                <th class="text-right">진행</th>
+                                <th class="text-right">예상</th>
+                                <th class="text-right">확정</th>
+                                <th class="text-right">진행</th>
+                                <th class="text-right">예상</th>
+                                <th class="text-right">확정</th>
+                                <th class="text-right">진행</th>
+                                <th class="text-right">예상</th>
+                                <th class="text-right">확정</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesDetailBody">
+                            <tr><td colspan="14" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- 탭 3: 업무 기록 -->
@@ -2097,23 +2132,23 @@
             
             // 기간 내 데이터 필터링
             const periodData = salesData.filter(row => {
-                const rowDate = parseKoreanDate(row['날짜']);
+                const rowDate = parseKoreanDate(row['일자'] || row['날짜'] || '');
                 return rowDate >= startDate && rowDate <= endDate;
             });
             
             // 상품별 합계 계산
             let totals = {
-                '컨홈': { expected: 0, confirmed: 0 },
-                '기홈': { expected: 0, confirmed: 0 },
+                '컨홀': { expected: 0, confirmed: 0 },
+                '기홀': { expected: 0, confirmed: 0 },
                 '지사': { expected: 0, confirmed: 0 },
                 '이너': { expected: 0, confirmed: 0 }
             };
             
             periodData.forEach(row => {
-                totals['컨홈'].expected += parseNumber(row['컨홈예상']);
-                totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
-                totals['기홈'].expected += parseNumber(row['기홈예상']);
-                totals['기홈'].confirmed += parseNumber(row['기홈확정']);
+                totals['컨홀'].expected += parseNumber(row['컨홀예상']);
+                totals['컨홀'].confirmed += parseNumber(row['컨홀확정']);
+                totals['기홀'].expected += parseNumber(row['기홀예상']);
+                totals['기홀'].confirmed += parseNumber(row['기홀확정']);
                 totals['지사'].expected += parseNumber(row['지사예상']);
                 totals['지사'].confirmed += parseNumber(row['지사확정']);
                 totals['이너'].expected += parseNumber(row['이너예상']);
@@ -2129,7 +2164,7 @@
             
             // 목표 (주간 또는 월간)
             const goalData = period === 'month' ? (monthlyGoals[0] || {}) : (weeklyGoals[0] || {});
-            const totalGoal = parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
+            const totalGoal = parseNumber(goalData['컨홀목표']) + parseNumber(goalData['기홀목표']) + 
                              parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']);
             const achievementRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
             
@@ -2142,8 +2177,8 @@
             
             // 상품별 테이블
             const products = [
-                { name: '컨홈목표', key: '컨홈', goalKey: '컨홈목표' },
-                { name: '기홈목표', key: '기홈', goalKey: '기홈목표' },
+                { name: '컨홀목표', key: '컨홀', goalKey: '컨홀목표' },
+                { name: '기홀목표', key: '기홀', goalKey: '기홀목표' },
                 { name: '지사목표', key: '지사', goalKey: '지사목표' },
                 { name: '이너목표', key: '이너', goalKey: '이너목표' }
             ];
@@ -2167,6 +2202,7 @@
             }).join('');
             
             updateSalesCharts(periodData, totals);
+            displaySalesDetail(periodData);  // 일자별 상세 데이터 표시
         }
 
         function updateSalesCharts(periodData, totals) {
@@ -2176,15 +2212,15 @@
                 if (chartInstances.salesDaily) chartInstances.salesDaily.destroy();
                 
                 const labels = periodData.map(row => {
-                    const date = parseKoreanDate(row['날짜']);
+                    const date = parseKoreanDate(row['일자'] || row['날짜'] || '');
                     return `${date.getMonth()+1}/${date.getDate()}`;
                 });
                 const expectedData = periodData.map(row => 
-                    parseNumber(row['컨홈예상']) + parseNumber(row['기홈예상']) + 
+                    parseNumber(row['컨홀예상']) + parseNumber(row['기홀예상']) + 
                     parseNumber(row['지사예상']) + parseNumber(row['이너예상'])
                 );
                 const confirmedData = periodData.map(row => 
-                    parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                    parseNumber(row['컨홀확정']) + parseNumber(row['기홀확정']) + 
                     parseNumber(row['지사확정']) + parseNumber(row['이너확정'])
                 );
                 
@@ -2228,11 +2264,11 @@
                 chartInstances.salesPie = new Chart(pieCtx.getContext('2d'), {
                     type: 'doughnut',
                     data: {
-                        labels: ['컨홈', '기업홈', '지사', '이너서클'],
+                        labels: ['컨홀', '기홀', '지사', '이너'],
                         datasets: [{
                             data: [
-                                totals['컨홈'].confirmed,
-                                totals['기홈'].confirmed,
+                                totals['컨홀'].confirmed,
+                                totals['기홀'].confirmed,
                                 totals['지사'].confirmed,
                                 totals['이너'].confirmed
                             ],
@@ -2267,7 +2303,7 @@
                 
                 let cumulative = 0;
                 const cumulativeData = periodData.map(row => {
-                    cumulative += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                    cumulative += parseNumber(row['컨홀확정']) + parseNumber(row['기홀확정']) + 
                                  parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
                     return cumulative;
                 });
@@ -2302,6 +2338,123 @@
                     }
                 });
             }
+        }
+
+        function displaySalesDetail(periodData) {
+            const tbody = document.getElementById('salesDetailBody');
+            
+            if (!periodData || periodData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="14" class="empty-state">조회 기간 내 데이터가 없습니다.</td></tr>';
+                return;
+            }
+            
+            // 일자별로 그룹화
+            const dataByDate = {};
+            periodData.forEach(row => {
+                const date = row['일자'] || row['날짜'] || '';
+                if (!date) return;
+                
+                if (!dataByDate[date]) {
+                    dataByDate[date] = [];
+                }
+                dataByDate[date].push(row);
+            });
+            
+            // 일자별로 정렬 (최신 순)
+            const sortedDates = Object.keys(dataByDate).sort((a, b) => {
+                const dateA = parseKoreanDate(a);
+                const dateB = parseKoreanDate(b);
+                return dateB - dateA;
+            });
+            
+            let html = '';
+            sortedDates.forEach(date => {
+                const rows = dataByDate[date];
+                
+                // 일자별 소계
+                let dateTotal = {
+                    컨홀진행: 0, 컨홀예상: 0, 컨홀확정: 0,
+                    기홀진행: 0, 기홀예상: 0, 기홀확정: 0,
+                    지사진행: 0, 지사예상: 0, 지사확정: 0,
+                    이너진행: 0, 이너예상: 0, 이너확정: 0
+                };
+                
+                rows.forEach((row, index) => {
+                    const memberName = row['회원명'] || '-';
+                    const showDate = index === 0 ? date : '';
+                    const rowspan = index === 0 ? rows.length + 1 : 0;
+                    
+                    // 각 항목 값
+                    const 컨홀진행 = parseNumber(row['컨홀진행']);
+                    const 컨홀예상 = parseNumber(row['컨홀예상']);
+                    const 컨홀확정 = parseNumber(row['컨홀확정']);
+                    const 기홀진행 = parseNumber(row['기홀진행']);
+                    const 기홀예상 = parseNumber(row['기홀예상']);
+                    const 기홀확정 = parseNumber(row['기홀확정']);
+                    const 지사진행 = parseNumber(row['지사진행']);
+                    const 지사예상 = parseNumber(row['지사예상']);
+                    const 지사확정 = parseNumber(row['지사확정']);
+                    const 이너진행 = parseNumber(row['이너진행']);
+                    const 이너예상 = parseNumber(row['이너예상']);
+                    const 이너확정 = parseNumber(row['이너확정']);
+                    
+                    // 소계 누적
+                    dateTotal.컨홀진행 += 컨홀진행;
+                    dateTotal.컨홀예상 += 컨홀예상;
+                    dateTotal.컨홀확정 += 컨홀확정;
+                    dateTotal.기홀진행 += 기홀진행;
+                    dateTotal.기홀예상 += 기홀예상;
+                    dateTotal.기홀확정 += 기홀확정;
+                    dateTotal.지사진행 += 지사진행;
+                    dateTotal.지사예상 += 지사예상;
+                    dateTotal.지사확정 += 지사확정;
+                    dateTotal.이너진행 += 이너진행;
+                    dateTotal.이너예상 += 이너예상;
+                    dateTotal.이너확정 += 이너확정;
+                    
+                    html += '<tr>';
+                    if (rowspan > 0) {
+                        html += `<td rowspan="${rowspan}" class="text-bold" style="background: #f8f9fa;">${showDate}</td>`;
+                    }
+                    html += `
+                        <td>${memberName}</td>
+                        <td class="text-right">${컨홀진행 ? formatNumber(컨홀진행) : '-'}</td>
+                        <td class="text-right">${컨홀예상 ? formatNumber(컨홀예상) : '-'}</td>
+                        <td class="text-right">${컨홀확정 ? formatNumber(컨홀확정) : '-'}</td>
+                        <td class="text-right">${기홀진행 ? formatNumber(기홀진행) : '-'}</td>
+                        <td class="text-right">${기홀예상 ? formatNumber(기홀예상) : '-'}</td>
+                        <td class="text-right">${기홀확정 ? formatNumber(기홀확정) : '-'}</td>
+                        <td class="text-right">${지사진행 ? formatNumber(지사진행) : '-'}</td>
+                        <td class="text-right">${지사예상 ? formatNumber(지사예상) : '-'}</td>
+                        <td class="text-right">${지사확정 ? formatNumber(지사확정) : '-'}</td>
+                        <td class="text-right">${이너진행 ? formatNumber(이너진행) : '-'}</td>
+                        <td class="text-right">${이너예상 ? formatNumber(이너예상) : '-'}</td>
+                        <td class="text-right">${이너확정 ? formatNumber(이너확정) : '-'}</td>
+                    `;
+                    html += '</tr>';
+                });
+                
+                // 일자별 소계 행
+                html += `
+                    <tr style="background: #e9ecef; font-weight: bold;">
+                        <td>소계</td>
+                        <td class="text-right">${formatNumber(dateTotal.컨홀진행)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.컨홀예상)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.컨홀확정)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.기홀진행)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.기홀예상)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.기홀확정)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.지사진행)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.지사예상)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.지사확정)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.이너진행)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.이너예상)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.이너확정)}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
         }
 
         function filterCalls() {
