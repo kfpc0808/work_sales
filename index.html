@@ -543,13 +543,14 @@
         /* 모바일 (768px 이하) - 최근 업무기록 2줄 레이아웃 */
         @media (max-width: 768px) {
             .call-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 6px;
+                flex-direction: row;  /* 이름과 일자 같은 행 */
+                justify-content: space-between;
+                align-items: center;  /* 수직 중앙 정렬 */
+                gap: 8px;
             }
 
             .call-left {
-                width: 100%;
+                flex: 0 0 auto;  /* 이름 너비 자동 */
             }
 
             .call-separator,
@@ -559,11 +560,17 @@
 
             .call-desc-block {
                 display: block;
+                margin-top: 3px;  /* 간격 좁힘 (6px → 3px) */
             }
 
             .call-time {
-                align-self: flex-end;
-                margin-top: -4px;
+                flex-shrink: 0;
+                margin-top: 0;  /* 정렬 초기화 */
+            }
+
+            .call-item {
+                min-height: auto;  /* 최소 높이 제거 */
+                padding: clamp(10px, 2.5vw, 14px);  /* 패딩 축소 */
             }
         }
 
