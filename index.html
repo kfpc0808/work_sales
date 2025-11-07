@@ -1365,21 +1365,130 @@
         }
 
         function updateSummaryCards() {
-            document.getElementById('todaySales').textContent = '850,000원';
-            document.getElementById('todayExpected').textContent = '920,000원';
-            document.getElementById('weeklyRate').textContent = '78%';
-            document.getElementById('weeklyGoal').textContent = '4,000,000원';
-            document.getElementById('monthlyRate').textContent = '65%';
-            document.getElementById('monthlyGoal').textContent = '5,600,000원';
+            // 데이터 체크
+            if (!salesData || salesData.length === 0) {
+                console.log('매출 데이터가 없습니다.');
+                return;
+            }
+            
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            
+            // 오늘 매출 계산
+            const todayData = salesData.find(row => row['날짜'] === todayStr);
+            let todayConfirmed = 0, todayExpected = 0;
+            if (todayData) {
+                todayConfirmed = parseNumber(todayData['컨홈확정']) + parseNumber(todayData['기홈확정']) + 
+                                parseNumber(todayData['지사확정']) + parseNumber(todayData['이너확정']);
+                todayExpected = parseNumber(todayData['컨홈예상']) + parseNumber(todayData['기홈예상']) + 
+                               parseNumber(todayData['지사예상']) + parseNumber(todayData['이너예상']);
+            }
+            
+            // 이번 주 계산
+            const weekStart = getWeekStart(today);
+            const weekData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= weekStart && rowDate <= today;
+            });
+            
+            let weekConfirmed = 0;
+            weekData.forEach(row => {
+                weekConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+            });
+            
+            // 주간 목표
+            const weekGoalData = weeklyGoals[0] || {};
+            const weekGoal = parseNumber(weekGoalData['컨홈목표']) + parseNumber(weekGoalData['기홈목표']) + 
+                            parseNumber(weekGoalData['지사목표']) + parseNumber(weekGoalData['이너목표']);
+            const weekRate = weekGoal > 0 ? Math.round((weekConfirmed / weekGoal) * 100) : 0;
+            
+            // 이번 달 계산
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            const monthData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= monthStart && rowDate <= today;
+            });
+            
+            let monthConfirmed = 0;
+            monthData.forEach(row => {
+                monthConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+            });
+            
+            // 월간 목표
+            const monthGoalData = monthlyGoals[0] || {};
+            const monthGoal = parseNumber(monthGoalData['컨홈목표']) + parseNumber(monthGoalData['기홈목표']) + 
+                             parseNumber(monthGoalData['지사목표']) + parseNumber(monthGoalData['이너목표']);
+            const monthRate = monthGoal > 0 ? Math.round((monthConfirmed / monthGoal) * 100) : 0;
+            
+            // UI 업데이트
+            document.getElementById('todaySales').textContent = formatNumber(todayConfirmed) + '원';
+            document.getElementById('todayExpected').textContent = formatNumber(todayExpected) + '원';
+            document.getElementById('weeklyRate').textContent = weekRate + '%';
+            document.getElementById('weeklyGoal').textContent = formatNumber(weekGoal) + '원';
+            document.getElementById('monthlyRate').textContent = monthRate + '%';
+            document.getElementById('monthlyGoal').textContent = formatNumber(monthGoal) + '원';
+            
+            // 배지 업데이트
+            updateBadge('weeklyBadge', weekRate);
+            updateBadge('monthlyBadge', monthRate);
         }
 
         function updateProductProgress() {
+            // 데이터 체크
+            if (!salesData || salesData.length === 0 || !weeklyGoals || weeklyGoals.length === 0) {
+                console.log('매출 또는 목표 데이터가 없습니다.');
+                document.getElementById('productProgress').innerHTML = 
+                    '<div class="empty-state"><div class="empty-state-icon">📊</div><div>데이터를 불러오는 중입니다...</div></div>';
+                return;
+            }
+            
+            const today = new Date();
+            const weekStart = getWeekStart(today);
+            const weekData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= weekStart && rowDate <= today;
+            });
+            
+            // 주간 실적 계산
+            let weekConfirmed = {
+                '컨홈': 0,
+                '기홈': 0,
+                '지사': 0,
+                '이너': 0
+            };
+            
+            weekData.forEach(row => {
+                weekConfirmed['컨홈'] += parseNumber(row['컨홈확정']);
+                weekConfirmed['기홈'] += parseNumber(row['기홈확정']);
+                weekConfirmed['지사'] += parseNumber(row['지사확정']);
+                weekConfirmed['이너'] += parseNumber(row['이너확정']);
+            });
+            
+            // 주간 목표
+            const weekGoalData = weeklyGoals[0] || {};
+            const weekGoals = {
+                '컨홈': parseNumber(weekGoalData['컨홈목표']),
+                '기홈': parseNumber(weekGoalData['기홈목표']),
+                '지사': parseNumber(weekGoalData['지사목표']),
+                '이너': parseNumber(weekGoalData['이너목표'])
+            };
+            
+            // 달성률 계산
             const products = [
-                { name: '컨홈목표', rate: 95, color: 'high' },
-                { name: '기홈목표', rate: 72, color: 'medium' },
-                { name: '지사목표', rate: 58, color: 'low' },
-                { name: '이너목표', rate: 89, color: 'high' }
-            ];
+                { name: '컨홈목표', key: '컨홈' },
+                { name: '기홈목표', key: '기홈' },
+                { name: '지사목표', key: '지사' },
+                { name: '이너목표', key: '이너' }
+            ].map(p => {
+                const confirmed = weekConfirmed[p.key];
+                const goal = weekGoals[p.key];
+                const rate = goal > 0 ? Math.round((confirmed / goal) * 100) : 0;
+                const color = rate >= 90 ? 'high' : rate >= 70 ? 'medium' : 'low';
+                return { name: p.name, rate, color };
+            });
+            
             document.getElementById('productProgress').innerHTML = products.map(p => `
                 <div class="progress-item">
                     <div class="progress-header">
@@ -1397,20 +1506,53 @@
             const ctx = document.getElementById('dashboardChart');
             if (!ctx) return;
             if (chartInstances.dashboard) chartInstances.dashboard.destroy();
+            
+            // 이번 주 데이터
+            const today = new Date();
+            const weekStart = getWeekStart(today);
+            const weekData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= weekStart && rowDate <= today;
+            });
+            
+            // 요일별 데이터
+            const days = ['월', '화', '수', '목', '금'];
+            const goalData = weeklyGoals[0] || {};
+            const dailyGoal = (parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
+                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표'])) / 5;
+            
+            const goalValues = [];
+            const actualValues = [];
+            let cumulative = 0;
+            
+            weekData.slice(0, 5).forEach((row, idx) => {
+                const daily = parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                             parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                cumulative += daily;
+                goalValues.push(dailyGoal * (idx + 1));
+                actualValues.push(cumulative);
+            });
+            
+            // 빈 날짜는 0으로
+            while (goalValues.length < 5) {
+                goalValues.push(dailyGoal * goalValues.length);
+                actualValues.push(cumulative);
+            }
+            
             chartInstances.dashboard = new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels: ['월', '화', '수', '목', '금'],
+                    labels: days.slice(0, actualValues.length),
                     datasets: [{
                         label: '목표',
-                        data: [800000, 1600000, 2400000, 3200000, 4000000],
+                        data: goalValues,
                         borderColor: '#667eea',
                         borderDash: [5, 5],
                         fill: false,
                         tension: 0.4
                     }, {
                         label: '실적',
-                        data: [760000, 1580000, 2380000, 3100000, 0],
+                        data: actualValues,
                         borderColor: '#764ba2',
                         backgroundColor: 'rgba(118, 75, 162, 0.1)',
                         fill: true,
@@ -1488,55 +1630,127 @@
         }
 
         function loadSalesData() {
-            document.getElementById('salesTotalExpected').textContent = '4,840,000원';
-            document.getElementById('salesTotalConfirmed').textContent = '3,820,000원';
-            document.getElementById('salesAchievementRate').textContent = '79%';
-            document.getElementById('salesGoalAmount').textContent = '4,000,000원';
+            const period = document.getElementById('salesPeriod').value;
+            let startDate, endDate = new Date();
             
+            if (period === 'today') {
+                startDate = new Date();
+            } else if (period === 'week') {
+                startDate = getWeekStart(endDate);
+            } else if (period === 'month') {
+                startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+            } else if (period === 'custom') {
+                startDate = new Date(document.getElementById('salesStartDate').value);
+                endDate = new Date(document.getElementById('salesEndDate').value);
+            }
+            
+            // 기간 내 데이터 필터링
+            const periodData = salesData.filter(row => {
+                const rowDate = parseKoreanDate(row['날짜']);
+                return rowDate >= startDate && rowDate <= endDate;
+            });
+            
+            // 상품별 합계 계산
+            let totals = {
+                '컨홈': { expected: 0, confirmed: 0 },
+                '기홈': { expected: 0, confirmed: 0 },
+                '지사': { expected: 0, confirmed: 0 },
+                '이너': { expected: 0, confirmed: 0 }
+            };
+            
+            periodData.forEach(row => {
+                totals['컨홈'].expected += parseNumber(row['컨홈예상']);
+                totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
+                totals['기홈'].expected += parseNumber(row['기홈예상']);
+                totals['기홈'].confirmed += parseNumber(row['기홈확정']);
+                totals['지사'].expected += parseNumber(row['지사예상']);
+                totals['지사'].confirmed += parseNumber(row['지사확정']);
+                totals['이너'].expected += parseNumber(row['이너예상']);
+                totals['이너'].confirmed += parseNumber(row['이너확정']);
+            });
+            
+            // 전체 합계
+            let totalExpected = 0, totalConfirmed = 0;
+            Object.values(totals).forEach(t => {
+                totalExpected += t.expected;
+                totalConfirmed += t.confirmed;
+            });
+            
+            // 목표 (주간 또는 월간)
+            const goalData = period === 'month' ? (monthlyGoals[0] || {}) : (weeklyGoals[0] || {});
+            const totalGoal = parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
+                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']);
+            const achievementRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
+            
+            // UI 업데이트
+            document.getElementById('salesTotalExpected').textContent = formatNumber(totalExpected) + '원';
+            document.getElementById('salesTotalConfirmed').textContent = formatNumber(totalConfirmed) + '원';
+            document.getElementById('salesAchievementRate').textContent = achievementRate + '%';
+            document.getElementById('salesGoalAmount').textContent = formatNumber(totalGoal) + '원';
+            updateBadge('salesAchievementBadge', achievementRate);
+            
+            // 상품별 테이블
             const products = [
-                { name: '컨홈목표', expected: 1200000, confirmed: 1140000, goal: 1000000 },
-                { name: '기홈목표', expected: 1500000, confirmed: 1080000, goal: 1200000 },
-                { name: '지사목표', expected: 1800000, confirmed: 1044000, goal: 1400000 },
-                { name: '이너목표', expected: 340000, confirmed: 556000, goal: 400000 }
+                { name: '컨홈목표', key: '컨홈', goalKey: '컨홈목표' },
+                { name: '기홈목표', key: '기홈', goalKey: '기홈목표' },
+                { name: '지사목표', key: '지사', goalKey: '지사목표' },
+                { name: '이너목표', key: '이너', goalKey: '이너목표' }
             ];
-
+            
             document.getElementById('salesTableBody').innerHTML = products.map(p => {
-                const rate = Math.round((p.confirmed / p.expected) * 100);
-                const goalRate = Math.round((p.confirmed / p.goal) * 100);
+                const data = totals[p.key];
+                const goal = parseNumber(goalData[p.goalKey]);
+                const rate = data.expected > 0 ? Math.round((data.confirmed / data.expected) * 100) : 0;
+                const goalRate = goal > 0 ? Math.round((data.confirmed / goal) * 100) : 0;
                 const badgeClass = goalRate >= 90 ? 'badge-success' : goalRate >= 70 ? 'badge-warning' : 'badge-danger';
                 return `
                     <tr>
                         <td class="text-bold">${p.name}</td>
-                        <td class="text-right">${formatNumber(p.expected)}원</td>
-                        <td class="text-right">${formatNumber(p.confirmed)}원</td>
+                        <td class="text-right">${formatNumber(data.expected)}원</td>
+                        <td class="text-right">${formatNumber(data.confirmed)}원</td>
                         <td class="text-right">${rate}%</td>
-                        <td class="text-right">${formatNumber(p.goal)}원</td>
+                        <td class="text-right">${formatNumber(goal)}원</td>
                         <td class="text-right"><span class="card-badge ${badgeClass}">${goalRate}%</span></td>
                     </tr>
                 `;
             }).join('');
             
-            updateSalesCharts();
+            updateSalesCharts(periodData, totals);
         }
 
-        function updateSalesCharts() {
+        function updateSalesCharts(periodData, totals) {
+            // 일별 매출 추이
             const dailyCtx = document.getElementById('salesDailyChart');
             if (dailyCtx) {
                 if (chartInstances.salesDaily) chartInstances.salesDaily.destroy();
+                
+                const labels = periodData.map(row => {
+                    const date = parseKoreanDate(row['날짜']);
+                    return `${date.getMonth()+1}/${date.getDate()}`;
+                });
+                const expectedData = periodData.map(row => 
+                    parseNumber(row['컨홈예상']) + parseNumber(row['기홈예상']) + 
+                    parseNumber(row['지사예상']) + parseNumber(row['이너예상'])
+                );
+                const confirmedData = periodData.map(row => 
+                    parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                    parseNumber(row['지사확정']) + parseNumber(row['이너확정'])
+                );
+                
                 chartInstances.salesDaily = new Chart(dailyCtx.getContext('2d'), {
                     type: 'bar',
                     data: {
-                        labels: ['월', '화', '수', '목', '금'],
+                        labels: labels,
                         datasets: [{
                             label: '예상',
-                            data: [800000, 900000, 850000, 920000, 880000],
+                            data: expectedData,
                             backgroundColor: 'rgba(102, 126, 234, 0.5)',
                             borderColor: '#667eea',
                             borderWidth: 2,
                             borderRadius: 8
                         }, {
                             label: '확정',
-                            data: [760000, 820000, 800000, 850000, 590000],
+                            data: confirmedData,
                             backgroundColor: 'rgba(118, 75, 162, 0.5)',
                             borderColor: '#764ba2',
                             borderWidth: 2,
@@ -1556,6 +1770,7 @@
                 });
             }
             
+            // 상품별 매출 비중
             const pieCtx = document.getElementById('salesPieChart');
             if (pieCtx) {
                 if (chartInstances.salesPie) chartInstances.salesPie.destroy();
@@ -1564,7 +1779,12 @@
                     data: {
                         labels: ['컨홈', '기업홈', '지사', '이너서클'],
                         datasets: [{
-                            data: [30, 28, 27, 15],
+                            data: [
+                                totals['컨홈'].confirmed,
+                                totals['기홈'].confirmed,
+                                totals['지사'].confirmed,
+                                totals['이너'].confirmed
+                            ],
                             backgroundColor: [
                                 'rgba(102, 126, 234, 0.8)',
                                 'rgba(118, 75, 162, 0.8)',
@@ -1575,28 +1795,44 @@
                     },
                     options: {
                         responsive: true,
-                        plugins: { legend: { position: 'bottom' } }
+                        plugins: { 
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + formatNumber(context.raw) + '원';
+                                    }
+                                }
+                            }
+                        }
                     }
                 });
             }
             
+            // 누적 매출 그래프
             const cumulativeCtx = document.getElementById('salesCumulativeChart');
             if (cumulativeCtx) {
                 if (chartInstances.salesCumulative) chartInstances.salesCumulative.destroy();
+                
+                let cumulative = 0;
+                const cumulativeData = periodData.map(row => {
+                    cumulative += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                    return cumulative;
+                });
+                
+                const labels = periodData.map(row => {
+                    const date = parseKoreanDate(row['날짜']);
+                    return `${date.getMonth()+1}/${date.getDate()}`;
+                });
+                
                 chartInstances.salesCumulative = new Chart(cumulativeCtx.getContext('2d'), {
                     type: 'line',
                     data: {
-                        labels: ['1일', '2일', '3일', '4일', '5일'],
+                        labels: labels,
                         datasets: [{
-                            label: '목표',
-                            data: [800000, 1600000, 2400000, 3200000, 4000000],
-                            borderColor: '#667eea',
-                            borderDash: [5, 5],
-                            fill: false,
-                            tension: 0.4
-                        }, {
-                            label: '실적',
-                            data: [760000, 1580000, 2380000, 3230000, 3820000],
+                            label: '누적 실적',
+                            data: cumulativeData,
                             borderColor: '#764ba2',
                             backgroundColor: 'rgba(118, 75, 162, 0.1)',
                             fill: true,
@@ -1705,6 +1941,51 @@
 
         function formatNumber(num) {
             return Math.round(num).toLocaleString('ko-KR');
+        }
+
+        function parseNumber(str) {
+            if (!str) return 0;
+            // 쉼표 제거 후 숫자로 변환
+            const cleaned = String(str).replace(/,/g, '').replace(/[^0-9.-]/g, '');
+            return parseFloat(cleaned) || 0;
+        }
+
+        function parseKoreanDate(dateStr) {
+            if (!dateStr) return new Date();
+            // "2025년 11월 7일" 형식 파싱
+            const match = dateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+            if (match) {
+                return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            }
+            return new Date();
+        }
+
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = day === 0 ? -6 : 1 - day; // 월요일을 주 시작으로
+            d.setDate(d.getDate() + diff);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        function updateBadge(elementId, rate) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            if (rate >= 100) {
+                element.className = 'card-badge badge-success';
+                element.textContent = '달성';
+            } else if (rate >= 90) {
+                element.className = 'card-badge badge-success';
+                element.textContent = '우수';
+            } else if (rate >= 70) {
+                element.className = 'card-badge badge-warning';
+                element.textContent = '진행중';
+            } else {
+                element.className = 'card-badge badge-danger';
+                element.textContent = '부진';
+            }
         }
 
         function showToast(message) {
