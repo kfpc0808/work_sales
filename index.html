@@ -1460,7 +1460,12 @@
                 salesData = sales;
                 monthlyGoals = monthly;
                 weeklyGoals = weekly;
-                callHistory = calls;
+                // 회원명이 있는 행만 필터링
+                callHistory = calls.filter(call => 
+                    call['회원명'] && 
+                    call['회원명'].trim() !== '' && 
+                    call['회원명'] !== '-'
+                );
                 noticeData = notices;
 
                 updateDashboard();
@@ -2082,19 +2087,29 @@
             // 테이블 데이터 표시
             document.getElementById('callsTableBody').innerHTML = currentPageData.map((call, index) => {
                 // 디버깅: 첫 번째 항목의 모든 키 출력
-                if (index === 0) {
+                if (index === 0 && currentTablePage === 1) {
                     console.log('첫 번째 업무기록 데이터:', call);
                     console.log('사용 가능한 컬럼들:', Object.keys(call));
+                    console.log('시간 값:', call['시간'], '타입:', typeof call['시간']);
                 }
                 
                 // 구글 시트에 "시간" 컬럼이 있으면 그 값 사용
-                // 여러 가능한 헤더 이름 시도
-                let timeStr = call['시간'] || call[' 시간'] || call['시간 '] || 
-                              call['Time'] || call['time'] || '';
+                let timeStr = call['시간'] || call[' 시간'] || call['시간 '] || '';
                 
-                // 공백 제거 및 유효성 검사
+                // 시간 데이터 처리
                 if (timeStr) {
                     timeStr = String(timeStr).trim();
+                    
+                    // Google Sheets의 시리얼 시간 형식 처리 (0.4375 = 10:30)
+                    if (!isNaN(timeStr) && timeStr.indexOf(':') === -1) {
+                        const decimal = parseFloat(timeStr);
+                        if (decimal >= 0 && decimal < 1) {
+                            const totalMinutes = Math.round(decimal * 24 * 60);
+                            const hours = Math.floor(totalMinutes / 60);
+                            const minutes = totalMinutes % 60;
+                            timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                        }
+                    }
                 }
                 
                 // 시간 데이터가 없거나 비어있으면 자동 생성
