@@ -1297,6 +1297,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination" id="callsTablePagination"></div>
             </div>
         </div>
 
@@ -1397,6 +1398,9 @@
         let chartInstances = {};
         let currentCallPage = 1;
         const CALLS_PER_PAGE = 10;
+        let currentTablePage = 1;
+        const TABLE_ROWS_PER_PAGE = 20;
+        let currentTableData = [];
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -2042,13 +2046,33 @@
         }
 
         function displayCalls(data) {
+            currentTableData = data;
+            currentTablePage = 1;
             document.getElementById('callsCount').textContent = data.length;
+            
             if (data.length === 0) {
                 document.getElementById('callsTableBody').innerHTML = 
                     '<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
+                document.getElementById('callsTablePagination').innerHTML = '';
                 return;
             }
-            document.getElementById('callsTableBody').innerHTML = data.map(call => `
+            
+            displayCallsPage(1);
+        }
+
+        function displayCallsPage(page) {
+            currentTablePage = page;
+            const data = currentTableData;
+            
+            // 페이지네이션 계산
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / TABLE_ROWS_PER_PAGE);
+            const startIndex = (page - 1) * TABLE_ROWS_PER_PAGE;
+            const endIndex = startIndex + TABLE_ROWS_PER_PAGE;
+            const currentPageData = data.slice(startIndex, endIndex);
+            
+            // 테이블 데이터 표시
+            document.getElementById('callsTableBody').innerHTML = currentPageData.map(call => `
                 <tr>
                     <td>${call['일자'] || '-'}</td>
                     <td class="text-bold">${call['회원명'] || '-'}</td>
@@ -2059,6 +2083,51 @@
                     <td>${call['비고'] || '-'}</td>
                 </tr>
             `).join('');
+            
+            // 페이지네이션 버튼 생성
+            if (totalPages > 1) {
+                let paginationHTML = '';
+                
+                // 이전 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="displayCallsPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>◀</button>`;
+                
+                // 페이지 번호
+                const maxButtons = 7;
+                let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+                let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+                
+                if (endPage - startPage < maxButtons - 1) {
+                    startPage = Math.max(1, endPage - maxButtons + 1);
+                }
+                
+                if (startPage > 1) {
+                    paginationHTML += `<button class="pagination-btn" onclick="displayCallsPage(1)">1</button>`;
+                    if (startPage > 2) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHTML += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="displayCallsPage(${i})">${i}</button>`;
+                }
+                
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `<span class="pagination-info">...</span>`;
+                    }
+                    paginationHTML += `<button class="pagination-btn" onclick="displayCallsPage(${totalPages})">${totalPages}</button>`;
+                }
+                
+                // 다음 버튼
+                paginationHTML += `<button class="pagination-btn" onclick="displayCallsPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>▶</button>`;
+                
+                // 페이지 정보
+                paginationHTML += `<span class="pagination-info">${startIndex + 1}-${Math.min(endIndex, totalItems)} / ${totalItems}개</span>`;
+                
+                document.getElementById('callsTablePagination').innerHTML = paginationHTML;
+            } else {
+                document.getElementById('callsTablePagination').innerHTML = '';
+            }
         }
 
         function filterNotices() {
