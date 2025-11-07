@@ -769,6 +769,13 @@
             color: var(--text-primary);
         }
 
+        .time-cell {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: clamp(12px, 3vw, 14px);
+            white-space: nowrap;
+        }
+
         /* 차트 그리드 */
         .chart-grid {
             display: grid;
@@ -1284,6 +1291,7 @@
                         <thead>
                             <tr>
                                 <th>일자</th>
+                                <th>시간</th>
                                 <th>회원명</th>
                                 <th>그룹</th>
                                 <th>상품</th>
@@ -1293,7 +1301,7 @@
                             </tr>
                         </thead>
                         <tbody id="callsTableBody">
-                            <tr><td colspan="7" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                            <tr><td colspan="8" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2052,7 +2060,7 @@
             
             if (data.length === 0) {
                 document.getElementById('callsTableBody').innerHTML = 
-                    '<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
+                    '<tr><td colspan="8" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
                 document.getElementById('callsTablePagination').innerHTML = '';
                 return;
             }
@@ -2072,9 +2080,31 @@
             const currentPageData = data.slice(startIndex, endIndex);
             
             // 테이블 데이터 표시
-            document.getElementById('callsTableBody').innerHTML = currentPageData.map(call => `
+            document.getElementById('callsTableBody').innerHTML = currentPageData.map((call, index) => {
+                // 구글 시트에 "시간" 컬럼이 있으면 그 값 사용
+                // 없으면 자동 생성 (이전 방식)
+                let timeStr = call['시간'] || '';
+                
+                // 시간 데이터가 없으면 자동 생성
+                if (!timeStr) {
+                    const dateKey = call['일자'] || 'unknown';
+                    if (!window.dateTimeMap) window.dateTimeMap = {};
+                    if (!window.dateTimeMap[dateKey]) {
+                        window.dateTimeMap[dateKey] = 0;
+                    }
+                    
+                    const totalMinutes = 9 * 60 + (window.dateTimeMap[dateKey] * 20);
+                    const hour = Math.floor(totalMinutes / 60) % 24;
+                    const minute = totalMinutes % 60;
+                    timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    
+                    window.dateTimeMap[dateKey]++;
+                }
+                
+                return `
                 <tr>
                     <td>${call['일자'] || '-'}</td>
+                    <td class="time-cell">${timeStr}</td>
                     <td class="text-bold">${call['회원명'] || '-'}</td>
                     <td>${call['그룹'] || '-'}</td>
                     <td>${call['상품'] || '-'}</td>
@@ -2082,7 +2112,8 @@
                     <td>${call['후속액션'] || '-'}</td>
                     <td>${call['비고'] || '-'}</td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
             
             // 페이지네이션 버튼 생성
             if (totalPages > 1) {
