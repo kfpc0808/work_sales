@@ -1391,6 +1391,7 @@
                                 <th colspan="3" class="text-center">기홈</th>
                                 <th colspan="3" class="text-center">지사</th>
                                 <th colspan="3" class="text-center">이너</th>
+                                <th rowspan="2">기타</th>
                             </tr>
                             <tr>
                                 <th class="text-right">진행</th>
@@ -1408,7 +1409,7 @@
                             </tr>
                         </thead>
                         <tbody id="salesDetailBody">
-                            <tr><td colspan="14" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                            <tr><td colspan="15" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2144,6 +2145,8 @@
                 '이너': { expected: 0, confirmed: 0 }
             };
             
+            let 기타Total = 0;
+            
             periodData.forEach(row => {
                 totals['컨홈'].expected += parseNumber(row['컨홈예상']);
                 totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
@@ -2153,6 +2156,7 @@
                 totals['지사'].confirmed += parseNumber(row['지사확정']);
                 totals['이너'].expected += parseNumber(row['이너예상']);
                 totals['이너'].confirmed += parseNumber(row['이너확정']);
+                기타Total += parseNumber(row['기타']);
             });
             
             // 전체 합계
@@ -2161,6 +2165,7 @@
                 totalExpected += t.expected;
                 totalConfirmed += t.confirmed;
             });
+            totalConfirmed += 기타Total;  // 기타 추가
             
             // 목표 (주간 또는 월간)
             const goalData = period === 'month' ? (monthlyGoals[0] || {}) : (weeklyGoals[0] || {});
@@ -2221,7 +2226,8 @@
                 );
                 const confirmedData = periodData.map(row => 
                     parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
-                    parseNumber(row['지사확정']) + parseNumber(row['이너확정'])
+                    parseNumber(row['지사확정']) + parseNumber(row['이너확정']) + 
+                    parseNumber(row['기타'])
                 );
                 
                 chartInstances.salesDaily = new Chart(dailyCtx.getContext('2d'), {
@@ -2304,12 +2310,13 @@
                 let cumulative = 0;
                 const cumulativeData = periodData.map(row => {
                     cumulative += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
-                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']) + 
+                                 parseNumber(row['기타']);
                     return cumulative;
                 });
                 
                 const labels = periodData.map(row => {
-                    const date = parseKoreanDate(row['날짜']);
+                    const date = parseKoreanDate(row['일자'] || row['날짜'] || '');
                     return `${date.getMonth()+1}/${date.getDate()}`;
                 });
                 
@@ -2344,7 +2351,7 @@
             const tbody = document.getElementById('salesDetailBody');
             
             if (!periodData || periodData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="14" class="empty-state">조회 기간 내 데이터가 없습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="15" class="empty-state">조회 기간 내 데이터가 없습니다.</td></tr>';
                 return;
             }
             
@@ -2376,7 +2383,8 @@
                     컨홈진행: 0, 컨홈예상: 0, 컨홈확정: 0,
                     기홈진행: 0, 기홈예상: 0, 기홈확정: 0,
                     지사진행: 0, 지사예상: 0, 지사확정: 0,
-                    이너진행: 0, 이너예상: 0, 이너확정: 0
+                    이너진행: 0, 이너예상: 0, 이너확정: 0,
+                    기타: 0
                 };
                 
                 rows.forEach((row, index) => {
@@ -2397,6 +2405,7 @@
                     const 이너진행 = parseNumber(row['이너진행']);
                     const 이너예상 = parseNumber(row['이너예상']);
                     const 이너확정 = parseNumber(row['이너확정']);
+                    const 기타 = parseNumber(row['기타']);
                     
                     // 소계 누적
                     dateTotal.컨홈진행 += 컨홈진행;
@@ -2411,6 +2420,7 @@
                     dateTotal.이너진행 += 이너진행;
                     dateTotal.이너예상 += 이너예상;
                     dateTotal.이너확정 += 이너확정;
+                    dateTotal.기타 += 기타;
                     
                     html += '<tr>';
                     if (rowspan > 0) {
@@ -2430,6 +2440,7 @@
                         <td class="text-right">${이너진행 ? formatNumber(이너진행) : '-'}</td>
                         <td class="text-right">${이너예상 ? formatNumber(이너예상) : '-'}</td>
                         <td class="text-right">${이너확정 ? formatNumber(이너확정) : '-'}</td>
+                        <td class="text-right">${기타 ? formatNumber(기타) : '-'}</td>
                     `;
                     html += '</tr>';
                 });
@@ -2450,6 +2461,7 @@
                         <td class="text-right">${formatNumber(dateTotal.이너진행)}</td>
                         <td class="text-right">${formatNumber(dateTotal.이너예상)}</td>
                         <td class="text-right">${formatNumber(dateTotal.이너확정)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.기타)}</td>
                     </tr>
                 `;
             });
