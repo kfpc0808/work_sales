@@ -2245,9 +2245,16 @@
                     window.dateTimeMap[dateKey]++;
                 }
                 
-                const checkComplete = (call['완료'] === 'TRUE' || call['완료'] === 'O') ? 
-                    '<span class="status-check completed">✓</span>' : 
-                    '<span class="status-check pending">✗</span>';
+                // 완료 체크 표시 로직
+                let checkComplete = '-';
+                const followUp = call['후속액션'] || '';
+                
+                // 후속액션이 있을 때만 완료 표시
+                if (followUp && followUp.trim() !== '' && followUp !== '-') {
+                    checkComplete = (call['완료'] === 'TRUE' || call['완료'] === 'O') ? 
+                        '<span class="status-check completed">✓</span>' : 
+                        '<span class="status-check pending">✗</span>';
+                }
                 
                 return `
                 <tr>
