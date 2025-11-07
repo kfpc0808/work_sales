@@ -303,10 +303,10 @@
             margin-bottom: clamp(20px, 5vw, 32px);
         }
 
-        /* 모바일 전용 - 카드 2개씩 */
+        /* 모바일 전용 - 카드 3개씩 한 행 */
         @media (max-width: 768px) {
             .cards-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(3, 1fr);
             }
         }
 
@@ -639,10 +639,15 @@
             align-items: end;
         }
 
-        /* 모바일 전용 - 필터 2개씩 */
+        /* 모바일 전용 - 필터 2개씩 (검색은 전체 너비) */
         @media (max-width: 768px) {
             .filter-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            /* 검색 필드만 전체 너비 */
+            .filter-grid .filter-group:nth-child(3) {
+                grid-column: 1 / -1;
             }
         }
 
