@@ -1299,6 +1299,14 @@
                 </div>
             </div>
 
+            <!-- 예정업무 섹션 -->
+            <div class="section">
+                <div class="section-title">📅 예정 업무</div>
+                <div id="scheduledTaskContent" style="padding: 16px; background: var(--bg-color); border-radius: 12px; min-height: 80px; white-space: pre-wrap; line-height: 1.6; color: var(--text-primary);">
+                    데이터 로딩 중...
+                </div>
+            </div>
+
             <!-- 영업전략 섹션 -->
             <div class="section">
                 <div class="section-title">💡 영업 전략</div>
@@ -3011,10 +3019,11 @@
             displayNoticesPage(currentNoticesPage);
         }
 
-        // 대시보드 정보 업데이트 (오늘할일, 영업전략, 프로모션)
+        // 대시보드 정보 업데이트 (오늘할일, 예정업무, 영업전략, 프로모션)
         function updateDashboardInfo() {
             if (!dashboardInfo || dashboardInfo.length === 0) {
                 document.getElementById('todayTaskContent').textContent = '데이터가 없습니다.';
+                document.getElementById('scheduledTaskContent').textContent = '데이터가 없습니다.';
                 document.getElementById('strategyContent').textContent = '데이터가 없습니다.';
                 document.getElementById('promotionContent').textContent = '데이터가 없습니다.';
                 return;
@@ -3040,6 +3049,16 @@
 
             // 오늘할일 업데이트
             updateTodayTask();
+
+            // 예정업무 - 마지막 데이터 중 내용이 있는 것
+            let scheduledContent = '';
+            for (let i = dashboardInfo.length - 1; i >= 0; i--) {
+                if (dashboardInfo[i]['예정업무'] && dashboardInfo[i]['예정업무'].trim() !== '') {
+                    scheduledContent = dashboardInfo[i]['예정업무'];
+                    break;
+                }
+            }
+            document.getElementById('scheduledTaskContent').textContent = scheduledContent || '등록된 예정업무가 없습니다.';
 
             // 영업전략 - 마지막 데이터 중 내용이 있는 것
             let strategyContent = '';
