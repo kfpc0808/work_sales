@@ -1286,6 +1286,35 @@
         <div id="tab-dashboard" class="tab-content active">
             <div class="date-display" id="dateDisplay">📅 2025년 11월 7일 (목요일)</div>
 
+            <!-- 오늘할일 섹션 -->
+            <div class="section">
+                <div class="section-title">
+                    📝 오늘 할일
+                    <select id="todayTaskDate" onchange="updateTodayTask()" style="float: right; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; background: var(--card-bg); cursor: pointer;">
+                        <option value="">날짜 선택</option>
+                    </select>
+                </div>
+                <div id="todayTaskContent" style="padding: 16px; background: var(--bg-color); border-radius: 12px; min-height: 80px; white-space: pre-wrap; line-height: 1.6; color: var(--text-primary);">
+                    데이터 로딩 중...
+                </div>
+            </div>
+
+            <!-- 영업전략 섹션 -->
+            <div class="section">
+                <div class="section-title">💡 영업 전략</div>
+                <div id="strategyContent" style="padding: 16px; background: var(--bg-color); border-radius: 12px; min-height: 80px; white-space: pre-wrap; line-height: 1.6; color: var(--text-primary);">
+                    데이터 로딩 중...
+                </div>
+            </div>
+
+            <!-- 프로모션 섹션 -->
+            <div class="section">
+                <div class="section-title">🎁 프로모션</div>
+                <div id="promotionContent" style="padding: 16px; background: var(--bg-color); border-radius: 12px; min-height: 80px; white-space: pre-wrap; line-height: 1.6; color: var(--text-primary);">
+                    데이터 로딩 중...
+                </div>
+            </div>
+
             <div class="cards-grid">
                 <div class="card">
                     <div class="card-title">오늘 실적 (확정)</div>
@@ -1641,7 +1670,8 @@
                 monthlyGoals: 'sheet2',
                 weeklyGoals: 'sheet3',
                 calls: 'sheet4',
-                notices: 'sheet5'
+                notices: 'sheet5',
+                dashboard: 'sheet6'
             }
         };
 
@@ -1653,6 +1683,7 @@
         let callHistory = [];
         let noticeData = [];
         let noticeHeaders = {}; // 공지 시트 헤더 정보
+        let dashboardInfo = []; // 대시보드 정보 (오늘할일, 영업전략, 프로모션)
         let chartInstances = {};
         let currentCallPage = 1;
         const CALLS_PER_PAGE = 10;
@@ -1740,12 +1771,13 @@
                 showToast('🔄 데이터 로딩 중...');
                 document.getElementById('statusText').textContent = '로딩 중...';
 
-                const [salesResult, monthlyResult, weeklyResult, callsResult, noticesResult] = await Promise.all([
+                const [salesResult, monthlyResult, weeklyResult, callsResult, noticesResult, dashboardResult] = await Promise.all([
                     getSheetData(CONFIG.SHEET_NAMES.sales),
                     getSheetData(CONFIG.SHEET_NAMES.monthlyGoals),
                     getSheetData(CONFIG.SHEET_NAMES.weeklyGoals),
                     getSheetData(CONFIG.SHEET_NAMES.calls),
-                    getNoticeSheetData(CONFIG.SHEET_NAMES.notices)  // 공지 시트만 별도 함수
+                    getNoticeSheetData(CONFIG.SHEET_NAMES.notices),  // 공지 시트만 별도 함수
+                    getSheetData(CONFIG.SHEET_NAMES.dashboard)  // 대시보드 정보
                 ]);
 
                 salesData = salesResult.data;
@@ -1758,6 +1790,7 @@
                     call['회원명'] !== '-'
                 );
                 noticeData = noticesResult.data;
+                dashboardInfo = dashboardResult.data;
                 
                 // 공지 시트 컬럼 인덱스 저장 (중복 헤더 문제 해결)
                 noticeHeaders = {
@@ -1778,6 +1811,7 @@
                 };
 
                 updateDashboard();
+                updateDashboardInfo(); // 오늘할일, 영업전략, 프로모션 업데이트
                 updateNoticeTableHeaders(); // 헤더 업데이트
                 document.getElementById('statusText').textContent = '연결됨';
                 showToast('✅ 데이터 로딩 완료!');
@@ -2975,6 +3009,72 @@
             
             currentNoticesData = sortedData;
             displayNoticesPage(currentNoticesPage);
+        }
+
+        // 대시보드 정보 업데이트 (오늘할일, 영업전략, 프로모션)
+        function updateDashboardInfo() {
+            if (!dashboardInfo || dashboardInfo.length === 0) {
+                document.getElementById('todayTaskContent').textContent = '데이터가 없습니다.';
+                document.getElementById('strategyContent').textContent = '데이터가 없습니다.';
+                document.getElementById('promotionContent').textContent = '데이터가 없습니다.';
+                return;
+            }
+
+            // 날짜 드롭다운 생성
+            const dateSelect = document.getElementById('todayTaskDate');
+            dateSelect.innerHTML = '<option value="">날짜 선택</option>';
+            
+            dashboardInfo.forEach((row, index) => {
+                if (row['일자']) {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = row['일자'];
+                    dateSelect.appendChild(option);
+                }
+            });
+
+            // 가장 최신 날짜 선택 (마지막 행)
+            if (dashboardInfo.length > 0) {
+                dateSelect.value = dashboardInfo.length - 1;
+            }
+
+            // 오늘할일 업데이트
+            updateTodayTask();
+
+            // 영업전략 - 마지막 데이터 중 내용이 있는 것
+            let strategyContent = '';
+            for (let i = dashboardInfo.length - 1; i >= 0; i--) {
+                if (dashboardInfo[i]['영업전략'] && dashboardInfo[i]['영업전략'].trim() !== '') {
+                    strategyContent = dashboardInfo[i]['영업전략'];
+                    break;
+                }
+            }
+            document.getElementById('strategyContent').textContent = strategyContent || '등록된 전략이 없습니다.';
+
+            // 프로모션 - 마지막 데이터 중 내용이 있는 것
+            let promotionContent = '';
+            for (let i = dashboardInfo.length - 1; i >= 0; i--) {
+                if (dashboardInfo[i]['프로모션'] && dashboardInfo[i]['프로모션'].trim() !== '') {
+                    promotionContent = dashboardInfo[i]['프로모션'];
+                    break;
+                }
+            }
+            document.getElementById('promotionContent').textContent = promotionContent || '등록된 프로모션이 없습니다.';
+        }
+
+        // 오늘할일 날짜 선택 시 업데이트
+        function updateTodayTask() {
+            const dateSelect = document.getElementById('todayTaskDate');
+            const selectedIndex = parseInt(dateSelect.value);
+            
+            if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= dashboardInfo.length) {
+                document.getElementById('todayTaskContent').textContent = '날짜를 선택해주세요.';
+                return;
+            }
+
+            const selectedData = dashboardInfo[selectedIndex];
+            const taskContent = selectedData['오늘할일'] || '등록된 할일이 없습니다.';
+            document.getElementById('todayTaskContent').textContent = taskContent;
         }
 
         function formatNumber(num) {
