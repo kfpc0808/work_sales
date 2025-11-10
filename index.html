@@ -1534,6 +1534,10 @@
                         </select>
                     </div>
                     <div class="filter-group">
+                        <label>회원명</label>
+                        <input type="text" class="filter-input" id="callsMemberName" placeholder="회원명 입력..." onkeypress="if(event.key==='Enter') filterCalls()">
+                    </div>
+                    <div class="filter-group">
                         <button class="btn btn-primary" onclick="filterCalls()">조회하기</button>
                     </div>
                 </div>
@@ -3407,9 +3411,27 @@
             const period = document.getElementById('callsPeriod').value;
             const group = document.getElementById('callsGroup').value;
             const product = document.getElementById('callsProduct').value;
+            const memberName = document.getElementById('callsMemberName').value.trim();
+            
             let filtered = [...callHistory];
-            if (group) filtered = filtered.filter(c => c['그룹'] === group);
-            if (product) filtered = filtered.filter(c => c['상품'] === product);
+            
+            // 그룹 필터
+            if (group) {
+                filtered = filtered.filter(c => c['그룹'] === group);
+            }
+            
+            // 상품 필터
+            if (product) {
+                filtered = filtered.filter(c => c['상품'] === product);
+            }
+            
+            // 회원명 필터 (부분 일치)
+            if (memberName) {
+                filtered = filtered.filter(c => 
+                    (c['회원명'] || '').toLowerCase().includes(memberName.toLowerCase())
+                );
+            }
+            
             displayCalls(filtered);
         }
 
