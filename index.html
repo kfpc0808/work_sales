@@ -1455,7 +1455,12 @@
             </div>
 
             <div class="section">
-                <div class="section-title">일자별 매출 상세</div>
+                <div class="section-title">
+                    일자별 매출 상세
+                    <select id="salesDetailDateFilter" onchange="filterSalesDetailByDate()" style="float: right; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; background: var(--card-bg); cursor: pointer;">
+                        <option value="all">전체</option>
+                    </select>
+                </div>
                 <div class="table-container" style="overflow-x: auto;">
                     <table>
                         <thead>
@@ -1692,6 +1697,7 @@
         let noticeData = [];
         let noticeHeaders = {}; // 공지 시트 헤더 정보
         let dashboardInfo = []; // 대시보드 정보 (오늘할일, 영업전략, 프로모션)
+        let currentPeriodData = []; // 현재 조회 기간의 매출 데이터
         let chartInstances = {};
         let currentCallPage = 1;
         const CALLS_PER_PAGE = 10;
@@ -2430,8 +2436,42 @@
         function displaySalesDetail(periodData) {
             const tbody = document.getElementById('salesDetailBody');
             
+            // 전역 변수에 저장
+            currentPeriodData = periodData;
+            
             if (!periodData || periodData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="15" class="empty-state">조회 기간 내 데이터가 없습니다.</td></tr>';
+                // 드롭다운 초기화
+                document.getElementById('salesDetailDateFilter').innerHTML = '<option value="all">전체</option>';
+                return;
+            }
+            
+            // 날짜 드롭다운 업데이트
+            const dates = [...new Set(periodData.map(row => row['일자'] || row['날짜'] || ''))].filter(d => d);
+            const sortedDates = dates.sort((a, b) => {
+                const dateA = parseKoreanDate(a);
+                const dateB = parseKoreanDate(b);
+                return dateB - dateA; // 최신 순
+            });
+            
+            const dateFilterSelect = document.getElementById('salesDetailDateFilter');
+            dateFilterSelect.innerHTML = '<option value="all">전체</option>';
+            sortedDates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = date;
+                dateFilterSelect.appendChild(option);
+            });
+            
+            // 테이블 렌더링
+            renderSalesDetailTable(periodData);
+        }
+
+        function renderSalesDetailTable(periodData) {
+            const tbody = document.getElementById('salesDetailBody');
+            
+            if (!periodData || periodData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="15" class="empty-state">해당 일자의 데이터가 없습니다.</td></tr>';
                 return;
             }
             
@@ -2547,6 +2587,22 @@
             });
             
             tbody.innerHTML = html;
+        }
+
+        function filterSalesDetailByDate() {
+            const selectedDate = document.getElementById('salesDetailDateFilter').value;
+            
+            if (selectedDate === 'all') {
+                // 전체 데이터 표시
+                renderSalesDetailTable(currentPeriodData);
+            } else {
+                // 선택한 날짜의 데이터만 필터링
+                const filteredData = currentPeriodData.filter(row => {
+                    const date = row['일자'] || row['날짜'] || '';
+                    return date === selectedDate;
+                });
+                renderSalesDetailTable(filteredData);
+            }
         }
 
         function filterCalls() {
