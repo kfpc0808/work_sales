@@ -717,6 +717,16 @@
             .filter-grid .filter-group:nth-child(3) {
                 grid-column: 1 / -1;
             }
+            
+            /* 업무기록 탭 필터 레이아웃 (5개 요소) */
+            .filter-grid-calls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            /* 업무기록: 조회하기 버튼만 전체 너비 */
+            .filter-grid-calls .filter-group:nth-child(5) {
+                grid-column: 1 / -1;
+            }
         }
 
         .filter-group {
@@ -1503,7 +1513,7 @@
         <!-- 탭 3: 업무 기록 -->
         <div id="tab-calls" class="tab-content">
             <div class="filter-section">
-                <div class="filter-grid">
+                <div class="filter-grid filter-grid-calls">
                     <div class="filter-group">
                         <label>기간</label>
                         <select class="filter-select" id="callsPeriod">
