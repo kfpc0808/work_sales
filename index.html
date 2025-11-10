@@ -2397,10 +2397,23 @@
             // 날짜 선택기 기본값 설정 (오늘)
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0];
-            document.getElementById('salesProductDate').value = todayStr;
+            const dateInput = document.getElementById('salesProductDate');
             
+            // 날짜 선택기가 비어있으면 오늘로 설정
+            if (!dateInput.value) {
+                dateInput.value = todayStr;
+            }
+            
+            // 차트와 상세 테이블 업데이트
             updateSalesCharts(actualData, totals);
-            displaySalesDetail(actualData);  // 일자별 상세 데이터 표시 (목표 행 제외)
+            displaySalesDetail(actualData);
+            
+            // DOM 업데이트 후 날짜별 필터링 적용
+            setTimeout(() => {
+                if (dateInput.value) {
+                    filterSalesProductByDate();
+                }
+            }, 100);
         }
 
         function filterSalesProductByDate() {
@@ -2411,12 +2424,27 @@
             const targetDate = new Date(selectedDate);
             targetDate.setHours(0, 0, 0, 0);
             
+            // 비교용 날짜 문자열 생성 (여러 형식)
+            const year = targetDate.getFullYear();
+            const month = targetDate.getMonth() + 1;
+            const day = targetDate.getDate();
+            const dateFormats = [
+                `${year}/${month}/${day}`,
+                `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`,
+                `${year}년 ${month}월 ${day}일`,
+                `${year}년${month}월${day}일`
+            ];
+            
             // 선택한 날짜의 데이터 필터링 (목표 행 제외)
             const filteredData = salesData.filter(row => {
                 const memberName = (row['회원명'] || '').trim();
                 if (memberName === '목표' || memberName === '일일목표') return false;
                 
-                const rowDate = parseKoreanDate(row['일자'] || row['날짜'] || '');
+                const dateStr = (row['일자'] || row['날짜'] || '').trim();
+                // 문자열 직접 비교 또는 Date 객체 비교
+                if (dateFormats.includes(dateStr)) return true;
+                
+                const rowDate = parseKoreanDate(dateStr);
                 rowDate.setHours(0, 0, 0, 0);
                 return rowDate.getTime() === targetDate.getTime();
             });
@@ -2426,7 +2454,11 @@
                 const memberName = (row['회원명'] || '').trim();
                 if (memberName !== '목표' && memberName !== '일일목표') return false;
                 
-                const rowDate = parseKoreanDate(row['일자'] || row['날짜'] || '');
+                const dateStr = (row['일자'] || row['날짜'] || '').trim();
+                // 문자열 직접 비교 또는 Date 객체 비교
+                if (dateFormats.includes(dateStr)) return true;
+                
+                const rowDate = parseKoreanDate(dateStr);
                 rowDate.setHours(0, 0, 0, 0);
                 return rowDate.getTime() === targetDate.getTime();
             });
