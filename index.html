@@ -2463,18 +2463,28 @@
                 dateFilterSelect.appendChild(option);
             });
             
-            // 오늘 날짜 찾기
+            // 오늘 날짜와 일치하는 데이터 찾기 (Date 객체로 비교)
             const today = new Date();
-            const todayStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            today.setHours(0, 0, 0, 0); // 시간 제거
+            
+            let todayDateStr = null;
+            for (let i = 0; i < sortedDates.length; i++) {
+                const dateStr = sortedDates[i];
+                const dateObj = parseDateFlexible(dateStr);
+                dateObj.setHours(0, 0, 0, 0);
+                
+                if (dateObj.getTime() === today.getTime()) {
+                    todayDateStr = dateStr;
+                    break;
+                }
+            }
             
             // 오늘 날짜가 있으면 선택, 없으면 가장 최근 날짜 선택
-            const todayExists = sortedDates.find(date => date === todayStr);
-            if (todayExists) {
-                dateFilterSelect.value = todayStr;
-                // 오늘 날짜 데이터만 표시
+            if (todayDateStr) {
+                dateFilterSelect.value = todayDateStr;
                 const todayData = periodData.filter(row => {
                     const date = row['일자'] || row['날짜'] || '';
-                    return date === todayStr;
+                    return date === todayDateStr;
                 });
                 renderSalesDetailTable(todayData);
             } else if (sortedDates.length > 0) {
@@ -3189,12 +3199,31 @@
 
         function parseKoreanDate(dateStr) {
             if (!dateStr) return new Date();
+            
             // "2025년 11월 7일" 형식 파싱
-            const match = dateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+            let match = dateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
             if (match) {
                 return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
             }
+            
+            // "2025/11/10" 형식 파싱
+            match = dateStr.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+            if (match) {
+                return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            }
+            
+            // "2025-11-10" 형식 파싱
+            match = dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (match) {
+                return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            }
+            
             return new Date();
+        }
+
+        function parseDateFlexible(dateStr) {
+            // parseKoreanDate와 동일한 로직 사용
+            return parseKoreanDate(dateStr);
         }
 
         function getWeekStart(date) {
