@@ -1730,11 +1730,13 @@
         async function getSheetData(sheetName, range = '') {
             try {
                 const fullRange = range ? `${sheetName}!${range}` : sheetName;
-                // 캐시 방지: 타임스탬프 추가
-                const timestamp = new Date().getTime();
-                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${fullRange}?key=${CONFIG.API_KEY}&_t=${timestamp}`;
+                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${fullRange}?key=${CONFIG.API_KEY}`;
                 const response = await fetch(url, {
-                    cache: 'no-store'  // 브라우저 캐시 완전 비활성화
+                    cache: 'no-store',  // 브라우저 캐시 비활성화
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
@@ -1758,11 +1760,13 @@
         // 공지 시트 전용 함수 (중복 헤더 처리)
         async function getNoticeSheetData(sheetName) {
             try {
-                // 캐시 방지: 타임스탬프 추가
-                const timestamp = new Date().getTime();
-                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${sheetName}?key=${CONFIG.API_KEY}&_t=${timestamp}`;
+                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${sheetName}?key=${CONFIG.API_KEY}`;
                 const response = await fetch(url, {
-                    cache: 'no-store'  // 브라우저 캐시 완전 비활성화
+                    cache: 'no-store',  // 브라우저 캐시 비활성화
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
