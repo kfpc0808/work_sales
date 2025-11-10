@@ -2310,6 +2310,14 @@
                 기타Total += parseNumber(row['기타']);
             });
             
+            // 목표 행의 확정 금액도 포함
+            dailyGoalRows.forEach(row => {
+                totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
+                totals['기홈'].confirmed += parseNumber(row['기홈확정']);
+                totals['지사'].confirmed += parseNumber(row['지사확정']);
+                totals['이너'].confirmed += parseNumber(row['이너확정']);
+            });
+            
             // 전체 합계
             let totalExpected = 0, totalConfirmed = 0;
             Object.values(totals).forEach(t => {
@@ -2434,7 +2442,7 @@
             
             // 차트와 상세 테이블 업데이트
             updateSalesCharts(actualData, totals);
-            displaySalesDetail(actualData);
+            displaySalesDetail(periodData);  // 목표 행 포함한 전체 데이터 전달
         }
 
         function filterSalesProductByDate() {
@@ -2523,6 +2531,14 @@
                 totals['이너'].expected += parseNumber(row['이너예상']);
                 totals['이너'].confirmed += parseNumber(row['이너확정']);
             });
+            
+            // 목표 행의 확정 금액도 포함
+            if (goalRow) {
+                totals['컨홈'].confirmed += parseNumber(goalRow['컨홈확정']);
+                totals['기홈'].confirmed += parseNumber(goalRow['기홈확정']);
+                totals['지사'].confirmed += parseNumber(goalRow['지사확정']);
+                totals['이너'].confirmed += parseNumber(goalRow['이너확정']);
+            }
             
             console.log('합계:', totals);
             
@@ -2788,23 +2804,22 @@
         function displaySalesDetail(periodData) {
             const tbody = document.getElementById('salesDetailBody');
             
-            // 목표 행 제외
-            const actualData = periodData.filter(row => {
-                const memberName = (row['회원명'] || '').trim();
-                return memberName !== '목표' && memberName !== '일일목표';
-            });
+            // 전역 변수에 저장 (목표 행 포함 - renderSalesDetailTable에서 처리)
+            currentPeriodData = periodData;
             
-            // 전역 변수에 저장
-            currentPeriodData = actualData;
-            
-            if (!actualData || actualData.length === 0) {
+            if (!periodData || periodData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="15" class="empty-state">조회 기간 내 데이터가 없습니다.</td></tr>';
                 // 드롭다운 초기화
                 document.getElementById('salesDetailDateFilter').innerHTML = '<option value="all">전체</option>';
                 return;
             }
             
-            // 날짜 드롭다운 업데이트
+            // 날짜 드롭다운 업데이트 (목표 행 제외)
+            const actualData = periodData.filter(row => {
+                const memberName = (row['회원명'] || '').trim();
+                return memberName !== '목표' && memberName !== '일일목표';
+            });
+            
             const dates = [...new Set(actualData.map(row => row['일자'] || row['날짜'] || ''))].filter(d => d);
             const sortedDates = dates.sort((a, b) => {
                 const dateA = parseKoreanDate(a);
@@ -2840,7 +2855,7 @@
             // 오늘 날짜가 있으면 선택, 없으면 가장 최근 날짜 선택
             if (todayDateStr) {
                 dateFilterSelect.value = todayDateStr;
-                const todayData = actualData.filter(row => {
+                const todayData = periodData.filter(row => {
                     const date = row['일자'] || row['날짜'] || '';
                     return date === todayDateStr;
                 });
@@ -2848,14 +2863,14 @@
             } else if (sortedDates.length > 0) {
                 // 오늘 날짜가 없으면 가장 최근 날짜 선택
                 dateFilterSelect.value = sortedDates[0];
-                const latestData = actualData.filter(row => {
+                const latestData = periodData.filter(row => {
                     const date = row['일자'] || row['날짜'] || '';
                     return date === sortedDates[0];
                 });
                 renderSalesDetailTable(latestData);
             } else {
                 // 전체 데이터 표시
-                renderSalesDetailTable(actualData);
+                renderSalesDetailTable(periodData);
             }
         }
 
@@ -2867,18 +2882,25 @@
                 return;
             }
             
-            // 목표 행 제외 (목표 행은 하단에 별도로 표시)
-            const actualData = periodData.filter(row => {
+            // 목표 행을 별도로 분리 (확정 금액은 소계에 포함하되, 화면에는 표시 안 함)
+            const actualData = [];
+            const goalRows = [];
+            
+            periodData.forEach(row => {
                 const memberName = (row['회원명'] || '').trim();
-                return memberName !== '목표' && memberName !== '일일목표';
+                if (memberName === '목표' || memberName === '일일목표') {
+                    goalRows.push(row);
+                } else {
+                    actualData.push(row);
+                }
             });
             
-            if (actualData.length === 0) {
+            if (actualData.length === 0 && goalRows.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="15" class="empty-state">해당 일자의 데이터가 없습니다.</td></tr>';
                 return;
             }
             
-            // 일자별로 그룹화
+            // 일자별로 그룹화 (일반 데이터만)
             const dataByDate = {};
             actualData.forEach(row => {
                 const date = row['일자'] || row['날짜'] || '';
@@ -2909,6 +2931,20 @@
                     이너진행: 0, 이너예상: 0, 이너확정: 0,
                     기타: 0
                 };
+                
+                // 해당 날짜의 목표 행 찾기
+                const dateGoalRow = goalRows.find(row => {
+                    const rowDate = row['일자'] || row['날짜'] || '';
+                    return rowDate === date;
+                });
+                
+                // 목표 행의 확정 금액을 소계에 포함
+                if (dateGoalRow) {
+                    dateTotal.컨홈확정 += parseNumber(dateGoalRow['컨홈확정']);
+                    dateTotal.기홈확정 += parseNumber(dateGoalRow['기홈확정']);
+                    dateTotal.지사확정 += parseNumber(dateGoalRow['지사확정']);
+                    dateTotal.이너확정 += parseNumber(dateGoalRow['이너확정']);
+                }
                 
                 rows.forEach((row, index) => {
                     const memberName = row['회원명'] || '-';
@@ -2998,6 +3034,7 @@
                 기타: 0
             };
             
+            // 일반 데이터 합산
             actualData.forEach(row => {
                 grandTotal.컨홈진행 += parseNumber(row['컨홈진행']);
                 grandTotal.컨홈예상 += parseNumber(row['컨홈예상']);
@@ -3012,6 +3049,14 @@
                 grandTotal.이너예상 += parseNumber(row['이너예상']);
                 grandTotal.이너확정 += parseNumber(row['이너확정']);
                 grandTotal.기타 += parseNumber(row['기타']);
+            });
+            
+            // 목표 행의 확정 금액도 합산 (목표 행은 화면에 표시 안 하지만 확정 금액은 포함)
+            goalRows.forEach(row => {
+                grandTotal.컨홈확정 += parseNumber(row['컨홈확정']);
+                grandTotal.기홈확정 += parseNumber(row['기홈확정']);
+                grandTotal.지사확정 += parseNumber(row['지사확정']);
+                grandTotal.이너확정 += parseNumber(row['이너확정']);
             });
             
             // 목표 데이터 가져오기
