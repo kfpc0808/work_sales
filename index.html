@@ -1419,7 +1419,7 @@
 
             <div class="section">
                 <div class="section-title">
-                    상품별 매출 현황
+                    상품별 매출현황
                     <input type="date" id="salesProductDate" onchange="filterSalesProductByDate()" style="float: right; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; background: var(--card-bg); cursor: pointer;">
                 </div>
                 <div class="table-container">
@@ -1427,12 +1427,12 @@
                         <thead>
                             <tr>
                                 <th>상품</th>
-                                <th class="text-right">예상</th>
-                                <th class="text-right">확정</th>
-                                <th class="text-right">일목표</th>
-                                <th class="text-right">달성률(일)</th>
-                                <th class="text-right">주목표</th>
-                                <th class="text-right">월목표</th>
+                                <th class="text-right">예상(당일)</th>
+                                <th class="text-right">확정(당일)</th>
+                                <th class="text-right">목표(당일)</th>
+                                <th class="text-right">달성률(당일)</th>
+                                <th class="text-right">목표(주간)</th>
+                                <th class="text-right">목표(당월)</th>
                             </tr>
                         </thead>
                         <tbody id="salesTableBody">
@@ -1444,11 +1444,11 @@
 
             <div class="chart-grid">
                 <div class="section">
-                    <div class="section-title">일별 매출 추이</div>
+                    <div class="section-title">일별 매출추이</div>
                     <canvas id="salesDailyChart" height="300"></canvas>
                 </div>
                 <div class="section">
-                    <div class="section-title">상품별 매출 비중</div>
+                    <div class="section-title">상품별 매출비중</div>
                     <canvas id="salesPieChart" height="300"></canvas>
                 </div>
             </div>
@@ -1807,6 +1807,13 @@
                     call['회원명'].trim() !== '' && 
                     call['회원명'] !== '-'
                 );
+                
+                // 일자 기준 내림차순 정렬 (최신 데이터가 먼저 표시)
+                callHistory.sort((a, b) => {
+                    const dateA = parseKoreanDate(a['일자'] || '');
+                    const dateB = parseKoreanDate(b['일자'] || '');
+                    return dateB - dateA; // 내림차순 (최신 날짜가 앞으로)
+                });
                 noticeData = noticesResult.data;
                 dashboardInfo = dashboardResult.data;
                 
@@ -3267,7 +3274,7 @@
             // 전체 합계 행
             html += `
                 <tr style="background: #d4edda; font-weight: bold; border-top: 3px solid #28a745;">
-                    <td colspan="2" style="text-align: center;">계</td>
+                    <td colspan="2" style="text-align: center;">계(당일)</td>
                     <td class="text-right">${formatNumber(grandTotal.컨홈진행)}</td>
                     <td class="text-right">${formatNumber(grandTotal.컨홈예상)}</td>
                     <td class="text-right">${formatNumber(grandTotal.컨홈확정)}</td>
@@ -3288,7 +3295,7 @@
             if (dailyGoal.컨홈 > 0 || dailyGoal.기홈 > 0 || dailyGoal.지사 > 0 || dailyGoal.이너 > 0) {
                 html += `
                     <tr style="background: #fff3cd; font-weight: bold;">
-                        <td colspan="2" style="text-align: center;">목표</td>
+                        <td colspan="2" style="text-align: center;">일목표</td>
                         <td colspan="3" class="text-right">${formatNumber(dailyGoal.컨홈)}</td>
                         <td colspan="3" class="text-right">${formatNumber(dailyGoal.기홈)}</td>
                         <td colspan="3" class="text-right">${formatNumber(dailyGoal.지사)}</td>
