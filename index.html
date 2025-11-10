@@ -2380,7 +2380,7 @@
                 return date !== '';
             });
             
-            // 상품별 합계 계산 (목표 행 제외한 실적만)
+            // 상품별 합계 계산 - 목표 행만 사용 (일반 데이터 제외)
             let totals = {
                 '컨홈': { expected: 0, confirmed: 0 },
                 '기홈': { expected: 0, confirmed: 0 },
@@ -2390,32 +2390,19 @@
             
             let 기타Total = 0;
             
-            actualData.forEach(row => {
-                totals['컨홈'].expected += parseNumber(row['컨홈예상']);
-                totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
-                totals['기홈'].expected += parseNumber(row['기홈예상']);
-                totals['기홈'].confirmed += parseNumber(row['기홈확정']);
-                totals['지사'].expected += parseNumber(row['지사예상']);
-                totals['지사'].confirmed += parseNumber(row['지사확정']);
-                totals['이너'].expected += parseNumber(row['이너예상']);
-                totals['이너'].confirmed += parseNumber(row['이너확정']);
-                기타Total += parseNumber(row['기타']);
-            });
-            
-            // 목표 행의 확정 금액도 포함
+            // 목표 행만 사용 (예상=진행, 확정=확정)
             dailyGoalRows.forEach(row => {
+                // 예상 = 진행 컬럼 (D, G, J, M)
+                totals['컨홈'].expected += parseNumber(row['컨홈진행']);
+                totals['기홈'].expected += parseNumber(row['기홈진행']);
+                totals['지사'].expected += parseNumber(row['지사진행']);
+                totals['이너'].expected += parseNumber(row['이너진행']);
+                
+                // 확정 = 확정 컬럼 (F, I, L, O)
                 totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
                 totals['기홈'].confirmed += parseNumber(row['기홈확정']);
                 totals['지사'].confirmed += parseNumber(row['지사확정']);
                 totals['이너'].confirmed += parseNumber(row['이너확정']);
-            });
-            
-            // 목표 행의 예상 금액도 포함 (상품별 매출 현황용)
-            dailyGoalRows.forEach(row => {
-                totals['컨홈'].expected += parseNumber(row['컨홈예상']);
-                totals['기홈'].expected += parseNumber(row['기홈예상']);
-                totals['지사'].expected += parseNumber(row['지사예상']);
-                totals['이너'].expected += parseNumber(row['이너예상']);
             });
             
             // 전체 합계
@@ -2624,7 +2611,7 @@
             console.log('선택한 날짜:', selectedDate);
             console.log('목표 행 결과:', goalRow);
             
-            // 상품별 합계 계산
+            // 상품별 합계 계산 - 목표 행만 사용
             let totals = {
                 '컨홈': { expected: 0, confirmed: 0 },
                 '기홈': { expected: 0, confirmed: 0 },
@@ -2632,31 +2619,19 @@
                 '이너': { expected: 0, confirmed: 0 }
             };
             
-            filteredData.forEach(row => {
-                totals['컨홈'].expected += parseNumber(row['컨홈예상']);
-                totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
-                totals['기홈'].expected += parseNumber(row['기홈예상']);
-                totals['기홈'].confirmed += parseNumber(row['기홈확정']);
-                totals['지사'].expected += parseNumber(row['지사예상']);
-                totals['지사'].confirmed += parseNumber(row['지사확정']);
-                totals['이너'].expected += parseNumber(row['이너예상']);
-                totals['이너'].confirmed += parseNumber(row['이너확정']);
-            });
-            
-            // 목표 행의 확정 금액도 포함
+            // 목표 행만 사용 (예상=진행, 확정=확정)
             if (goalRow) {
-                totals['컨홈'].confirmed += parseNumber(goalRow['컨홈확정']);
-                totals['기홈'].confirmed += parseNumber(goalRow['기홈확정']);
-                totals['지사'].confirmed += parseNumber(goalRow['지사확정']);
-                totals['이너'].confirmed += parseNumber(goalRow['이너확정']);
-            }
-            
-            // 목표 행의 예상 금액도 포함
-            if (goalRow) {
-                totals['컨홈'].expected += parseNumber(goalRow['컨홈예상']);
-                totals['기홈'].expected += parseNumber(goalRow['기홈예상']);
-                totals['지사'].expected += parseNumber(goalRow['지사예상']);
-                totals['이너'].expected += parseNumber(goalRow['이너예상']);
+                // 예상 = 진행 컬럼 (D, G, J, M)
+                totals['컨홈'].expected = parseNumber(goalRow['컨홈진행']);
+                totals['기홈'].expected = parseNumber(goalRow['기홈진행']);
+                totals['지사'].expected = parseNumber(goalRow['지사진행']);
+                totals['이너'].expected = parseNumber(goalRow['이너진행']);
+                
+                // 확정 = 확정 컬럼 (F, I, L, O)
+                totals['컨홈'].confirmed = parseNumber(goalRow['컨홈확정']);
+                totals['기홈'].confirmed = parseNumber(goalRow['기홈확정']);
+                totals['지사'].confirmed = parseNumber(goalRow['지사확정']);
+                totals['이너'].confirmed = parseNumber(goalRow['이너확정']);
             }
             
             console.log('합계:', totals);
