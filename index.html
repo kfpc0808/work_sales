@@ -720,12 +720,26 @@
             
             /* 업무기록 탭 필터 레이아웃 (5개 요소) */
             .filter-grid-calls {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr 1fr; /* 명확하게 50% 50% */
+                gap: 12px;
+            }
+            
+            /* 각 필터 그룹이 정확히 그리드 셀에 맞도록 */
+            .filter-grid-calls .filter-group {
+                width: 100%;
+                min-width: 0;
             }
             
             /* 업무기록: 조회하기 버튼만 전체 너비 */
             .filter-grid-calls .filter-group:nth-child(5) {
                 grid-column: 1 / -1;
+            }
+            
+            /* 필터 내 버튼은 전체 너비 */
+            .filter-grid .btn,
+            .filter-grid-calls .btn {
+                width: 100%;
+                display: flex;
             }
         }
 
@@ -733,6 +747,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            min-width: 0; /* flex/grid 오버플로우 방지 */
         }
 
         .filter-group label {
@@ -743,6 +758,7 @@
 
         .filter-input,
         .filter-select {
+            width: 100%; /* 명확한 너비 설정 */
             padding: clamp(10px, 2.5vw, 14px);
             border: 2px solid var(--border-color);
             border-radius: 12px;
@@ -751,6 +767,7 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             background: var(--card-bg);
             color: var(--text-primary);
+            box-sizing: border-box; /* padding 포함한 너비 계산 */
             
             /* iOS 최적화 */
             min-height: 44px;
@@ -1553,7 +1570,7 @@
                 </div>
             </div>
 
-            <div class="search-bar">
+            <div class="search-bar" style="display: none;">
                 <input type="text" class="search-input" id="callsSearch" placeholder="회원명 또는 업무내용 검색..." onkeyup="searchCalls()">
             </div>
 
