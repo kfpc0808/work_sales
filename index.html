@@ -713,8 +713,8 @@
                 grid-template-columns: repeat(2, 1fr);
             }
             
-            /* 검색 필드만 전체 너비 */
-            .filter-grid .filter-group:nth-child(3) {
+            /* 검색 필드만 전체 너비 (업무기록 탭 제외) */
+            .filter-grid:not(.filter-grid-calls) .filter-group:nth-child(3) {
                 grid-column: 1 / -1;
             }
             
