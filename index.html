@@ -2788,10 +2788,16 @@
         function displaySalesDetail(periodData) {
             const tbody = document.getElementById('salesDetailBody');
             
-            // 전역 변수에 저장
-            currentPeriodData = periodData;
+            // 목표 행 제외
+            const actualData = periodData.filter(row => {
+                const memberName = (row['회원명'] || '').trim();
+                return memberName !== '목표' && memberName !== '일일목표';
+            });
             
-            if (!periodData || periodData.length === 0) {
+            // 전역 변수에 저장
+            currentPeriodData = actualData;
+            
+            if (!actualData || actualData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="15" class="empty-state">조회 기간 내 데이터가 없습니다.</td></tr>';
                 // 드롭다운 초기화
                 document.getElementById('salesDetailDateFilter').innerHTML = '<option value="all">전체</option>';
@@ -2799,7 +2805,7 @@
             }
             
             // 날짜 드롭다운 업데이트
-            const dates = [...new Set(periodData.map(row => row['일자'] || row['날짜'] || ''))].filter(d => d);
+            const dates = [...new Set(actualData.map(row => row['일자'] || row['날짜'] || ''))].filter(d => d);
             const sortedDates = dates.sort((a, b) => {
                 const dateA = parseKoreanDate(a);
                 const dateB = parseKoreanDate(b);
@@ -2834,7 +2840,7 @@
             // 오늘 날짜가 있으면 선택, 없으면 가장 최근 날짜 선택
             if (todayDateStr) {
                 dateFilterSelect.value = todayDateStr;
-                const todayData = periodData.filter(row => {
+                const todayData = actualData.filter(row => {
                     const date = row['일자'] || row['날짜'] || '';
                     return date === todayDateStr;
                 });
@@ -2842,14 +2848,14 @@
             } else if (sortedDates.length > 0) {
                 // 오늘 날짜가 없으면 가장 최근 날짜 선택
                 dateFilterSelect.value = sortedDates[0];
-                const latestData = periodData.filter(row => {
+                const latestData = actualData.filter(row => {
                     const date = row['일자'] || row['날짜'] || '';
                     return date === sortedDates[0];
                 });
                 renderSalesDetailTable(latestData);
             } else {
                 // 전체 데이터 표시
-                renderSalesDetailTable(periodData);
+                renderSalesDetailTable(actualData);
             }
         }
 
@@ -2861,9 +2867,20 @@
                 return;
             }
             
+            // 목표 행 제외 (목표 행은 하단에 별도로 표시)
+            const actualData = periodData.filter(row => {
+                const memberName = (row['회원명'] || '').trim();
+                return memberName !== '목표' && memberName !== '일일목표';
+            });
+            
+            if (actualData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="15" class="empty-state">해당 일자의 데이터가 없습니다.</td></tr>';
+                return;
+            }
+            
             // 일자별로 그룹화
             const dataByDate = {};
-            periodData.forEach(row => {
+            actualData.forEach(row => {
                 const date = row['일자'] || row['날짜'] || '';
                 if (!date) return;
                 
@@ -2981,7 +2998,7 @@
                 기타: 0
             };
             
-            periodData.forEach(row => {
+            actualData.forEach(row => {
                 grandTotal.컨홈진행 += parseNumber(row['컨홈진행']);
                 grandTotal.컨홈예상 += parseNumber(row['컨홈예상']);
                 grandTotal.컨홈확정 += parseNumber(row['컨홈확정']);
@@ -3004,8 +3021,8 @@
             // 일일 목표 (선택된 날짜 또는 조회 기간의 목표 행)
             let dailyGoal = { 컨홈: 0, 기홈: 0, 지사: 0, 이너: 0 };
             if (selectedDate !== 'all') {
-                // 특정 날짜 선택 시 해당 날짜의 목표
-                const goalRow = currentPeriodData.find(row => {
+                // 특정 날짜 선택 시 해당 날짜의 목표 (salesData에서 찾기)
+                const goalRow = salesData.find(row => {
                     const memberName = (row['회원명'] || '').trim();
                     const date = row['일자'] || row['날짜'] || '';
                     return (memberName === '목표' || memberName === '일일목표') && date === selectedDate;
