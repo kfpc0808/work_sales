@@ -2318,6 +2318,14 @@
                 totals['이너'].confirmed += parseNumber(row['이너확정']);
             });
             
+            // 목표 행의 예상 금액도 포함 (상품별 매출 현황용)
+            dailyGoalRows.forEach(row => {
+                totals['컨홈'].expected += parseNumber(row['컨홈예상']);
+                totals['기홈'].expected += parseNumber(row['기홈예상']);
+                totals['지사'].expected += parseNumber(row['지사예상']);
+                totals['이너'].expected += parseNumber(row['이너예상']);
+            });
+            
             // 전체 합계
             let totalExpected = 0, totalConfirmed = 0;
             Object.values(totals).forEach(t => {
@@ -2326,22 +2334,22 @@
             });
             totalConfirmed += 기타Total;  // 기타 추가
             
-            // 목표 데이터 선택
+            // 일목표 데이터 (목표 행의 '컨홈목표' 등 사용)
             let goalData = {};
-            if (period === 'today' && dailyGoalRows.length > 0) {
-                // "오늘" 선택 시: 일일 목표 행의 합계 사용
+            if (dailyGoalRows.length > 0) {
+                // 기간 내 목표 행의 합계 사용
                 dailyGoalRows.forEach(row => {
                     goalData['컨홈목표'] = (goalData['컨홈목표'] || 0) + parseNumber(row['컨홈목표']);
                     goalData['기홈목표'] = (goalData['기홈목표'] || 0) + parseNumber(row['기홈목표']);
                     goalData['지사목표'] = (goalData['지사목표'] || 0) + parseNumber(row['지사목표']);
                     goalData['이너목표'] = (goalData['이너목표'] || 0) + parseNumber(row['이너목표']);
                 });
-            } else if (period === 'month') {
-                // 월간: 현재 월 목표
-                goalData = getCurrentMonthGoal();
             } else {
-                // 주간/사용자지정: 현재 주 목표
-                goalData = getCurrentWeekGoal();
+                // 목표 행이 없으면 0으로 설정
+                goalData['컨홈목표'] = 0;
+                goalData['기홈목표'] = 0;
+                goalData['지사목표'] = 0;
+                goalData['이너목표'] = 0;
             }
             
             const totalGoal = parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
@@ -2538,6 +2546,14 @@
                 totals['기홈'].confirmed += parseNumber(goalRow['기홈확정']);
                 totals['지사'].confirmed += parseNumber(goalRow['지사확정']);
                 totals['이너'].confirmed += parseNumber(goalRow['이너확정']);
+            }
+            
+            // 목표 행의 예상 금액도 포함
+            if (goalRow) {
+                totals['컨홈'].expected += parseNumber(goalRow['컨홈예상']);
+                totals['기홈'].expected += parseNumber(goalRow['기홈예상']);
+                totals['지사'].expected += parseNumber(goalRow['지사예상']);
+                totals['이너'].expected += parseNumber(goalRow['이너예상']);
             }
             
             console.log('합계:', totals);
