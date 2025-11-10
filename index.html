@@ -1429,9 +1429,8 @@
                                 <th>상품</th>
                                 <th class="text-right">예상</th>
                                 <th class="text-right">확정</th>
-                                <th class="text-right">달성률</th>
                                 <th class="text-right">일목표</th>
-                                <th class="text-right">목표 대비</th>
+                                <th class="text-right">달성률(일)</th>
                                 <th class="text-right">주목표</th>
                                 <th class="text-right">월목표</th>
                             </tr>
@@ -1929,9 +1928,15 @@
             
             // 주간 목표 (현재 주)
             const weekGoalData = getCurrentWeekGoal(today);
-            const weekGoal = parseNumber(weekGoalData['주목표계']) || 
-                            (parseNumber(weekGoalData['컨홈목표']) + parseNumber(weekGoalData['기홈목표']) + 
-                             parseNumber(weekGoalData['지사목표']) + parseNumber(weekGoalData['이너목표']));
+            let weekGoal = 0;
+            if (weekGoalData['주목표계'] !== undefined && weekGoalData['주목표계'] !== null && weekGoalData['주목표계'] !== '') {
+                weekGoal = parseNumber(weekGoalData['주목표계']);
+            } else if (weekGoalData['주목표'] !== undefined && weekGoalData['주목표'] !== null && weekGoalData['주목표'] !== '') {
+                weekGoal = parseNumber(weekGoalData['주목표']);
+            } else {
+                weekGoal = parseNumber(weekGoalData['컨홈목표']) + parseNumber(weekGoalData['기홈목표']) + 
+                          parseNumber(weekGoalData['지사목표']) + parseNumber(weekGoalData['이너목표']);
+            }
             const weekRate = weekGoal > 0 ? Math.round((weekConfirmed / weekGoal) * 100) : 0;
             
             // 이번 달 계산 (목표 행 제외)
@@ -1951,9 +1956,15 @@
             
             // 월간 목표 (현재 월)
             const monthGoalData = getCurrentMonthGoal(today);
-            const monthGoal = parseNumber(monthGoalData['월목표계']) || 
-                             (parseNumber(monthGoalData['컨홈목표']) + parseNumber(monthGoalData['기홈목표']) + 
-                              parseNumber(monthGoalData['지사목표']) + parseNumber(monthGoalData['이너목표']));
+            let monthGoal = 0;
+            if (monthGoalData['월목표계'] !== undefined && monthGoalData['월목표계'] !== null && monthGoalData['월목표계'] !== '') {
+                monthGoal = parseNumber(monthGoalData['월목표계']);
+            } else if (monthGoalData['월목표'] !== undefined && monthGoalData['월목표'] !== null && monthGoalData['월목표'] !== '') {
+                monthGoal = parseNumber(monthGoalData['월목표']);
+            } else {
+                monthGoal = parseNumber(monthGoalData['컨홈목표']) + parseNumber(monthGoalData['기홈목표']) + 
+                           parseNumber(monthGoalData['지사목표']) + parseNumber(monthGoalData['이너목표']);
+            }
             const monthRate = monthGoal > 0 ? Math.round((monthConfirmed / monthGoal) * 100) : 0;
             
             // UI 업데이트
@@ -2354,7 +2365,6 @@
                 const weeklyGoal = parseNumber(weeklyGoalData[p.goalKey]);
                 const monthlyGoal = parseNumber(monthlyGoalData[p.goalKey]);
                 
-                const rate = data.expected > 0 ? Math.round((data.confirmed / data.expected) * 100) : 0;
                 const goalRate = goal > 0 ? Math.round((data.confirmed / goal) * 100) : 0;
                 const badgeClass = goalRate >= 90 ? 'badge-success' : goalRate >= 70 ? 'badge-warning' : 'badge-danger';
                 
@@ -2363,7 +2373,6 @@
                         <td class="text-bold">${p.name}</td>
                         <td class="text-right">${formatNumber(data.expected)}원</td>
                         <td class="text-right">${formatNumber(data.confirmed)}원</td>
-                        <td class="text-right">${rate}%</td>
                         <td class="text-right">${formatNumber(goal)}원</td>
                         <td class="text-right"><span class="card-badge ${badgeClass}">${goalRate}%</span></td>
                         <td class="text-right">${formatNumber(weeklyGoal)}원</td>
@@ -2372,11 +2381,31 @@
                 `;
             }).join('');
             
-            // 합계 계산 - 우측 합계 컬럼 사용
-            const totalWeeklyGoal = parseNumber(weeklyGoalData['주목표계']);
-            const totalMonthlyGoal = parseNumber(monthlyGoalData['월목표계']);
+            // 합계 계산 - 우측 합계 컬럼 사용 또는 개별 합산
+            let totalWeeklyGoal = 0;
+            if (weeklyGoalData['주목표계'] !== undefined && weeklyGoalData['주목표계'] !== null && weeklyGoalData['주목표계'] !== '') {
+                totalWeeklyGoal = parseNumber(weeklyGoalData['주목표계']);
+            } else if (weeklyGoalData['주목표'] !== undefined && weeklyGoalData['주목표'] !== null && weeklyGoalData['주목표'] !== '') {
+                totalWeeklyGoal = parseNumber(weeklyGoalData['주목표']);
+            } else {
+                totalWeeklyGoal = parseNumber(weeklyGoalData['컨홈목표']) + 
+                                 parseNumber(weeklyGoalData['기홈목표']) + 
+                                 parseNumber(weeklyGoalData['지사목표']) + 
+                                 parseNumber(weeklyGoalData['이너목표']);
+            }
             
-            const totalRate = totalExpected > 0 ? Math.round((totalConfirmed / totalExpected) * 100) : 0;
+            let totalMonthlyGoal = 0;
+            if (monthlyGoalData['월목표계'] !== undefined && monthlyGoalData['월목표계'] !== null && monthlyGoalData['월목표계'] !== '') {
+                totalMonthlyGoal = parseNumber(monthlyGoalData['월목표계']);
+            } else if (monthlyGoalData['월목표'] !== undefined && monthlyGoalData['월목표'] !== null && monthlyGoalData['월목표'] !== '') {
+                totalMonthlyGoal = parseNumber(monthlyGoalData['월목표']);
+            } else {
+                totalMonthlyGoal = parseNumber(monthlyGoalData['컨홈목표']) + 
+                                  parseNumber(monthlyGoalData['기홈목표']) + 
+                                  parseNumber(monthlyGoalData['지사목표']) + 
+                                  parseNumber(monthlyGoalData['이너목표']);
+            }
+            
             const totalGoalRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
             const totalBadgeClass = totalGoalRate >= 90 ? 'badge-success' : totalGoalRate >= 70 ? 'badge-warning' : 'badge-danger';
             
@@ -2386,7 +2415,6 @@
                     <td class="text-bold">계</td>
                     <td class="text-right">${formatNumber(totalExpected)}원</td>
                     <td class="text-right">${formatNumber(totalConfirmed)}원</td>
-                    <td class="text-right">${totalRate}%</td>
                     <td class="text-right">${formatNumber(totalGoal)}원</td>
                     <td class="text-right"><span class="card-badge ${totalBadgeClass}">${totalGoalRate}%</span></td>
                     <td class="text-right">${formatNumber(totalWeeklyGoal)}원</td>
@@ -2399,7 +2427,7 @@
             const todayStr = today.toISOString().split('T')[0];
             const dateInput = document.getElementById('salesProductDate');
             
-            // 날짜 선택기가 비어있으면 오늘로 설정
+            // 날짜 선택기가 비어있으면 오늘로 설정 (하지만 자동 필터링은 하지 않음)
             if (!dateInput.value) {
                 dateInput.value = todayStr;
             }
@@ -2407,13 +2435,6 @@
             // 차트와 상세 테이블 업데이트
             updateSalesCharts(actualData, totals);
             displaySalesDetail(actualData);
-            
-            // DOM 업데이트 후 날짜별 필터링 적용
-            setTimeout(() => {
-                if (dateInput.value) {
-                    filterSalesProductByDate();
-                }
-            }, 100);
         }
 
         function filterSalesProductByDate() {
@@ -2548,7 +2569,6 @@
                 const weeklyGoal = parseNumber(weeklyGoalData[p.goalKey]);
                 const monthlyGoal = parseNumber(monthlyGoalData[p.goalKey]);
                 
-                const rate = data.expected > 0 ? Math.round((data.confirmed / data.expected) * 100) : 0;
                 const goalRate = goal > 0 ? Math.round((data.confirmed / goal) * 100) : 0;
                 const badgeClass = goalRate >= 90 ? 'badge-success' : goalRate >= 70 ? 'badge-warning' : 'badge-danger';
                 
@@ -2557,7 +2577,6 @@
                         <td class="text-bold">${p.name}</td>
                         <td class="text-right">${formatNumber(data.expected)}원</td>
                         <td class="text-right">${formatNumber(data.confirmed)}원</td>
-                        <td class="text-right">${rate}%</td>
                         <td class="text-right">${formatNumber(goal)}원</td>
                         <td class="text-right"><span class="card-badge ${badgeClass}">${goalRate}%</span></td>
                         <td class="text-right">${formatNumber(weeklyGoal)}원</td>
@@ -2567,20 +2586,51 @@
             }).join('');
             
             // 합계 계산 - 우측 합계 컬럼 사용 또는 개별 합산
-            let totalWeeklyGoal = parseNumber(weeklyGoalData['주목표계']) || 
-                                 parseNumber(weeklyGoalData['주목표']) ||
-                                 (parseNumber(weeklyGoalData['컨홈목표']) + parseNumber(weeklyGoalData['기홈목표']) + 
-                                  parseNumber(weeklyGoalData['지사목표']) + parseNumber(weeklyGoalData['이너목표']));
+            let totalWeeklyGoal = 0;
             
-            let totalMonthlyGoal = parseNumber(monthlyGoalData['월목표계']) ||
-                                  parseNumber(monthlyGoalData['월목표']) ||
-                                  (parseNumber(monthlyGoalData['컨홈목표']) + parseNumber(monthlyGoalData['기홈목표']) + 
-                                   parseNumber(monthlyGoalData['지사목표']) + parseNumber(monthlyGoalData['이너목표']));
+            // 1순위: '주목표계' 컬럼
+            if (weeklyGoalData['주목표계'] !== undefined && weeklyGoalData['주목표계'] !== null && weeklyGoalData['주목표계'] !== '') {
+                totalWeeklyGoal = parseNumber(weeklyGoalData['주목표계']);
+                console.log('주목표계 컬럼 사용:', totalWeeklyGoal);
+            }
+            // 2순위: '주목표' 컬럼
+            else if (weeklyGoalData['주목표'] !== undefined && weeklyGoalData['주목표'] !== null && weeklyGoalData['주목표'] !== '') {
+                totalWeeklyGoal = parseNumber(weeklyGoalData['주목표']);
+                console.log('주목표 컬럼 사용:', totalWeeklyGoal);
+            }
+            // 3순위: 개별 합산
+            else {
+                totalWeeklyGoal = parseNumber(weeklyGoalData['컨홈목표']) + 
+                                 parseNumber(weeklyGoalData['기홈목표']) + 
+                                 parseNumber(weeklyGoalData['지사목표']) + 
+                                 parseNumber(weeklyGoalData['이너목표']);
+                console.log('개별 합산 사용:', totalWeeklyGoal);
+            }
             
-            console.log('주목표 합계:', totalWeeklyGoal);
-            console.log('월목표 합계:', totalMonthlyGoal);
+            let totalMonthlyGoal = 0;
             
-            const totalRate = totalExpected > 0 ? Math.round((totalConfirmed / totalExpected) * 100) : 0;
+            // 1순위: '월목표계' 컬럼
+            if (monthlyGoalData['월목표계'] !== undefined && monthlyGoalData['월목표계'] !== null && monthlyGoalData['월목표계'] !== '') {
+                totalMonthlyGoal = parseNumber(monthlyGoalData['월목표계']);
+                console.log('월목표계 컬럼 사용:', totalMonthlyGoal);
+            }
+            // 2순위: '월목표' 컬럼
+            else if (monthlyGoalData['월목표'] !== undefined && monthlyGoalData['월목표'] !== null && monthlyGoalData['월목표'] !== '') {
+                totalMonthlyGoal = parseNumber(monthlyGoalData['월목표']);
+                console.log('월목표 컬럼 사용:', totalMonthlyGoal);
+            }
+            // 3순위: 개별 합산
+            else {
+                totalMonthlyGoal = parseNumber(monthlyGoalData['컨홈목표']) + 
+                                  parseNumber(monthlyGoalData['기홈목표']) + 
+                                  parseNumber(monthlyGoalData['지사목표']) + 
+                                  parseNumber(monthlyGoalData['이너목표']);
+                console.log('개별 합산 사용:', totalMonthlyGoal);
+            }
+            
+            console.log('주목표 합계 최종:', totalWeeklyGoal);
+            console.log('월목표 합계 최종:', totalMonthlyGoal);
+            
             const totalGoalRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
             const totalBadgeClass = totalGoalRate >= 90 ? 'badge-success' : totalGoalRate >= 70 ? 'badge-warning' : 'badge-danger';
             
@@ -2590,7 +2640,6 @@
                     <td class="text-bold">계</td>
                     <td class="text-right">${formatNumber(totalExpected)}원</td>
                     <td class="text-right">${formatNumber(totalConfirmed)}원</td>
-                    <td class="text-right">${totalRate}%</td>
                     <td class="text-right">${formatNumber(totalGoal)}원</td>
                     <td class="text-right"><span class="card-badge ${totalBadgeClass}">${totalGoalRate}%</span></td>
                     <td class="text-right">${formatNumber(totalWeeklyGoal)}원</td>
@@ -2995,17 +3044,33 @@
                 컨홈: parseNumber(weeklyGoalData['컨홈목표']),
                 기홈: parseNumber(weeklyGoalData['기홈목표']),
                 지사: parseNumber(weeklyGoalData['지사목표']),
-                이너: parseNumber(weeklyGoalData['이너목표']),
-                합계: parseNumber(weeklyGoalData['주목표계'])
+                이너: parseNumber(weeklyGoalData['이너목표'])
             };
+            
+            // 주목표 합계 계산
+            if (weeklyGoalData['주목표계'] !== undefined && weeklyGoalData['주목표계'] !== null && weeklyGoalData['주목표계'] !== '') {
+                weeklyGoal.합계 = parseNumber(weeklyGoalData['주목표계']);
+            } else if (weeklyGoalData['주목표'] !== undefined && weeklyGoalData['주목표'] !== null && weeklyGoalData['주목표'] !== '') {
+                weeklyGoal.합계 = parseNumber(weeklyGoalData['주목표']);
+            } else {
+                weeklyGoal.합계 = weeklyGoal.컨홈 + weeklyGoal.기홈 + weeklyGoal.지사 + weeklyGoal.이너;
+            }
             
             const monthlyGoal = {
                 컨홈: parseNumber(monthlyGoalData['컨홈목표']),
                 기홈: parseNumber(monthlyGoalData['기홈목표']),
                 지사: parseNumber(monthlyGoalData['지사목표']),
-                이너: parseNumber(monthlyGoalData['이너목표']),
-                합계: parseNumber(monthlyGoalData['월목표계'])
+                이너: parseNumber(monthlyGoalData['이너목표'])
             };
+            
+            // 월목표 합계 계산
+            if (monthlyGoalData['월목표계'] !== undefined && monthlyGoalData['월목표계'] !== null && monthlyGoalData['월목표계'] !== '') {
+                monthlyGoal.합계 = parseNumber(monthlyGoalData['월목표계']);
+            } else if (monthlyGoalData['월목표'] !== undefined && monthlyGoalData['월목표'] !== null && monthlyGoalData['월목표'] !== '') {
+                monthlyGoal.합계 = parseNumber(monthlyGoalData['월목표']);
+            } else {
+                monthlyGoal.합계 = monthlyGoal.컨홈 + monthlyGoal.기홈 + monthlyGoal.지사 + monthlyGoal.이너;
+            }
             
             // 전체 합계 행
             html += `
@@ -3696,35 +3761,57 @@
         }
 
         function getCurrentWeekGoal(targetDate = null) {
+            console.log('=== getCurrentWeekGoal 시작 ===');
+            console.log('weeklyGoals 배열:', weeklyGoals);
+            console.log('weeklyGoals 길이:', weeklyGoals ? weeklyGoals.length : 'undefined');
+            
             // targetDate가 없으면 오늘 날짜 사용
             const today = targetDate || new Date();
             today.setHours(0, 0, 0, 0);
+            console.log('검색할 날짜:', today.toISOString().split('T')[0]);
             
             // weeklyGoals에서 오늘이 속한 주 찾기
             for (let i = 0; i < weeklyGoals.length; i++) {
                 const row = weeklyGoals[i];
+                console.log(`주차 ${i}:`, row);
+                
                 const startDateStr = row['시작일'] || '';
                 const endDateStr = row['종료일'] || '';
+                console.log(`  시작일 문자열: "${startDateStr}"`);
+                console.log(`  종료일 문자열: "${endDateStr}"`);
                 
                 const startDate = parseSimpleDate(startDateStr);
                 const endDate = parseSimpleDate(endDateStr);
+                console.log(`  시작일 파싱:`, startDate);
+                console.log(`  종료일 파싱:`, endDate);
                 
                 if (startDate && endDate) {
                     startDate.setHours(0, 0, 0, 0);
                     endDate.setHours(23, 59, 59, 999);
                     
+                    console.log(`  범위: ${startDate.toISOString().split('T')[0]} ~ ${endDate.toISOString().split('T')[0]}`);
+                    console.log(`  비교: ${today.getTime()} >= ${startDate.getTime()} && ${today.getTime()} <= ${endDate.getTime()}`);
+                    
                     // 오늘이 시작일과 종료일 사이에 있으면 해당 주
                     if (today >= startDate && today <= endDate) {
+                        console.log('  ✓ 해당 주 찾음!');
+                        console.log('=== getCurrentWeekGoal 종료 ===');
                         return row;
                     }
                 }
             }
             
             // 찾지 못하면 첫 번째 행 반환 (기본값)
+            console.log('해당 주를 못 찾음, 첫 번째 행 반환');
+            console.log('=== getCurrentWeekGoal 종료 ===');
             return weeklyGoals[0] || {};
         }
 
         function getCurrentMonthGoal(targetDate = null) {
+            console.log('=== getCurrentMonthGoal 시작 ===');
+            console.log('monthlyGoals 배열:', monthlyGoals);
+            console.log('monthlyGoals 길이:', monthlyGoals ? monthlyGoals.length : 'undefined');
+            
             // targetDate가 없으면 오늘 날짜 사용
             const today = targetDate || new Date();
             const currentYear = today.getFullYear();
@@ -3732,17 +3819,23 @@
             
             // monthlyGoals에서 현재 월 찾기
             const targetMonthStr = `${currentYear}년${currentMonth}월`;
+            console.log('검색할 월:', targetMonthStr);
             
             for (let i = 0; i < monthlyGoals.length; i++) {
                 const row = monthlyGoals[i];
                 const monthStr = (row['월'] || '').replace(/\s/g, ''); // 공백 제거
+                console.log(`  행 ${i}: 월="${monthStr}"`, row);
                 
                 if (monthStr === targetMonthStr || monthStr === `${currentYear}년 ${currentMonth}월`) {
+                    console.log('  ✓ 해당 월 찾음!');
+                    console.log('=== getCurrentMonthGoal 종료 ===');
                     return row;
                 }
             }
             
             // 찾지 못하면 첫 번째 행 반환 (기본값)
+            console.log('해당 월을 못 찾음, 첫 번째 행 반환');
+            console.log('=== getCurrentMonthGoal 종료 ===');
             return monthlyGoals[0] || {};
         }
 
