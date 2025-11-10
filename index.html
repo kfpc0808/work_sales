@@ -1730,8 +1730,12 @@
         async function getSheetData(sheetName, range = '') {
             try {
                 const fullRange = range ? `${sheetName}!${range}` : sheetName;
-                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${fullRange}?key=${CONFIG.API_KEY}`;
-                const response = await fetch(url);
+                // 캐시 방지: 타임스탬프 추가
+                const timestamp = new Date().getTime();
+                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${fullRange}?key=${CONFIG.API_KEY}&_t=${timestamp}`;
+                const response = await fetch(url, {
+                    cache: 'no-store'  // 브라우저 캐시 완전 비활성화
+                });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 if (!data.values || data.values.length === 0) return { headers: [], data: [] };
@@ -1754,8 +1758,12 @@
         // 공지 시트 전용 함수 (중복 헤더 처리)
         async function getNoticeSheetData(sheetName) {
             try {
-                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${sheetName}?key=${CONFIG.API_KEY}`;
-                const response = await fetch(url);
+                // 캐시 방지: 타임스탬프 추가
+                const timestamp = new Date().getTime();
+                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${sheetName}?key=${CONFIG.API_KEY}&_t=${timestamp}`;
+                const response = await fetch(url, {
+                    cache: 'no-store'  // 브라우저 캐시 완전 비활성화
+                });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 if (!data.values || data.values.length === 0) return { headers: [], data: [] };
@@ -1808,11 +1816,54 @@
                     call['회원명'] !== '-'
                 );
                 
-                // 일자 기준 내림차순 정렬 (최신 데이터가 먼저 표시)
+                // 일자와 시간을 모두 고려하여 내림차순 정렬 (최신 데이터가 먼저 표시)
                 callHistory.sort((a, b) => {
+                    // 일자 파싱
                     const dateA = parseKoreanDate(a['일자'] || '');
                     const dateB = parseKoreanDate(b['일자'] || '');
-                    return dateB - dateA; // 내림차순 (최신 날짜가 앞으로)
+                    
+                    // 시간 파싱 및 처리
+                    const parseTime = (timeStr) => {
+                        if (!timeStr) return { hours: 0, minutes: 0 };
+                        
+                        timeStr = String(timeStr).trim();
+                        
+                        // Google Sheets의 시리얼 시간 형식 처리 (0.4375 = 10:30)
+                        if (!isNaN(timeStr) && timeStr.indexOf(':') === -1) {
+                            const decimal = parseFloat(timeStr);
+                            if (decimal >= 0 && decimal < 1) {
+                                const totalMinutes = Math.round(decimal * 24 * 60);
+                                return {
+                                    hours: Math.floor(totalMinutes / 60),
+                                    minutes: totalMinutes % 60
+                                };
+                            }
+                        }
+                        
+                        // "HH:MM" 형식 파싱
+                        const match = timeStr.match(/(\d{1,2}):(\d{2})/);
+                        if (match) {
+                            return {
+                                hours: parseInt(match[1]),
+                                minutes: parseInt(match[2])
+                            };
+                        }
+                        
+                        return { hours: 0, minutes: 0 };
+                    };
+                    
+                    const timeA = parseTime(a['시간'] || a[' 시간'] || a['시간 '] || '');
+                    const timeB = parseTime(b['시간'] || b[' 시간'] || b['시간 '] || '');
+                    
+                    // 일자+시간을 합쳐서 완전한 Date 객체 생성
+                    const fullDateA = new Date(dateA);
+                    fullDateA.setHours(timeA.hours, timeA.minutes, 0, 0);
+                    
+                    const fullDateB = new Date(dateB);
+                    fullDateB.setHours(timeB.hours, timeB.minutes, 0, 0);
+                    
+                    // 내림차순 정렬 (최신이 먼저)
+                    return fullDateB - fullDateA;
                 });
                 noticeData = noticesResult.data;
                 dashboardInfo = dashboardResult.data;
