@@ -1899,11 +1899,27 @@
             const todayData = salesData.filter(row => {
                 const memberName = (row['회원명'] || '').trim();
                 const dateStr = row['날짜'] || row['일자'] || '';
+                
+                // 합계/소계 행 제외
+                if (memberName === '합계' || memberName === '소계' || memberName === '계') return false;
+                if (memberName.includes('합계') || memberName.includes('소계')) return false;
+                
+                // 목표 행이 아니고 날짜가 오늘인 것
                 return (dateStr === todayStr || dateStr === todaySlash) && 
                        memberName !== '목표' && memberName !== '일일목표';
             });
             
+            // 오늘의 목표 행 (날짜가 있는 것만)
+            const todayGoalRow = salesData.find(row => {
+                const memberName = (row['회원명'] || '').trim();
+                const dateStr = row['날짜'] || row['일자'] || '';
+                return (memberName === '목표' || memberName === '일일목표') && 
+                       (dateStr === todayStr || dateStr === todaySlash);
+            });
+            
             let todayConfirmed = 0, todayExpected = 0;
+            
+            // 일반 데이터 합산
             todayData.forEach(row => {
                 todayConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
@@ -1911,17 +1927,54 @@
                                parseNumber(row['지사예상']) + parseNumber(row['이너예상']);
             });
             
-            // 이번 주 계산 (목표 행 제외)
+            // 목표 행의 확정/예상 금액도 포함
+            if (todayGoalRow) {
+                todayConfirmed += parseNumber(todayGoalRow['컨홈확정']) + parseNumber(todayGoalRow['기홈확정']) + 
+                                parseNumber(todayGoalRow['지사확정']) + parseNumber(todayGoalRow['이너확정']);
+                todayExpected += parseNumber(todayGoalRow['컨홈예상']) + parseNumber(todayGoalRow['기홈예상']) + 
+                               parseNumber(todayGoalRow['지사예상']) + parseNumber(todayGoalRow['이너예상']);
+            }
+            
+            // 이번 주 계산
             const weekStart = getWeekStart(today);
             const weekData = salesData.filter(row => {
                 const memberName = (row['회원명'] || '').trim();
-                const rowDate = parseKoreanDate(row['날짜'] || row['일자']);
+                const dateStr = row['날짜'] || row['일자'] || '';
+                
+                // 합계/소계 행 제외
+                if (memberName === '합계' || memberName === '소계' || memberName === '계') return false;
+                if (memberName.includes('합계') || memberName.includes('소계')) return false;
+                
+                // 날짜가 없으면 제외
+                if (!dateStr) return false;
+                
+                const rowDate = parseKoreanDate(dateStr);
                 return rowDate >= weekStart && rowDate <= today &&
                        memberName !== '목표' && memberName !== '일일목표';
             });
             
+            // 이번 주의 목표 행들 (날짜가 있는 것만)
+            const weekGoalRows = salesData.filter(row => {
+                const memberName = (row['회원명'] || '').trim();
+                const dateStr = row['날짜'] || row['일자'] || '';
+                
+                if (!dateStr) return false;
+                if (memberName !== '목표' && memberName !== '일일목표') return false;
+                
+                const rowDate = parseKoreanDate(dateStr);
+                return rowDate >= weekStart && rowDate <= today;
+            });
+            
             let weekConfirmed = 0;
+            
+            // 일반 데이터 합산
             weekData.forEach(row => {
+                weekConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+            });
+            
+            // 목표 행의 확정 금액도 포함
+            weekGoalRows.forEach(row => {
                 weekConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
             });
@@ -1939,17 +1992,46 @@
             }
             const weekRate = weekGoal > 0 ? Math.round((weekConfirmed / weekGoal) * 100) : 0;
             
-            // 이번 달 계산 (목표 행 제외)
+            // 이번 달 계산
             const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
             const monthData = salesData.filter(row => {
                 const memberName = (row['회원명'] || '').trim();
-                const rowDate = parseKoreanDate(row['날짜'] || row['일자']);
+                const dateStr = row['날짜'] || row['일자'] || '';
+                
+                // 합계/소계 행 제외
+                if (memberName === '합계' || memberName === '소계' || memberName === '계') return false;
+                if (memberName.includes('합계') || memberName.includes('소계')) return false;
+                
+                // 날짜가 없으면 제외
+                if (!dateStr) return false;
+                
+                const rowDate = parseKoreanDate(dateStr);
                 return rowDate >= monthStart && rowDate <= today &&
                        memberName !== '목표' && memberName !== '일일목표';
             });
             
+            // 이번 달의 목표 행들 (날짜가 있는 것만)
+            const monthGoalRows = salesData.filter(row => {
+                const memberName = (row['회원명'] || '').trim();
+                const dateStr = row['날짜'] || row['일자'] || '';
+                
+                if (!dateStr) return false;
+                if (memberName !== '목표' && memberName !== '일일목표') return false;
+                
+                const rowDate = parseKoreanDate(dateStr);
+                return rowDate >= monthStart && rowDate <= today;
+            });
+            
             let monthConfirmed = 0;
+            
+            // 일반 데이터 합산
             monthData.forEach(row => {
+                monthConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+            });
+            
+            // 목표 행의 확정 금액도 포함
+            monthGoalRows.forEach(row => {
                 monthConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
                                  parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
             });
@@ -2276,16 +2358,26 @@
                 return rowDate >= startDate && rowDate <= endDate;
             });
             
-            // "목표" 행 추출 (일일 목표)
+            // "목표" 행 추출 (일일 목표 - 날짜가 있는 것만!)
             const dailyGoalRows = periodData.filter(row => {
                 const memberName = (row['회원명'] || '').trim();
-                return memberName === '목표' || memberName === '일일목표';
+                const date = (row['일자'] || row['날짜'] || '').trim();
+                // 회원명이 "목표"이고 날짜가 있는 행만 (Sheet1)
+                return (memberName === '목표' || memberName === '일일목표') && date !== '';
             });
             
-            // 실적 계산용 데이터 ("목표" 행 제외)
+            // 실적 계산용 데이터 (날짜가 있고 목표/합계 행이 아닌 것만)
             const actualData = periodData.filter(row => {
                 const memberName = (row['회원명'] || '').trim();
-                return memberName !== '목표' && memberName !== '일일목표';
+                const date = (row['일자'] || row['날짜'] || '').trim();
+                
+                // 제외할 회원명 패턴
+                if (memberName === '목표' || memberName === '일일목표') return false;
+                if (memberName === '합계' || memberName === '소계' || memberName === '계') return false;
+                if (memberName.includes('합계') || memberName.includes('소계')) return false;
+                
+                // 날짜가 있는 행만
+                return date !== '';
             });
             
             // 상품별 합계 계산 (목표 행 제외한 실적만)
@@ -2472,12 +2564,20 @@
                 `${year}년${month}월${day}일`
             ];
             
-            // 선택한 날짜의 데이터 필터링 (목표 행 제외)
+            // 선택한 날짜의 데이터 필터링 (날짜가 있고 목표/합계 행이 아닌 것만)
             const filteredData = salesData.filter(row => {
                 const memberName = (row['회원명'] || '').trim();
+                
+                // 제외할 회원명 패턴
                 if (memberName === '목표' || memberName === '일일목표') return false;
+                if (memberName === '합계' || memberName === '소계' || memberName === '계') return false;
+                if (memberName.includes('합계') || memberName.includes('소계')) return false;
                 
                 const dateStr = (row['일자'] || row['날짜'] || '').trim();
+                
+                // 날짜가 비어있으면 제외
+                if (!dateStr) return false;
+                
                 // 문자열 직접 비교 또는 Date 객체 비교
                 if (dateFormats.includes(dateStr)) return true;
                 
@@ -2486,7 +2586,7 @@
                 return rowDate.getTime() === targetDate.getTime();
             });
             
-            // 일일 목표 행 찾기 (개선된 로직)
+            // 일일 목표 행 찾기 (날짜가 있는 목표 행만)
             let goalRow = null;
             for (let i = 0; i < salesData.length; i++) {
                 const row = salesData[i];
@@ -2496,6 +2596,9 @@
                 if (memberName !== '목표' && memberName !== '일일목표') continue;
                 
                 const dateStr = (row['일자'] || row['날짜'] || '').trim();
+                
+                // 날짜가 비어있으면 건너뛰기 (Sheet3 제외)
+                if (!dateStr) continue;
                 
                 // 여러 형식으로 날짜 비교
                 if (dateFormats.includes(dateStr)) {
@@ -2898,15 +3001,23 @@
                 return;
             }
             
-            // 목표 행을 별도로 분리 (확정 금액은 소계에 포함하되, 화면에는 표시 안 함)
+            // 목표 행을 별도로 분리 (날짜가 있는 목표 행만)
             const actualData = [];
             const goalRows = [];
             
             periodData.forEach(row => {
                 const memberName = (row['회원명'] || '').trim();
-                if (memberName === '목표' || memberName === '일일목표') {
+                const date = (row['일자'] || row['날짜'] || '').trim();
+                
+                // 제외할 회원명 패턴
+                if (memberName === '합계' || memberName === '소계' || memberName === '계') return;
+                if (memberName.includes('합계') || memberName.includes('소계')) return;
+                
+                if ((memberName === '목표' || memberName === '일일목표') && date !== '') {
+                    // 날짜가 있는 목표 행만 (Sheet1)
                     goalRows.push(row);
-                } else {
+                } else if (memberName !== '목표' && memberName !== '일일목표' && date !== '') {
+                    // 일반 데이터 (날짜가 있는 것만)
                     actualData.push(row);
                 }
             });
