@@ -2463,8 +2463,32 @@
                 dateFilterSelect.appendChild(option);
             });
             
-            // 테이블 렌더링
-            renderSalesDetailTable(periodData);
+            // 오늘 날짜 찾기
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            
+            // 오늘 날짜가 있으면 선택, 없으면 가장 최근 날짜 선택
+            const todayExists = sortedDates.find(date => date === todayStr);
+            if (todayExists) {
+                dateFilterSelect.value = todayStr;
+                // 오늘 날짜 데이터만 표시
+                const todayData = periodData.filter(row => {
+                    const date = row['일자'] || row['날짜'] || '';
+                    return date === todayStr;
+                });
+                renderSalesDetailTable(todayData);
+            } else if (sortedDates.length > 0) {
+                // 오늘 날짜가 없으면 가장 최근 날짜 선택
+                dateFilterSelect.value = sortedDates[0];
+                const latestData = periodData.filter(row => {
+                    const date = row['일자'] || row['날짜'] || '';
+                    return date === sortedDates[0];
+                });
+                renderSalesDetailTable(latestData);
+            } else {
+                // 전체 데이터 표시
+                renderSalesDetailTable(periodData);
+            }
         }
 
         function renderSalesDetailTable(periodData) {
