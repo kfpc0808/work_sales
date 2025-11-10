@@ -2390,15 +2390,15 @@
             
             let 기타Total = 0;
             
-            // 목표 행만 사용 (예상=진행, 확정=확정)
+            // 목표 행만 사용 (예상=예상, 확정=확정)
             dailyGoalRows.forEach(row => {
-                // 예상 = 진행 컬럼 (D, G, J, M)
-                totals['컨홈'].expected += parseNumber(row['컨홈진행']);
-                totals['기홈'].expected += parseNumber(row['기홈진행']);
-                totals['지사'].expected += parseNumber(row['지사진행']);
-                totals['이너'].expected += parseNumber(row['이너진행']);
+                // 예상 = 예상 컬럼 (D, H, L, P)
+                totals['컨홈'].expected += parseNumber(row['컨홈예상']);
+                totals['기홈'].expected += parseNumber(row['기홈예상']);
+                totals['지사'].expected += parseNumber(row['지사예상']);
+                totals['이너'].expected += parseNumber(row['이너예상']);
                 
-                // 확정 = 확정 컬럼 (F, I, L, O)
+                // 확정 = 확정 컬럼 (E, I, M, Q)
                 totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
                 totals['기홈'].confirmed += parseNumber(row['기홈확정']);
                 totals['지사'].confirmed += parseNumber(row['지사확정']);
@@ -2460,7 +2460,15 @@
                 const weeklyGoal = parseNumber(weeklyGoalData[p.goalKey]);
                 const monthlyGoal = parseNumber(monthlyGoalData[p.goalKey]);
                 
-                const goalRate = goal > 0 ? Math.round((data.confirmed / goal) * 100) : 0;
+                // 달성률 계산 (목표가 0일 때 처리)
+                let goalRate = 0;
+                if (goal > 0) {
+                    goalRate = Math.round((data.confirmed / goal) * 100);
+                } else if (data.confirmed > 0) {
+                    // 목표가 0인데 확정이 있으면 100% 이상으로 표시
+                    goalRate = 100;
+                }
+                
                 const badgeClass = goalRate >= 90 ? 'badge-success' : goalRate >= 70 ? 'badge-warning' : 'badge-danger';
                 
                 return `
@@ -2501,7 +2509,13 @@
                                   parseNumber(monthlyGoalData['이너목표']);
             }
             
-            const totalGoalRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
+            // 합계 달성률 계산 (목표가 0일 때 처리)
+            let totalGoalRate = 0;
+            if (totalGoal > 0) {
+                totalGoalRate = Math.round((totalConfirmed / totalGoal) * 100);
+            } else if (totalConfirmed > 0) {
+                totalGoalRate = 100;
+            }
             const totalBadgeClass = totalGoalRate >= 90 ? 'badge-success' : totalGoalRate >= 70 ? 'badge-warning' : 'badge-danger';
             
             // 합계 행 추가
@@ -2619,15 +2633,15 @@
                 '이너': { expected: 0, confirmed: 0 }
             };
             
-            // 목표 행만 사용 (예상=진행, 확정=확정)
+            // 목표 행만 사용 (예상=예상, 확정=확정)
             if (goalRow) {
-                // 예상 = 진행 컬럼 (D, G, J, M)
-                totals['컨홈'].expected = parseNumber(goalRow['컨홈진행']);
-                totals['기홈'].expected = parseNumber(goalRow['기홈진행']);
-                totals['지사'].expected = parseNumber(goalRow['지사진행']);
-                totals['이너'].expected = parseNumber(goalRow['이너진행']);
+                // 예상 = 예상 컬럼 (D, H, L, P)
+                totals['컨홈'].expected = parseNumber(goalRow['컨홈예상']);
+                totals['기홈'].expected = parseNumber(goalRow['기홈예상']);
+                totals['지사'].expected = parseNumber(goalRow['지사예상']);
+                totals['이너'].expected = parseNumber(goalRow['이너예상']);
                 
-                // 확정 = 확정 컬럼 (F, I, L, O)
+                // 확정 = 확정 컬럼 (E, I, M, Q)
                 totals['컨홈'].confirmed = parseNumber(goalRow['컨홈확정']);
                 totals['기홈'].confirmed = parseNumber(goalRow['기홈확정']);
                 totals['지사'].confirmed = parseNumber(goalRow['지사확정']);
@@ -2679,7 +2693,15 @@
                 const weeklyGoal = parseNumber(weeklyGoalData[p.goalKey]);
                 const monthlyGoal = parseNumber(monthlyGoalData[p.goalKey]);
                 
-                const goalRate = goal > 0 ? Math.round((data.confirmed / goal) * 100) : 0;
+                // 달성률 계산 (목표가 0일 때 처리)
+                let goalRate = 0;
+                if (goal > 0) {
+                    goalRate = Math.round((data.confirmed / goal) * 100);
+                } else if (data.confirmed > 0) {
+                    // 목표가 0인데 확정이 있으면 100% 이상으로 표시
+                    goalRate = 100;
+                }
+                
                 const badgeClass = goalRate >= 90 ? 'badge-success' : goalRate >= 70 ? 'badge-warning' : 'badge-danger';
                 
                 return `
@@ -2741,7 +2763,13 @@
             console.log('주목표 합계 최종:', totalWeeklyGoal);
             console.log('월목표 합계 최종:', totalMonthlyGoal);
             
-            const totalGoalRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
+            // 합계 달성률 계산 (목표가 0일 때 처리)
+            let totalGoalRate = 0;
+            if (totalGoal > 0) {
+                totalGoalRate = Math.round((totalConfirmed / totalGoal) * 100);
+            } else if (totalConfirmed > 0) {
+                totalGoalRate = 100;
+            }
             const totalBadgeClass = totalGoalRate >= 90 ? 'badge-success' : totalGoalRate >= 70 ? 'badge-warning' : 'badge-danger';
             
             // 합계 행 추가
