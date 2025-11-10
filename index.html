@@ -1418,7 +1418,10 @@
             </div>
 
             <div class="section">
-                <div class="section-title">상품별 매출 현황</div>
+                <div class="section-title">
+                    상품별 매출 현황
+                    <input type="date" id="salesProductDate" onchange="filterSalesProductByDate()" style="float: right; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; background: var(--card-bg); cursor: pointer;">
+                </div>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -1427,7 +1430,7 @@
                                 <th class="text-right">예상</th>
                                 <th class="text-right">확정</th>
                                 <th class="text-right">달성률</th>
-                                <th class="text-right">목표</th>
+                                <th class="text-right">일목표</th>
                                 <th class="text-right">목표 대비</th>
                                 <th class="text-right">주목표</th>
                                 <th class="text-right">월목표</th>
@@ -2238,18 +2241,27 @@
             
             if (period === 'today') {
                 startDate = new Date();
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date();
+                endDate.setHours(23, 59, 59, 999);
             } else if (period === 'week') {
                 startDate = getWeekStart(endDate);
+                endDate.setHours(23, 59, 59, 999);
             } else if (period === 'month') {
                 startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
             } else if (period === 'custom') {
                 startDate = new Date(document.getElementById('salesStartDate').value);
+                startDate.setHours(0, 0, 0, 0);
                 endDate = new Date(document.getElementById('salesEndDate').value);
+                endDate.setHours(23, 59, 59, 999);
             }
             
             // 기간 내 데이터 필터링
             const periodData = salesData.filter(row => {
                 const rowDate = parseKoreanDate(row['일자'] || row['날짜'] || '');
+                rowDate.setHours(0, 0, 0, 0);
                 return rowDate >= startDate && rowDate <= endDate;
             });
             
@@ -2382,8 +2394,138 @@
                 </tr>
             `;
             
+            // 날짜 선택기 기본값 설정 (오늘)
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('salesProductDate').value = todayStr;
+            
             updateSalesCharts(actualData, totals);
             displaySalesDetail(actualData);  // 일자별 상세 데이터 표시 (목표 행 제외)
+        }
+
+        function filterSalesProductByDate() {
+            const selectedDate = document.getElementById('salesProductDate').value;
+            if (!selectedDate) return;
+            
+            // 선택한 날짜를 Date 객체로 변환
+            const targetDate = new Date(selectedDate);
+            targetDate.setHours(0, 0, 0, 0);
+            
+            // 선택한 날짜의 데이터 필터링 (목표 행 제외)
+            const filteredData = salesData.filter(row => {
+                const memberName = (row['회원명'] || '').trim();
+                if (memberName === '목표' || memberName === '일일목표') return false;
+                
+                const rowDate = parseKoreanDate(row['일자'] || row['날짜'] || '');
+                rowDate.setHours(0, 0, 0, 0);
+                return rowDate.getTime() === targetDate.getTime();
+            });
+            
+            // 일일 목표 행 찾기
+            const goalRow = salesData.find(row => {
+                const memberName = (row['회원명'] || '').trim();
+                if (memberName !== '목표' && memberName !== '일일목표') return false;
+                
+                const rowDate = parseKoreanDate(row['일자'] || row['날짜'] || '');
+                rowDate.setHours(0, 0, 0, 0);
+                return rowDate.getTime() === targetDate.getTime();
+            });
+            
+            // 상품별 합계 계산
+            let totals = {
+                '컨홈': { expected: 0, confirmed: 0 },
+                '기홈': { expected: 0, confirmed: 0 },
+                '지사': { expected: 0, confirmed: 0 },
+                '이너': { expected: 0, confirmed: 0 }
+            };
+            
+            filteredData.forEach(row => {
+                totals['컨홈'].expected += parseNumber(row['컨홈예상']);
+                totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
+                totals['기홈'].expected += parseNumber(row['기홈예상']);
+                totals['기홈'].confirmed += parseNumber(row['기홈확정']);
+                totals['지사'].expected += parseNumber(row['지사예상']);
+                totals['지사'].confirmed += parseNumber(row['지사확정']);
+                totals['이너'].expected += parseNumber(row['이너예상']);
+                totals['이너'].confirmed += parseNumber(row['이너확정']);
+            });
+            
+            // 전체 합계
+            let totalExpected = 0, totalConfirmed = 0;
+            Object.values(totals).forEach(t => {
+                totalExpected += t.expected;
+                totalConfirmed += t.confirmed;
+            });
+            
+            // 일일 목표
+            let goalData = {};
+            if (goalRow) {
+                goalData['컨홈목표'] = parseNumber(goalRow['컨홈목표']);
+                goalData['기홈목표'] = parseNumber(goalRow['기홈목표']);
+                goalData['지사목표'] = parseNumber(goalRow['지사목표']);
+                goalData['이너목표'] = parseNumber(goalRow['이너목표']);
+            }
+            
+            const totalGoal = parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
+                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']);
+            
+            // 주목표와 월목표 데이터 (현재 날짜 기준)
+            const weeklyGoalData = getCurrentWeekGoal(targetDate);
+            const monthlyGoalData = getCurrentMonthGoal(targetDate);
+            
+            // 상품별 테이블
+            const products = [
+                { name: '컨홈', key: '컨홈', goalKey: '컨홈목표' },
+                { name: '기홈', key: '기홈', goalKey: '기홈목표' },
+                { name: '지사', key: '지사', goalKey: '지사목표' },
+                { name: '이너', key: '이너', goalKey: '이너목표' }
+            ];
+            
+            document.getElementById('salesTableBody').innerHTML = products.map(p => {
+                const data = totals[p.key];
+                const goal = parseNumber(goalData[p.goalKey]);
+                const weeklyGoal = parseNumber(weeklyGoalData[p.goalKey]);
+                const monthlyGoal = parseNumber(monthlyGoalData[p.goalKey]);
+                
+                const rate = data.expected > 0 ? Math.round((data.confirmed / data.expected) * 100) : 0;
+                const goalRate = goal > 0 ? Math.round((data.confirmed / goal) * 100) : 0;
+                const badgeClass = goalRate >= 90 ? 'badge-success' : goalRate >= 70 ? 'badge-warning' : 'badge-danger';
+                
+                return `
+                    <tr>
+                        <td class="text-bold">${p.name}</td>
+                        <td class="text-right">${formatNumber(data.expected)}원</td>
+                        <td class="text-right">${formatNumber(data.confirmed)}원</td>
+                        <td class="text-right">${rate}%</td>
+                        <td class="text-right">${formatNumber(goal)}원</td>
+                        <td class="text-right"><span class="card-badge ${badgeClass}">${goalRate}%</span></td>
+                        <td class="text-right">${formatNumber(weeklyGoal)}원</td>
+                        <td class="text-right">${formatNumber(monthlyGoal)}원</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // 합계 계산 - 우측 합계 컬럼 사용
+            const totalWeeklyGoal = parseNumber(weeklyGoalData['주목표계']);
+            const totalMonthlyGoal = parseNumber(monthlyGoalData['월목표계']);
+            
+            const totalRate = totalExpected > 0 ? Math.round((totalConfirmed / totalExpected) * 100) : 0;
+            const totalGoalRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
+            const totalBadgeClass = totalGoalRate >= 90 ? 'badge-success' : totalGoalRate >= 70 ? 'badge-warning' : 'badge-danger';
+            
+            // 합계 행 추가
+            document.getElementById('salesTableBody').innerHTML += `
+                <tr style="background: #f0f0f0; font-weight: bold; border-top: 2px solid #333;">
+                    <td class="text-bold">계</td>
+                    <td class="text-right">${formatNumber(totalExpected)}원</td>
+                    <td class="text-right">${formatNumber(totalConfirmed)}원</td>
+                    <td class="text-right">${totalRate}%</td>
+                    <td class="text-right">${formatNumber(totalGoal)}원</td>
+                    <td class="text-right"><span class="card-badge ${totalBadgeClass}">${totalGoalRate}%</span></td>
+                    <td class="text-right">${formatNumber(totalWeeklyGoal)}원</td>
+                    <td class="text-right">${formatNumber(totalMonthlyGoal)}원</td>
+                </tr>
+            `;
         }
 
         function updateSalesCharts(periodData, totals) {
