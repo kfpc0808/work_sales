@@ -1429,10 +1429,12 @@
                                 <th class="text-right">달성률</th>
                                 <th class="text-right">목표</th>
                                 <th class="text-right">목표 대비</th>
+                                <th class="text-right">주목표</th>
+                                <th class="text-right">월목표</th>
                             </tr>
                         </thead>
                         <tbody id="salesTableBody">
-                            <tr><td colspan="6" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                            <tr><td colspan="8" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1889,22 +1891,31 @@
             
             const today = new Date();
             const todayStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            const todaySlash = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
             
-            // 오늘 매출 계산
-            const todayData = salesData.find(row => row['날짜'] === todayStr);
+            // 오늘 매출 계산 (목표 행 제외)
+            const todayData = salesData.filter(row => {
+                const memberName = (row['회원명'] || '').trim();
+                const dateStr = row['날짜'] || row['일자'] || '';
+                return (dateStr === todayStr || dateStr === todaySlash) && 
+                       memberName !== '목표' && memberName !== '일일목표';
+            });
+            
             let todayConfirmed = 0, todayExpected = 0;
-            if (todayData) {
-                todayConfirmed = parseNumber(todayData['컨홈확정']) + parseNumber(todayData['기홈확정']) + 
-                                parseNumber(todayData['지사확정']) + parseNumber(todayData['이너확정']);
-                todayExpected = parseNumber(todayData['컨홈예상']) + parseNumber(todayData['기홈예상']) + 
-                               parseNumber(todayData['지사예상']) + parseNumber(todayData['이너예상']);
-            }
+            todayData.forEach(row => {
+                todayConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                todayExpected += parseNumber(row['컨홈예상']) + parseNumber(row['기홈예상']) + 
+                               parseNumber(row['지사예상']) + parseNumber(row['이너예상']);
+            });
             
-            // 이번 주 계산
+            // 이번 주 계산 (목표 행 제외)
             const weekStart = getWeekStart(today);
             const weekData = salesData.filter(row => {
-                const rowDate = parseKoreanDate(row['날짜']);
-                return rowDate >= weekStart && rowDate <= today;
+                const memberName = (row['회원명'] || '').trim();
+                const rowDate = parseKoreanDate(row['날짜'] || row['일자']);
+                return rowDate >= weekStart && rowDate <= today &&
+                       memberName !== '목표' && memberName !== '일일목표';
             });
             
             let weekConfirmed = 0;
@@ -1919,11 +1930,13 @@
                             parseNumber(weekGoalData['지사목표']) + parseNumber(weekGoalData['이너목표']);
             const weekRate = weekGoal > 0 ? Math.round((weekConfirmed / weekGoal) * 100) : 0;
             
-            // 이번 달 계산
+            // 이번 달 계산 (목표 행 제외)
             const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
             const monthData = salesData.filter(row => {
-                const rowDate = parseKoreanDate(row['날짜']);
-                return rowDate >= monthStart && rowDate <= today;
+                const memberName = (row['회원명'] || '').trim();
+                const rowDate = parseKoreanDate(row['날짜'] || row['일자']);
+                return rowDate >= monthStart && rowDate <= today &&
+                       memberName !== '목표' && memberName !== '일일목표';
             });
             
             let monthConfirmed = 0;
@@ -1963,8 +1976,10 @@
             const today = new Date();
             const weekStart = getWeekStart(today);
             const weekData = salesData.filter(row => {
-                const rowDate = parseKoreanDate(row['날짜']);
-                return rowDate >= weekStart && rowDate <= today;
+                const memberName = (row['회원명'] || '').trim();
+                const rowDate = parseKoreanDate(row['날짜'] || row['일자']);
+                return rowDate >= weekStart && rowDate <= today &&
+                       memberName !== '목표' && memberName !== '일일목표';
             });
             
             // 주간 실적 계산
@@ -1993,10 +2008,10 @@
             
             // 달성률 계산
             const products = [
-                { name: '컨홈목표', key: '컨홈' },
-                { name: '기홈목표', key: '기홈' },
-                { name: '지사목표', key: '지사' },
-                { name: '이너목표', key: '이너' }
+                { name: '컨홈', key: '컨홈' },
+                { name: '기홈', key: '기홈' },
+                { name: '지사', key: '지사' },
+                { name: '이너', key: '이너' }
             ].map(p => {
                 const confirmed = weekConfirmed[p.key];
                 const goal = weekGoals[p.key];
@@ -2023,12 +2038,25 @@
             if (!ctx) return;
             if (chartInstances.dashboard) chartInstances.dashboard.destroy();
             
-            // 이번 주 데이터
+            // 이번 주 데이터 (목표 행 제외)
             const today = new Date();
             const weekStart = getWeekStart(today);
             const weekData = salesData.filter(row => {
-                const rowDate = parseKoreanDate(row['날짜']);
-                return rowDate >= weekStart && rowDate <= today;
+                const memberName = (row['회원명'] || '').trim();
+                const rowDate = parseKoreanDate(row['날짜'] || row['일자']);
+                return rowDate >= weekStart && rowDate <= today &&
+                       memberName !== '목표' && memberName !== '일일목표';
+            });
+            
+            // 날짜별로 그룹화 및 합계 계산
+            const dailyTotals = {};
+            weekData.forEach(row => {
+                const dateStr = row['날짜'] || row['일자'] || '';
+                if (!dailyTotals[dateStr]) {
+                    dailyTotals[dateStr] = 0;
+                }
+                dailyTotals[dateStr] += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
+                                       parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
             });
             
             // 요일별 데이터
@@ -2041,24 +2069,24 @@
             const actualValues = [];
             let cumulative = 0;
             
-            weekData.slice(0, 5).forEach((row, idx) => {
-                const daily = parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
-                             parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
-                cumulative += daily;
-                goalValues.push(dailyGoal * (idx + 1));
-                actualValues.push(cumulative);
-            });
-            
-            // 빈 날짜는 0으로
-            while (goalValues.length < 5) {
-                goalValues.push(dailyGoal * goalValues.length);
+            // 월요일부터 금요일까지
+            for (let i = 0; i < 5; i++) {
+                const date = new Date(weekStart);
+                date.setDate(date.getDate() + i);
+                const dateStr = `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+                const dateSlash = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+                
+                const dailyTotal = (dailyTotals[dateStr] || 0) + (dailyTotals[dateSlash] || 0);
+                cumulative += dailyTotal;
+                
+                goalValues.push(dailyGoal * (i + 1));
                 actualValues.push(cumulative);
             }
             
             chartInstances.dashboard = new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels: days.slice(0, actualValues.length),
+                    labels: days,
                     datasets: [{
                         label: '목표',
                         data: goalValues,
@@ -2223,7 +2251,19 @@
                 return rowDate >= startDate && rowDate <= endDate;
             });
             
-            // 상품별 합계 계산
+            // "목표" 행 추출 (일일 목표)
+            const dailyGoalRows = periodData.filter(row => {
+                const memberName = (row['회원명'] || '').trim();
+                return memberName === '목표' || memberName === '일일목표';
+            });
+            
+            // 실적 계산용 데이터 ("목표" 행 제외)
+            const actualData = periodData.filter(row => {
+                const memberName = (row['회원명'] || '').trim();
+                return memberName !== '목표' && memberName !== '일일목표';
+            });
+            
+            // 상품별 합계 계산 (목표 행 제외한 실적만)
             let totals = {
                 '컨홈': { expected: 0, confirmed: 0 },
                 '기홈': { expected: 0, confirmed: 0 },
@@ -2233,7 +2273,7 @@
             
             let 기타Total = 0;
             
-            periodData.forEach(row => {
+            actualData.forEach(row => {
                 totals['컨홈'].expected += parseNumber(row['컨홈예상']);
                 totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
                 totals['기홈'].expected += parseNumber(row['기홈예상']);
@@ -2253,8 +2293,21 @@
             });
             totalConfirmed += 기타Total;  // 기타 추가
             
-            // 목표 (주간 또는 월간)
-            const goalData = period === 'month' ? (monthlyGoals[0] || {}) : (weeklyGoals[0] || {});
+            // 목표 데이터 선택
+            let goalData = {};
+            if (period === 'today' && dailyGoalRows.length > 0) {
+                // "오늘" 선택 시: 일일 목표 행의 합계 사용
+                dailyGoalRows.forEach(row => {
+                    goalData['컨홈목표'] = (goalData['컨홈목표'] || 0) + parseNumber(row['컨홈목표']);
+                    goalData['기홈목표'] = (goalData['기홈목표'] || 0) + parseNumber(row['기홈목표']);
+                    goalData['지사목표'] = (goalData['지사목표'] || 0) + parseNumber(row['지사목표']);
+                    goalData['이너목표'] = (goalData['이너목표'] || 0) + parseNumber(row['이너목표']);
+                });
+            } else {
+                // 주간/월간/사용자지정: 기존 로직 (sheet2/sheet3)
+                goalData = period === 'month' ? (monthlyGoals[0] || {}) : (weeklyGoals[0] || {});
+            }
+            
             const totalGoal = parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
                              parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']);
             const achievementRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
@@ -2268,18 +2321,26 @@
             
             // 상품별 테이블
             const products = [
-                { name: '컨홈목표', key: '컨홈', goalKey: '컨홈목표' },
-                { name: '기홈목표', key: '기홈', goalKey: '기홈목표' },
-                { name: '지사목표', key: '지사', goalKey: '지사목표' },
-                { name: '이너목표', key: '이너', goalKey: '이너목표' }
+                { name: '컨홈', key: '컨홈', goalKey: '컨홈목표' },
+                { name: '기홈', key: '기홈', goalKey: '기홈목표' },
+                { name: '지사', key: '지사', goalKey: '지사목표' },
+                { name: '이너', key: '이너', goalKey: '이너목표' }
             ];
+            
+            // 주목표와 월목표 데이터
+            const weeklyGoalData = weeklyGoals[0] || {};
+            const monthlyGoalData = monthlyGoals[0] || {};
             
             document.getElementById('salesTableBody').innerHTML = products.map(p => {
                 const data = totals[p.key];
                 const goal = parseNumber(goalData[p.goalKey]);
+                const weeklyGoal = parseNumber(weeklyGoalData[p.goalKey]);
+                const monthlyGoal = parseNumber(monthlyGoalData[p.goalKey]);
+                
                 const rate = data.expected > 0 ? Math.round((data.confirmed / data.expected) * 100) : 0;
                 const goalRate = goal > 0 ? Math.round((data.confirmed / goal) * 100) : 0;
                 const badgeClass = goalRate >= 90 ? 'badge-success' : goalRate >= 70 ? 'badge-warning' : 'badge-danger';
+                
                 return `
                     <tr>
                         <td class="text-bold">${p.name}</td>
@@ -2288,12 +2349,38 @@
                         <td class="text-right">${rate}%</td>
                         <td class="text-right">${formatNumber(goal)}원</td>
                         <td class="text-right"><span class="card-badge ${badgeClass}">${goalRate}%</span></td>
+                        <td class="text-right">${formatNumber(weeklyGoal)}원</td>
+                        <td class="text-right">${formatNumber(monthlyGoal)}원</td>
                     </tr>
                 `;
             }).join('');
             
-            updateSalesCharts(periodData, totals);
-            displaySalesDetail(periodData);  // 일자별 상세 데이터 표시
+            // 합계 계산
+            const totalWeeklyGoal = parseNumber(weeklyGoalData['컨홈목표']) + parseNumber(weeklyGoalData['기홈목표']) + 
+                                   parseNumber(weeklyGoalData['지사목표']) + parseNumber(weeklyGoalData['이너목표']);
+            const totalMonthlyGoal = parseNumber(monthlyGoalData['컨홈목표']) + parseNumber(monthlyGoalData['기홈목표']) + 
+                                    parseNumber(monthlyGoalData['지사목표']) + parseNumber(monthlyGoalData['이너목표']);
+            
+            const totalRate = totalExpected > 0 ? Math.round((totalConfirmed / totalExpected) * 100) : 0;
+            const totalGoalRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
+            const totalBadgeClass = totalGoalRate >= 90 ? 'badge-success' : totalGoalRate >= 70 ? 'badge-warning' : 'badge-danger';
+            
+            // 합계 행 추가
+            document.getElementById('salesTableBody').innerHTML += `
+                <tr style="background: #f0f0f0; font-weight: bold; border-top: 2px solid #333;">
+                    <td class="text-bold">계</td>
+                    <td class="text-right">${formatNumber(totalExpected)}원</td>
+                    <td class="text-right">${formatNumber(totalConfirmed)}원</td>
+                    <td class="text-right">${totalRate}%</td>
+                    <td class="text-right">${formatNumber(totalGoal)}원</td>
+                    <td class="text-right"><span class="card-badge ${totalBadgeClass}">${totalGoalRate}%</span></td>
+                    <td class="text-right">${formatNumber(totalWeeklyGoal)}원</td>
+                    <td class="text-right">${formatNumber(totalMonthlyGoal)}원</td>
+                </tr>
+            `;
+            
+            updateSalesCharts(actualData, totals);
+            displaySalesDetail(actualData);  // 일자별 상세 데이터 표시 (목표 행 제외)
         }
 
         function updateSalesCharts(periodData, totals) {
@@ -2619,6 +2706,146 @@
                     </tr>
                 `;
             });
+            
+            // 전체 합계 계산
+            let grandTotal = {
+                컨홈진행: 0, 컨홈예상: 0, 컨홈확정: 0,
+                기홈진행: 0, 기홈예상: 0, 기홈확정: 0,
+                지사진행: 0, 지사예상: 0, 지사확정: 0,
+                이너진행: 0, 이너예상: 0, 이너확정: 0,
+                기타: 0
+            };
+            
+            periodData.forEach(row => {
+                grandTotal.컨홈진행 += parseNumber(row['컨홈진행']);
+                grandTotal.컨홈예상 += parseNumber(row['컨홈예상']);
+                grandTotal.컨홈확정 += parseNumber(row['컨홈확정']);
+                grandTotal.기홈진행 += parseNumber(row['기홈진행']);
+                grandTotal.기홈예상 += parseNumber(row['기홈예상']);
+                grandTotal.기홈확정 += parseNumber(row['기홈확정']);
+                grandTotal.지사진행 += parseNumber(row['지사진행']);
+                grandTotal.지사예상 += parseNumber(row['지사예상']);
+                grandTotal.지사확정 += parseNumber(row['지사확정']);
+                grandTotal.이너진행 += parseNumber(row['이너진행']);
+                grandTotal.이너예상 += parseNumber(row['이너예상']);
+                grandTotal.이너확정 += parseNumber(row['이너확정']);
+                grandTotal.기타 += parseNumber(row['기타']);
+            });
+            
+            // 목표 데이터 가져오기
+            const period = document.getElementById('salesPeriod').value;
+            const selectedDate = document.getElementById('salesDetailDateFilter').value;
+            
+            // 일일 목표 (선택된 날짜 또는 조회 기간의 목표 행)
+            let dailyGoal = { 컨홈: 0, 기홈: 0, 지사: 0, 이너: 0 };
+            if (selectedDate !== 'all') {
+                // 특정 날짜 선택 시 해당 날짜의 목표
+                const goalRow = currentPeriodData.find(row => {
+                    const memberName = (row['회원명'] || '').trim();
+                    const date = row['일자'] || row['날짜'] || '';
+                    return (memberName === '목표' || memberName === '일일목표') && date === selectedDate;
+                });
+                if (goalRow) {
+                    dailyGoal.컨홈 = parseNumber(goalRow['컨홈목표']);
+                    dailyGoal.기홈 = parseNumber(goalRow['기홈목표']);
+                    dailyGoal.지사 = parseNumber(goalRow['지사목표']);
+                    dailyGoal.이너 = parseNumber(goalRow['이너목표']);
+                }
+            } else if (period === 'today') {
+                // "오늘" 선택 시
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+                const todaySlash = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+                
+                const goalRow = salesData.find(row => {
+                    const memberName = (row['회원명'] || '').trim();
+                    const date = row['일자'] || row['날짜'] || '';
+                    return (memberName === '목표' || memberName === '일일목표') && 
+                           (date === todayStr || date === todaySlash);
+                });
+                if (goalRow) {
+                    dailyGoal.컨홈 = parseNumber(goalRow['컨홈목표']);
+                    dailyGoal.기홈 = parseNumber(goalRow['기홈목표']);
+                    dailyGoal.지사 = parseNumber(goalRow['지사목표']);
+                    dailyGoal.이너 = parseNumber(goalRow['이너목표']);
+                }
+            }
+            
+            // 주목표와 월목표
+            const weeklyGoalData = weeklyGoals[0] || {};
+            const monthlyGoalData = monthlyGoals[0] || {};
+            
+            const weeklyGoal = {
+                컨홈: parseNumber(weeklyGoalData['컨홈목표']),
+                기홈: parseNumber(weeklyGoalData['기홈목표']),
+                지사: parseNumber(weeklyGoalData['지사목표']),
+                이너: parseNumber(weeklyGoalData['이너목표'])
+            };
+            
+            const monthlyGoal = {
+                컨홈: parseNumber(monthlyGoalData['컨홈목표']),
+                기홈: parseNumber(monthlyGoalData['기홈목표']),
+                지사: parseNumber(monthlyGoalData['지사목표']),
+                이너: parseNumber(monthlyGoalData['이너목표'])
+            };
+            
+            // 전체 합계 행
+            html += `
+                <tr style="background: #d4edda; font-weight: bold; border-top: 3px solid #28a745;">
+                    <td colspan="2" style="text-align: center;">계</td>
+                    <td class="text-right">${formatNumber(grandTotal.컨홈진행)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.컨홈예상)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.컨홈확정)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.기홈진행)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.기홈예상)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.기홈확정)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.지사진행)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.지사예상)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.지사확정)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.이너진행)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.이너예상)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.이너확정)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.기타)}</td>
+                </tr>
+            `;
+            
+            // 목표 행 (조회 기간 또는 선택 날짜)
+            if (dailyGoal.컨홈 > 0 || dailyGoal.기홈 > 0 || dailyGoal.지사 > 0 || dailyGoal.이너 > 0) {
+                html += `
+                    <tr style="background: #fff3cd; font-weight: bold;">
+                        <td colspan="2" style="text-align: center;">목표</td>
+                        <td colspan="3" class="text-right">${formatNumber(dailyGoal.컨홈)}</td>
+                        <td colspan="3" class="text-right">${formatNumber(dailyGoal.기홈)}</td>
+                        <td colspan="3" class="text-right">${formatNumber(dailyGoal.지사)}</td>
+                        <td colspan="3" class="text-right">${formatNumber(dailyGoal.이너)}</td>
+                        <td class="text-right">-</td>
+                    </tr>
+                `;
+            }
+            
+            // 주목표 행
+            html += `
+                <tr style="background: #d1ecf1; font-weight: bold;">
+                    <td colspan="2" style="text-align: center;">주목표</td>
+                    <td colspan="3" class="text-right">${formatNumber(weeklyGoal.컨홈)}</td>
+                    <td colspan="3" class="text-right">${formatNumber(weeklyGoal.기홈)}</td>
+                    <td colspan="3" class="text-right">${formatNumber(weeklyGoal.지사)}</td>
+                    <td colspan="3" class="text-right">${formatNumber(weeklyGoal.이너)}</td>
+                    <td class="text-right">-</td>
+                </tr>
+            `;
+            
+            // 월목표 행
+            html += `
+                <tr style="background: #f8d7da; font-weight: bold;">
+                    <td colspan="2" style="text-align: center;">월목표</td>
+                    <td colspan="3" class="text-right">${formatNumber(monthlyGoal.컨홈)}</td>
+                    <td colspan="3" class="text-right">${formatNumber(monthlyGoal.기홈)}</td>
+                    <td colspan="3" class="text-right">${formatNumber(monthlyGoal.지사)}</td>
+                    <td colspan="3" class="text-right">${formatNumber(monthlyGoal.이너)}</td>
+                    <td class="text-right">-</td>
+                </tr>
+            `;
             
             tbody.innerHTML = html;
         }
