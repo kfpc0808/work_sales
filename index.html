@@ -1924,10 +1924,11 @@
                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
             });
             
-            // 주간 목표
-            const weekGoalData = weeklyGoals[0] || {};
-            const weekGoal = parseNumber(weekGoalData['컨홈목표']) + parseNumber(weekGoalData['기홈목표']) + 
-                            parseNumber(weekGoalData['지사목표']) + parseNumber(weekGoalData['이너목표']);
+            // 주간 목표 (현재 주)
+            const weekGoalData = getCurrentWeekGoal(today);
+            const weekGoal = parseNumber(weekGoalData['주목표계']) || 
+                            (parseNumber(weekGoalData['컨홈목표']) + parseNumber(weekGoalData['기홈목표']) + 
+                             parseNumber(weekGoalData['지사목표']) + parseNumber(weekGoalData['이너목표']));
             const weekRate = weekGoal > 0 ? Math.round((weekConfirmed / weekGoal) * 100) : 0;
             
             // 이번 달 계산 (목표 행 제외)
@@ -1945,10 +1946,11 @@
                                  parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
             });
             
-            // 월간 목표
-            const monthGoalData = monthlyGoals[0] || {};
-            const monthGoal = parseNumber(monthGoalData['컨홈목표']) + parseNumber(monthGoalData['기홈목표']) + 
-                             parseNumber(monthGoalData['지사목표']) + parseNumber(monthGoalData['이너목표']);
+            // 월간 목표 (현재 월)
+            const monthGoalData = getCurrentMonthGoal(today);
+            const monthGoal = parseNumber(monthGoalData['월목표계']) || 
+                             (parseNumber(monthGoalData['컨홈목표']) + parseNumber(monthGoalData['기홈목표']) + 
+                              parseNumber(monthGoalData['지사목표']) + parseNumber(monthGoalData['이너목표']));
             const monthRate = monthGoal > 0 ? Math.round((monthConfirmed / monthGoal) * 100) : 0;
             
             // UI 업데이트
@@ -1997,8 +1999,8 @@
                 weekConfirmed['이너'] += parseNumber(row['이너확정']);
             });
             
-            // 주간 목표
-            const weekGoalData = weeklyGoals[0] || {};
+            // 주간 목표 (현재 주)
+            const weekGoalData = getCurrentWeekGoal(today);
             const weekGoals = {
                 '컨홈': parseNumber(weekGoalData['컨홈목표']),
                 '기홈': parseNumber(weekGoalData['기홈목표']),
@@ -2303,9 +2305,12 @@
                     goalData['지사목표'] = (goalData['지사목표'] || 0) + parseNumber(row['지사목표']);
                     goalData['이너목표'] = (goalData['이너목표'] || 0) + parseNumber(row['이너목표']);
                 });
+            } else if (period === 'month') {
+                // 월간: 현재 월 목표
+                goalData = getCurrentMonthGoal();
             } else {
-                // 주간/월간/사용자지정: 기존 로직 (sheet2/sheet3)
-                goalData = period === 'month' ? (monthlyGoals[0] || {}) : (weeklyGoals[0] || {});
+                // 주간/사용자지정: 현재 주 목표
+                goalData = getCurrentWeekGoal();
             }
             
             const totalGoal = parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
@@ -2327,9 +2332,9 @@
                 { name: '이너', key: '이너', goalKey: '이너목표' }
             ];
             
-            // 주목표와 월목표 데이터
-            const weeklyGoalData = weeklyGoals[0] || {};
-            const monthlyGoalData = monthlyGoals[0] || {};
+            // 주목표와 월목표 데이터 (현재 날짜 기준)
+            const weeklyGoalData = getCurrentWeekGoal();
+            const monthlyGoalData = getCurrentMonthGoal();
             
             document.getElementById('salesTableBody').innerHTML = products.map(p => {
                 const data = totals[p.key];
@@ -2355,11 +2360,9 @@
                 `;
             }).join('');
             
-            // 합계 계산
-            const totalWeeklyGoal = parseNumber(weeklyGoalData['컨홈목표']) + parseNumber(weeklyGoalData['기홈목표']) + 
-                                   parseNumber(weeklyGoalData['지사목표']) + parseNumber(weeklyGoalData['이너목표']);
-            const totalMonthlyGoal = parseNumber(monthlyGoalData['컨홈목표']) + parseNumber(monthlyGoalData['기홈목표']) + 
-                                    parseNumber(monthlyGoalData['지사목표']) + parseNumber(monthlyGoalData['이너목표']);
+            // 합계 계산 - 우측 합계 컬럼 사용
+            const totalWeeklyGoal = parseNumber(weeklyGoalData['주목표계']);
+            const totalMonthlyGoal = parseNumber(monthlyGoalData['월목표계']);
             
             const totalRate = totalExpected > 0 ? Math.round((totalConfirmed / totalExpected) * 100) : 0;
             const totalGoalRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
@@ -2771,22 +2774,24 @@
                 }
             }
             
-            // 주목표와 월목표
-            const weeklyGoalData = weeklyGoals[0] || {};
-            const monthlyGoalData = monthlyGoals[0] || {};
+            // 주목표와 월목표 (현재 날짜 기준)
+            const weeklyGoalData = getCurrentWeekGoal();
+            const monthlyGoalData = getCurrentMonthGoal();
             
             const weeklyGoal = {
                 컨홈: parseNumber(weeklyGoalData['컨홈목표']),
                 기홈: parseNumber(weeklyGoalData['기홈목표']),
                 지사: parseNumber(weeklyGoalData['지사목표']),
-                이너: parseNumber(weeklyGoalData['이너목표'])
+                이너: parseNumber(weeklyGoalData['이너목표']),
+                합계: parseNumber(weeklyGoalData['주목표계'])
             };
             
             const monthlyGoal = {
                 컨홈: parseNumber(monthlyGoalData['컨홈목표']),
                 기홈: parseNumber(monthlyGoalData['기홈목표']),
                 지사: parseNumber(monthlyGoalData['지사목표']),
-                이너: parseNumber(monthlyGoalData['이너목표'])
+                이너: parseNumber(monthlyGoalData['이너목표']),
+                합계: parseNumber(monthlyGoalData['월목표계'])
             };
             
             // 전체 합계 행
@@ -3460,6 +3465,72 @@
             d.setDate(d.getDate() + diff);
             d.setHours(0, 0, 0, 0);
             return d;
+        }
+
+        function parseSimpleDate(dateStr) {
+            // "11월1일", "12월30일" 형식을 Date 객체로 변환
+            if (!dateStr) return null;
+            
+            const match = dateStr.match(/(\d{1,2})월\s*(\d{1,2})일/);
+            if (match) {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = parseInt(match[1]) - 1;
+                const day = parseInt(match[2]);
+                return new Date(year, month, day);
+            }
+            return null;
+        }
+
+        function getCurrentWeekGoal(targetDate = null) {
+            // targetDate가 없으면 오늘 날짜 사용
+            const today = targetDate || new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // weeklyGoals에서 오늘이 속한 주 찾기
+            for (let i = 0; i < weeklyGoals.length; i++) {
+                const row = weeklyGoals[i];
+                const startDateStr = row['시작일'] || '';
+                const endDateStr = row['종료일'] || '';
+                
+                const startDate = parseSimpleDate(startDateStr);
+                const endDate = parseSimpleDate(endDateStr);
+                
+                if (startDate && endDate) {
+                    startDate.setHours(0, 0, 0, 0);
+                    endDate.setHours(23, 59, 59, 999);
+                    
+                    // 오늘이 시작일과 종료일 사이에 있으면 해당 주
+                    if (today >= startDate && today <= endDate) {
+                        return row;
+                    }
+                }
+            }
+            
+            // 찾지 못하면 첫 번째 행 반환 (기본값)
+            return weeklyGoals[0] || {};
+        }
+
+        function getCurrentMonthGoal(targetDate = null) {
+            // targetDate가 없으면 오늘 날짜 사용
+            const today = targetDate || new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth() + 1; // 1~12
+            
+            // monthlyGoals에서 현재 월 찾기
+            const targetMonthStr = `${currentYear}년${currentMonth}월`;
+            
+            for (let i = 0; i < monthlyGoals.length; i++) {
+                const row = monthlyGoals[i];
+                const monthStr = (row['월'] || '').replace(/\s/g, ''); // 공백 제거
+                
+                if (monthStr === targetMonthStr || monthStr === `${currentYear}년 ${currentMonth}월`) {
+                    return row;
+                }
+            }
+            
+            // 찾지 못하면 첫 번째 행 반환 (기본값)
+            return monthlyGoals[0] || {};
         }
 
         function updateBadge(elementId, rate) {
