@@ -1893,8 +1893,8 @@
                 if (!valuesResponse.ok) throw new Error(`HTTP ${valuesResponse.status}`);
                 const valuesData = await valuesResponse.json();
                 
-                // 2. 서식 정보 가져오기
-                const formatUrl = `${BASE_URL}/${CONFIG.SHEETS_ID}?ranges=${sheetName}&fields=sheets(data(rowData(values(effectiveFormat,userEnteredFormat,formattedValue))))&key=${CONFIG.API_KEY}`;
+                // 2. 서식 정보 가져오기 (textFormatRuns 포함)
+                const formatUrl = `${BASE_URL}/${CONFIG.SHEETS_ID}?ranges=${sheetName}&fields=sheets(data(rowData(values(effectiveFormat,userEnteredFormat,textFormatRuns,formattedValue))))&key=${CONFIG.API_KEY}`;
                 const formatResponse = await fetch(formatUrl, {
                     cache: 'no-store',
                     headers: {
@@ -1946,10 +1946,16 @@
             }
         }
 
-        // 셀 서식을 HTML로 변환하는 함수
+        // 셀 서식을 HTML로 변환하는 함수 (Rich Text 지원)
         function formatCellToHTML(value, cellFormat) {
             if (!cellFormat || !value) return escapeHTML(value);
             
+            // Rich Text 처리 (textRuns가 있는 경우)
+            if (cellFormat.textFormatRuns && cellFormat.textFormatRuns.length > 0) {
+                return formatRichText(value, cellFormat.textFormatRuns, cellFormat.effectiveFormat);
+            }
+            
+            // 일반 서식 처리 (셀 전체)
             const format = cellFormat.effectiveFormat || cellFormat.userEnteredFormat || {};
             const textFormat = format.textFormat || {};
             
@@ -1959,7 +1965,7 @@
             // 글꼴 색상
             if (textFormat.foregroundColor) {
                 const color = rgbToHex(textFormat.foregroundColor);
-                if (color !== '#000000') {  // 기본 검정색이 아닌 경우만
+                if (color !== '#000000') {
                     styles.push(`color: ${color}`);
                 }
             }
@@ -1967,7 +1973,7 @@
             // 배경색
             if (format.backgroundColor) {
                 const bgColor = rgbToHex(format.backgroundColor);
-                if (bgColor !== '#ffffff' && bgColor !== '#fff') {  // 기본 흰색이 아닌 경우만
+                if (bgColor !== '#ffffff' && bgColor !== '#fff') {
                     styles.push(`background-color: ${bgColor}`);
                     styles.push(`padding: 2px 4px`);
                     styles.push(`border-radius: 2px`);
@@ -1981,14 +1987,8 @@
             
             // 글꼴 굵기
             const isBold = textFormat.bold === true;
-            
-            // 기울임
             const isItalic = textFormat.italic === true;
-            
-            // 밑줄
             const isUnderline = textFormat.underline === true;
-            
-            // 취소선
             const isStrikethrough = textFormat.strikethrough === true;
             
             // 텍스트 처리
@@ -2009,6 +2009,81 @@
             wrappedText = wrappedText.replace(/\n/g, '<br>');
             
             return wrappedText;
+        }
+
+        // Rich Text 서식 처리 함수
+        function formatRichText(fullText, textRuns, defaultFormat) {
+            let result = '';
+            let currentIndex = 0;
+            
+            textRuns.forEach((run, idx) => {
+                // 시작 인덱스 (첫 번째는 항상 0)
+                const startIndex = run.startIndex || 0;
+                
+                // 다음 run의 시작 인덱스 (마지막이면 텍스트 끝)
+                const endIndex = idx < textRuns.length - 1 
+                    ? (textRuns[idx + 1].startIndex || fullText.length)
+                    : fullText.length;
+                
+                // 이 run의 텍스트 추출
+                const text = fullText.substring(startIndex, endIndex);
+                
+                if (text) {
+                    // 이 run의 서식
+                    const format = run.format || {};
+                    
+                    // 스타일 수집
+                    const styles = [];
+                    
+                    // 글꼴 색상
+                    if (format.foregroundColor) {
+                        const color = rgbToHex(format.foregroundColor);
+                        if (color !== '#000000') {
+                            styles.push(`color: ${color}`);
+                        }
+                    }
+                    
+                    // 글꼴 크기
+                    if (format.fontSize) {
+                        styles.push(`font-size: ${format.fontSize}pt`);
+                    }
+                    
+                    // 배경색
+                    if (format.backgroundColor) {
+                        const bgColor = rgbToHex(format.backgroundColor);
+                        if (bgColor !== '#ffffff' && bgColor !== '#fff') {
+                            styles.push(`background-color: ${bgColor}`);
+                            styles.push(`padding: 2px 4px`);
+                            styles.push(`border-radius: 2px`);
+                        }
+                    }
+                    
+                    // 서식 태그
+                    const isBold = format.bold === true;
+                    const isItalic = format.italic === true;
+                    const isUnderline = format.underline === true;
+                    const isStrikethrough = format.strikethrough === true;
+                    
+                    // 텍스트 이스케이프 및 줄바꿈 처리
+                    let processedText = escapeHTML(text);
+                    processedText = processedText.replace(/\n/g, '<br>');  // 각 조각마다 처리
+                    
+                    // 서식 적용
+                    if (isStrikethrough) processedText = `<s>${processedText}</s>`;
+                    if (isUnderline) processedText = `<u>${processedText}</u>`;
+                    if (isItalic) processedText = `<i>${processedText}</i>`;
+                    if (isBold) processedText = `<strong>${processedText}</strong>`;
+                    
+                    // 스타일 적용
+                    if (styles.length > 0) {
+                        processedText = `<span style="${styles.join('; ')}">${processedText}</span>`;
+                    }
+                    
+                    result += processedText;
+                }
+            });
+            
+            return result;
         }
 
         // RGB 색상을 Hex로 변환
