@@ -280,6 +280,27 @@
             letter-spacing: -0.01em;
         }
 
+        /* 프로모션 & 업무오더 그리드 - 반응형 레이아웃 */
+        .promo-order-grid {
+            display: grid;
+            gap: clamp(16px, 4vw, 24px);
+            margin-bottom: clamp(20px, 5vw, 32px);
+        }
+
+        /* 모바일: 세로 배치 (1열) */
+        @media (max-width: 768px) {
+            .promo-order-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 태블릿 이상: 가로 배치 (2열) */
+        @media (min-width: 769px) {
+            .promo-order-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
         /* 카드 그리드 - iOS 반응형 최적화 */
         .cards-grid {
             display: grid;
@@ -1342,11 +1363,22 @@
                 </div>
             </div>
 
-            <!-- 프로모션 섹션 -->
-            <div class="section">
-                <div class="section-title">🎁 프로모션</div>
-                <div id="promotionContent" style="padding: 16px; background: var(--bg-color); border-radius: 12px; min-height: 80px; white-space: pre-wrap; line-height: 1.6; color: var(--text-primary);">
-                    데이터 로딩 중...
+            <!-- 프로모션 & 업무오더 그리드 (PC: 가로 배치, 모바일: 세로 배치) -->
+            <div class="promo-order-grid">
+                <!-- 프로모션 섹션 -->
+                <div class="section">
+                    <div class="section-title">🎁 프로모션</div>
+                    <div id="promotionContent" style="padding: 16px; background: var(--bg-color); border-radius: 12px; min-height: 80px; white-space: pre-wrap; line-height: 1.6; color: var(--text-primary);">
+                        데이터 로딩 중...
+                    </div>
+                </div>
+
+                <!-- 업무오더 섹션 -->
+                <div class="section">
+                    <div class="section-title">📋 업무 오더</div>
+                    <div id="workOrderContent" style="padding: 16px; background: var(--bg-color); border-radius: 12px; min-height: 80px; white-space: pre-wrap; line-height: 1.6; color: var(--text-primary);">
+                        데이터 로딩 중...
+                    </div>
                 </div>
             </div>
 
@@ -1731,7 +1763,7 @@
         let callHistory = [];
         let noticeData = [];
         let noticeHeaders = {}; // 공지 시트 헤더 정보
-        let dashboardInfo = []; // 대시보드 정보 (오늘할일, 영업전략, 프로모션)
+        let dashboardInfo = []; // 대시보드 정보 (오늘할일, 예정업무, 영업전략, 프로모션, 업무오더)
         let currentPeriodData = []; // 현재 조회 기간의 매출 데이터
         let chartInstances = {};
         let currentCallPage = 1;
@@ -1845,6 +1877,165 @@
             }
         }
 
+        // 서식 정보를 포함하여 데이터 가져오기 (Sheet6 전용)
+        async function getFormattedSheetData(sheetName) {
+            try {
+                // 1. 값 가져오기
+                const valuesUrl = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${sheetName}?key=${CONFIG.API_KEY}`;
+                const valuesResponse = await fetch(valuesUrl, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                if (!valuesResponse.ok) throw new Error(`HTTP ${valuesResponse.status}`);
+                const valuesData = await valuesResponse.json();
+                
+                // 2. 서식 정보 가져오기
+                const formatUrl = `${BASE_URL}/${CONFIG.SHEETS_ID}?ranges=${sheetName}&fields=sheets(data(rowData(values(effectiveFormat,userEnteredFormat,formattedValue))))&key=${CONFIG.API_KEY}`;
+                const formatResponse = await fetch(formatUrl, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                if (!formatResponse.ok) {
+                    console.warn('서식 정보 가져오기 실패, 일반 데이터만 사용:', formatResponse.status);
+                    // 서식 정보 실패 시 일반 데이터만 반환
+                    return getSheetData(sheetName);
+                }
+                
+                const formatData = await formatResponse.json();
+                
+                // 3. 값과 서식 합치기
+                const values = valuesData.values || [];
+                if (values.length === 0) return { headers: [], data: [] };
+                
+                const headers = values[0];
+                const rows = values.slice(1);
+                
+                // 서식 데이터 추출
+                const sheetData = formatData.sheets && formatData.sheets[0] && formatData.sheets[0].data && formatData.sheets[0].data[0] ? formatData.sheets[0].data[0].rowData : [];
+                
+                const mappedData = rows.map((row, rowIndex) => {
+                    const obj = {};
+                    headers.forEach((header, colIndex) => {
+                        const cellValue = row[colIndex] || '';
+                        
+                        // 서식 정보 가져오기 (헤더 행 제외이므로 rowIndex + 1)
+                        const cellFormat = sheetData[rowIndex + 1] && sheetData[rowIndex + 1].values ? sheetData[rowIndex + 1].values[colIndex] : null;
+                        
+                        // 서식을 HTML로 변환
+                        const formattedValue = formatCellToHTML(cellValue, cellFormat);
+                        
+                        obj[header] = cellValue;  // 원본 값
+                        obj[header + '_formatted'] = formattedValue;  // 서식이 적용된 HTML
+                    });
+                    return obj;
+                });
+                
+                return { headers, data: mappedData };
+            } catch (error) {
+                console.error('서식 데이터 가져오기 오류:', sheetName, error);
+                // 오류 발생 시 일반 데이터 반환
+                return getSheetData(sheetName);
+            }
+        }
+
+        // 셀 서식을 HTML로 변환하는 함수
+        function formatCellToHTML(value, cellFormat) {
+            if (!cellFormat || !value) return escapeHTML(value);
+            
+            const format = cellFormat.effectiveFormat || cellFormat.userEnteredFormat || {};
+            const textFormat = format.textFormat || {};
+            
+            // 스타일 속성 수집
+            const styles = [];
+            
+            // 글꼴 색상
+            if (textFormat.foregroundColor) {
+                const color = rgbToHex(textFormat.foregroundColor);
+                if (color !== '#000000') {  // 기본 검정색이 아닌 경우만
+                    styles.push(`color: ${color}`);
+                }
+            }
+            
+            // 배경색
+            if (format.backgroundColor) {
+                const bgColor = rgbToHex(format.backgroundColor);
+                if (bgColor !== '#ffffff' && bgColor !== '#fff') {  // 기본 흰색이 아닌 경우만
+                    styles.push(`background-color: ${bgColor}`);
+                    styles.push(`padding: 2px 4px`);
+                    styles.push(`border-radius: 2px`);
+                }
+            }
+            
+            // 글꼴 크기
+            if (textFormat.fontSize) {
+                styles.push(`font-size: ${textFormat.fontSize}pt`);
+            }
+            
+            // 글꼴 굵기
+            const isBold = textFormat.bold === true;
+            
+            // 기울임
+            const isItalic = textFormat.italic === true;
+            
+            // 밑줄
+            const isUnderline = textFormat.underline === true;
+            
+            // 취소선
+            const isStrikethrough = textFormat.strikethrough === true;
+            
+            // 텍스트 처리
+            let wrappedText = escapeHTML(String(value));
+            
+            // 서식 적용
+            if (isStrikethrough) wrappedText = `<s>${wrappedText}</s>`;
+            if (isUnderline) wrappedText = `<u>${wrappedText}</u>`;
+            if (isItalic) wrappedText = `<i>${wrappedText}</i>`;
+            if (isBold) wrappedText = `<strong>${wrappedText}</strong>`;
+            
+            // 스타일 적용
+            if (styles.length > 0) {
+                wrappedText = `<span style="${styles.join('; ')}">${wrappedText}</span>`;
+            }
+            
+            // 줄바꿈 처리
+            wrappedText = wrappedText.replace(/\n/g, '<br>');
+            
+            return wrappedText;
+        }
+
+        // RGB 색상을 Hex로 변환
+        function rgbToHex(color) {
+            if (!color) return '#000000';
+            
+            const r = Math.round((color.red || 0) * 255);
+            const g = Math.round((color.green || 0) * 255);
+            const b = Math.round((color.blue || 0) * 255);
+            
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        // HTML 이스케이프 함수
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // 로딩 상태 관리
         let isLoading = false;
         let autoRefreshInterval = null;
@@ -1868,7 +2059,7 @@
                     getSheetData(CONFIG.SHEET_NAMES.weeklyGoals),
                     getSheetData(CONFIG.SHEET_NAMES.calls),
                     getNoticeSheetData(CONFIG.SHEET_NAMES.notices),  // 공지 시트만 별도 함수
-                    getSheetData(CONFIG.SHEET_NAMES.dashboard)  // 대시보드 정보
+                    getFormattedSheetData(CONFIG.SHEET_NAMES.dashboard)  // 대시보드 정보 (서식 포함)
                 ]);
 
                 salesData = salesResult.data;
@@ -1952,7 +2143,7 @@
                 };
 
                 updateDashboard();
-                updateDashboardInfo(); // 오늘할일, 영업전략, 프로모션 업데이트
+                updateDashboardInfo(); // 오늘할일, 예정업무, 영업전략, 프로모션, 업무오더 업데이트
                 updateNoticeTableHeaders(); // 헤더 업데이트
                 document.getElementById('statusText').textContent = '연결됨';
                 showToast('✅ 데이터 로딩 완료!');
@@ -4025,13 +4216,14 @@
             displayNoticesPage(currentNoticesPage);
         }
 
-        // 대시보드 정보 업데이트 (오늘할일, 예정업무, 영업전략, 프로모션)
+        // 대시보드 정보 업데이트 (오늘할일, 예정업무, 영업전략, 프로모션, 업무오더)
         function updateDashboardInfo() {
             if (!dashboardInfo || dashboardInfo.length === 0) {
                 document.getElementById('todayTaskContent').textContent = '데이터가 없습니다.';
                 document.getElementById('scheduledTaskContent').textContent = '데이터가 없습니다.';
                 document.getElementById('strategyContent').textContent = '데이터가 없습니다.';
                 document.getElementById('promotionContent').textContent = '데이터가 없습니다.';
+                document.getElementById('workOrderContent').textContent = '데이터가 없습니다.';
                 return;
             }
 
@@ -4060,31 +4252,41 @@
             let scheduledContent = '';
             for (let i = dashboardInfo.length - 1; i >= 0; i--) {
                 if (dashboardInfo[i]['예정업무'] && dashboardInfo[i]['예정업무'].trim() !== '') {
-                    scheduledContent = dashboardInfo[i]['예정업무'];
+                    scheduledContent = dashboardInfo[i]['예정업무_formatted'] || dashboardInfo[i]['예정업무'];
                     break;
                 }
             }
-            document.getElementById('scheduledTaskContent').textContent = scheduledContent || '등록된 예정업무가 없습니다.';
+            document.getElementById('scheduledTaskContent').innerHTML = scheduledContent || '등록된 예정업무가 없습니다.';
 
             // 영업전략 - 마지막 데이터 중 내용이 있는 것
             let strategyContent = '';
             for (let i = dashboardInfo.length - 1; i >= 0; i--) {
                 if (dashboardInfo[i]['영업전략'] && dashboardInfo[i]['영업전략'].trim() !== '') {
-                    strategyContent = dashboardInfo[i]['영업전략'];
+                    strategyContent = dashboardInfo[i]['영업전략_formatted'] || dashboardInfo[i]['영업전략'];
                     break;
                 }
             }
-            document.getElementById('strategyContent').textContent = strategyContent || '등록된 전략이 없습니다.';
+            document.getElementById('strategyContent').innerHTML = strategyContent || '등록된 전략이 없습니다.';
 
             // 프로모션 - 마지막 데이터 중 내용이 있는 것
             let promotionContent = '';
             for (let i = dashboardInfo.length - 1; i >= 0; i--) {
                 if (dashboardInfo[i]['프로모션'] && dashboardInfo[i]['프로모션'].trim() !== '') {
-                    promotionContent = dashboardInfo[i]['프로모션'];
+                    promotionContent = dashboardInfo[i]['프로모션_formatted'] || dashboardInfo[i]['프로모션'];
                     break;
                 }
             }
-            document.getElementById('promotionContent').textContent = promotionContent || '등록된 프로모션이 없습니다.';
+            document.getElementById('promotionContent').innerHTML = promotionContent || '등록된 프로모션이 없습니다.';
+
+            // 업무오더 - 마지막 데이터 중 내용이 있는 것
+            let workOrderContent = '';
+            for (let i = dashboardInfo.length - 1; i >= 0; i--) {
+                if (dashboardInfo[i]['업무오더'] && dashboardInfo[i]['업무오더'].trim() !== '') {
+                    workOrderContent = dashboardInfo[i]['업무오더_formatted'] || dashboardInfo[i]['업무오더'];
+                    break;
+                }
+            }
+            document.getElementById('workOrderContent').innerHTML = workOrderContent || '등록된 업무오더가 없습니다.';
         }
 
         // 오늘할일 날짜 선택 시 업데이트
@@ -4093,13 +4295,13 @@
             const selectedIndex = parseInt(dateSelect.value);
             
             if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= dashboardInfo.length) {
-                document.getElementById('todayTaskContent').textContent = '날짜를 선택해주세요.';
+                document.getElementById('todayTaskContent').innerHTML = '날짜를 선택해주세요.';
                 return;
             }
 
             const selectedData = dashboardInfo[selectedIndex];
-            const taskContent = selectedData['오늘할일'] || '등록된 할일이 없습니다.';
-            document.getElementById('todayTaskContent').textContent = taskContent;
+            const taskContent = selectedData['오늘할일_formatted'] || selectedData['오늘할일'] || '등록된 할일이 없습니다.';
+            document.getElementById('todayTaskContent').innerHTML = taskContent;
         }
 
         function formatNumber(num) {
