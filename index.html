@@ -2593,10 +2593,16 @@
             
             // 상품별 테이블
             const products = [
-                { name: '컨홈', key: '컨홈', goalKey: '컨홈목표' },
-                { name: '기홈', key: '기홈', goalKey: '기홈목표' },
-                { name: '지사', key: '지사', goalKey: '지사목표' },
-                { name: '이너', key: '이너', goalKey: '이너목표' }
+                { name: '컨홈', key: '컨홈', goalKey: '컨홈목표', hasData: true },
+                { name: '기홈', key: '기홈', goalKey: '기홈목표', hasData: true },
+                { name: '지사', key: '지사', goalKey: '지사목표', hasData: true },
+                { name: '이너', key: '이너', goalKey: '이너목표', hasData: true },
+                { name: '컨홈정기', key: '컨홈정기', goalKey: '컨홈정기', hasData: false },
+                { name: '기홈정기', key: '기홈정기', goalKey: '기홈정기', hasData: false },
+                { name: '이너정기', key: '이너정기', goalKey: '이너정기', hasData: false },
+                { name: '지사분납', key: '지사분납', goalKey: '지사분납', hasData: false },
+                { name: '브로슈어', key: '브로슈어', goalKey: '브로슈어', hasData: false },
+                { name: '특강', key: '특강', goalKey: '특강', hasData: false }
             ];
             
             // 주목표와 월목표 데이터 (현재 날짜 기준)
@@ -2604,11 +2610,27 @@
             const monthlyGoalData = getCurrentMonthGoal();
             
             document.getElementById('salesTableBody').innerHTML = products.map(p => {
-                const data = totals[p.key];
-                const goal = parseNumber(goalData[p.goalKey]);
-                const weeklyGoal = parseNumber(weeklyGoalData[p.goalKey]);
+                const data = totals[p.key] || { expected: 0, confirmed: 0 };
+                const goal = p.hasData ? parseNumber(goalData[p.goalKey]) : 0;
+                const weeklyGoal = p.hasData ? parseNumber(weeklyGoalData[p.goalKey]) : 0;
                 const monthlyGoal = parseNumber(monthlyGoalData[p.goalKey]);
                 
+                // hasData가 false인 경우 (새로 추가된 6개 항목)
+                if (!p.hasData) {
+                    return `
+                        <tr>
+                            <td class="text-bold">${p.name}</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">${monthlyGoal > 0 ? formatNumber(monthlyGoal) + '원' : '-'}</td>
+                        </tr>
+                    `;
+                }
+                
+                // hasData가 true인 경우 (기존 4개 항목)
                 // 달성률 계산 (목표가 0일 때 처리)
                 let goalRate = 0;
                 if (goal > 0) {
@@ -2830,18 +2852,40 @@
             
             // 상품별 테이블
             const products = [
-                { name: '컨홈', key: '컨홈', goalKey: '컨홈목표' },
-                { name: '기홈', key: '기홈', goalKey: '기홈목표' },
-                { name: '지사', key: '지사', goalKey: '지사목표' },
-                { name: '이너', key: '이너', goalKey: '이너목표' }
+                { name: '컨홈', key: '컨홈', goalKey: '컨홈목표', hasData: true },
+                { name: '기홈', key: '기홈', goalKey: '기홈목표', hasData: true },
+                { name: '지사', key: '지사', goalKey: '지사목표', hasData: true },
+                { name: '이너', key: '이너', goalKey: '이너목표', hasData: true },
+                { name: '컨홈정기', key: '컨홈정기', goalKey: '컨홈정기', hasData: false },
+                { name: '기홈정기', key: '기홈정기', goalKey: '기홈정기', hasData: false },
+                { name: '이너정기', key: '이너정기', goalKey: '이너정기', hasData: false },
+                { name: '지사분납', key: '지사분납', goalKey: '지사분납', hasData: false },
+                { name: '브로슈어', key: '브로슈어', goalKey: '브로슈어', hasData: false },
+                { name: '특강', key: '특강', goalKey: '특강', hasData: false }
             ];
             
             document.getElementById('salesTableBody').innerHTML = products.map(p => {
-                const data = totals[p.key];
-                const goal = parseNumber(goalData[p.goalKey]);
-                const weeklyGoal = parseNumber(weeklyGoalData[p.goalKey]);
+                const data = totals[p.key] || { expected: 0, confirmed: 0 };
+                const goal = p.hasData ? parseNumber(goalData[p.goalKey]) : 0;
+                const weeklyGoal = p.hasData ? parseNumber(weeklyGoalData[p.goalKey]) : 0;
                 const monthlyGoal = parseNumber(monthlyGoalData[p.goalKey]);
                 
+                // hasData가 false인 경우 (새로 추가된 6개 항목)
+                if (!p.hasData) {
+                    return `
+                        <tr>
+                            <td class="text-bold">${p.name}</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">${monthlyGoal > 0 ? formatNumber(monthlyGoal) + '원' : '-'}</td>
+                        </tr>
+                    `;
+                }
+                
+                // hasData가 true인 경우 (기존 4개 항목)
                 // 달성률 계산 (목표가 0일 때 처리)
                 let goalRate = 0;
                 if (goal > 0) {
