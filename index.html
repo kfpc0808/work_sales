@@ -391,146 +391,6 @@
             }
         }
 
-        /* 월간 일정 스타일 */
-        #tab-schedule .table-container {
-            overflow-x: auto;
-            overflow-y: auto;
-            max-height: 80vh;
-            -webkit-overflow-scrolling: touch;
-            position: relative;
-        }
-
-        #scheduleTable {
-            min-width: 800px;
-            position: relative;
-        }
-
-        #scheduleTable thead {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: var(--primary-color);
-        }
-
-        #scheduleTable th {
-            background: var(--primary-color);
-            color: white;
-            font-weight: 600;
-            text-align: center;
-            padding: 12px 8px;
-            white-space: pre-line;
-            line-height: 1.4;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        #scheduleTable td {
-            padding: 12px 8px;
-            min-height: 80px;
-            font-size: 13px;
-            line-height: 1.6;
-            word-break: keep-all;
-        }
-
-        #scheduleTable tr:hover td {
-            background: var(--hover-bg) !important;
-        }
-
-        @media (max-width: 768px) {
-            #scheduleTable {
-                font-size: 12px;
-            }
-            
-            #scheduleTable th,
-            #scheduleTable td {
-                padding: 8px 4px;
-                min-width: 150px;
-            }
-
-            #tab-schedule .table-container {
-                max-height: 70vh;
-            }
-        }
-
-        /* 주별 목표관리현황 스타일 */
-        #weeklyGoalTable {
-            width: 100%;
-        }
-
-        #weeklyGoalTable th {
-            background: var(--primary-color);
-            color: white;
-            font-weight: 600;
-            padding: 12px;
-        }
-
-        #weeklyGoalTable td {
-            padding: 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        #weeklyGoalTable tbody tr:last-child {
-            font-weight: bold;
-            background: #e8f5e9;
-        }
-
-        .weekly-progress-container {
-            width: 100%;
-            height: 24px;
-            background: #e0e0e0;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .weekly-progress-bar {
-            height: 100%;
-            border-radius: 12px;
-            transition: width 0.5s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .weekly-progress-bar.success {
-            background: linear-gradient(90deg, #4CAF50, #8BC34A);
-        }
-
-        .weekly-progress-bar.warning {
-            background: linear-gradient(90deg, #FF9800, #FFC107);
-        }
-
-        .weekly-progress-bar.danger {
-            background: linear-gradient(90deg, #F44336, #FF5722);
-        }
-
-        .achievement-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        .achievement-badge.high {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .achievement-badge.medium {
-            background: #FF9800;
-            color: white;
-        }
-
-        .achievement-badge.low {
-            background: #F44336;
-            color: white;
-        }
-
 
         .card {
             background: var(--card-bg);
@@ -1466,7 +1326,6 @@
             <button class="tab-btn" onclick="switchTab('sales')">📊 매출 분석</button>
             <button class="tab-btn" onclick="switchTab('calls')">📞 업무 기록</button>
             <button class="tab-btn" onclick="switchTab('notices')">✅ 공지 관리</button>
-            <button class="tab-btn" onclick="switchTab('schedule')">📅 월간 일정</button>
         </div>
     </div>
 
@@ -1637,30 +1496,6 @@
                         </thead>
                         <tbody id="salesTableBody">
                             <tr><td colspan="8" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 주별 목표관리현황 -->
-            <div class="section">
-                <div class="section-title">
-                    📊 주별 목표관리현황
-                    <span id="weeklyGoalPeriod" style="float: right; font-size: 14px; font-weight: normal; color: var(--text-secondary);"></span>
-                </div>
-                <div class="table-container">
-                    <table id="weeklyGoalTable">
-                        <thead>
-                            <tr>
-                                <th>구분</th>
-                                <th class="text-right">주간목표</th>
-                                <th class="text-right">주간달성</th>
-                                <th class="text-center">달성률</th>
-                                <th class="text-right">진행바</th>
-                            </tr>
-                        </thead>
-                        <tbody id="weeklyGoalTableBody">
-                            <tr><td colspan="5" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1901,39 +1736,6 @@
                 <div class="pagination" id="noticesTablePagination"></div>
             </div>
         </div>
-
-        <!-- 탭 5: 월간 일정 -->
-        <div id="tab-schedule" class="tab-content">
-            <div class="filter-section">
-                <div class="filter-grid">
-                    <div class="filter-group">
-                        <label>년월 선택</label>
-                        <input type="month" class="filter-input" id="scheduleYearMonth" onchange="changeScheduleMonth()">
-                    </div>
-                    <div class="filter-group" style="display: flex; gap: 10px; align-items: flex-end;">
-                        <button class="btn btn-secondary" onclick="previousWeek()" style="padding: 10px 20px;">◀ 이전 주</button>
-                        <button class="btn btn-secondary" onclick="nextWeek()" style="padding: 10px 20px;">다음 주 ▶</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="section-title">
-                    📅 주간 일정표
-                    <span id="scheduleCurrentWeek" style="float: right; font-size: 14px; font-weight: normal; color: var(--text-secondary);"></span>
-                </div>
-                <div class="table-container" style="overflow-x: auto;">
-                    <table id="scheduleTable">
-                        <thead id="scheduleTableHead">
-                            <tr><th>로딩 중...</th></tr>
-                        </thead>
-                        <tbody id="scheduleTableBody">
-                            <tr><td class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -1950,10 +1752,7 @@
                 calls: 'sheet4',
                 notices: 'sheet5',
                 dashboard: 'sheet6'
-            },
-            // 월간 일정 스프레드시트
-            SCHEDULE_SHEETS_ID: '1fUdBppPRzn3j-iqNkDeASEeATJyYv8qtx6QYu1E7Ld0',
-            SCHEDULE_GID: '1642560392'
+            }
         };
 
         const BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
@@ -1964,7 +1763,6 @@
         let callHistory = [];
         let noticeData = [];
         let noticeHeaders = {}; // 공지 시트 헤더 정보
-        let scheduleData = []; // 월간 일정 데이터
         let dashboardInfo = []; // 대시보드 정보 (오늘할일, 예정업무, 영업전략, 프로모션, 업무오더)
         let currentPeriodData = []; // 현재 조회 기간의 매출 데이터
         let chartInstances = {};
@@ -1990,7 +1788,6 @@
             if (tabName === 'sales' && salesData.length > 0) loadSalesData();
             else if (tabName === 'calls' && callHistory.length > 0) filterCalls();
             else if (tabName === 'notices' && noticeData.length > 0) filterNotices();
-            else if (tabName === 'schedule' && scheduleData.length > 0) renderCurrentWeek();
         }
 
         async function getSheetData(sheetName, range = '') {
@@ -2314,109 +2111,6 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // 월간 일정 데이터 로딩 함수
-        async function getScheduleData() {
-            try {
-                // 1단계: 시트 메타데이터를 가져와서 GID에 해당하는 시트 이름 찾기
-                const metadataUrl = `${BASE_URL}/${CONFIG.SCHEDULE_SHEETS_ID}?key=${CONFIG.API_KEY}`;
-                
-                const metadataResponse = await fetch(metadataUrl, {
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
-                    }
-                });
-                
-                if (!metadataResponse.ok) throw new Error(`메타데이터 로딩 실패: ${metadataResponse.status}`);
-                const metadata = await metadataResponse.json();
-                
-                // GID로 시트 찾기
-                const targetGid = parseInt(CONFIG.SCHEDULE_GID);
-                let sheetTitle = null;
-                
-                if (metadata.sheets && metadata.sheets.length > 0) {
-                    for (let sheet of metadata.sheets) {
-                        if (sheet.properties && sheet.properties.sheetId === targetGid) {
-                            sheetTitle = sheet.properties.title;
-                            break;
-                        }
-                    }
-                    
-                    // GID로 못 찾으면 첫 번째 시트 사용
-                    if (!sheetTitle) {
-                        sheetTitle = metadata.sheets[0].properties.title;
-                        console.warn('GID로 시트를 찾을 수 없어 첫 번째 시트 사용:', sheetTitle);
-                    }
-                }
-                
-                if (!sheetTitle) throw new Error('시트를 찾을 수 없습니다.');
-                
-                console.log('사용할 시트:', sheetTitle);
-                
-                // 2단계: 서식 포함 데이터 가져오기
-                const dataUrl = `${BASE_URL}/${CONFIG.SCHEDULE_SHEETS_ID}?key=${CONFIG.API_KEY}&includeGridData=true&ranges=${encodeURIComponent(sheetTitle)}`;
-                
-                const fetchPromise = fetch(dataUrl, {
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
-                    }
-                });
-                
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('요청 시간 초과 (15초)')), 15000);
-                });
-                
-                const response = await Promise.race([fetchPromise, timeoutPromise]);
-                
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                
-                if (!data.sheets || data.sheets.length === 0) return [];
-                
-                const sheet = data.sheets[0];
-                
-                // 안전한 경로 체크
-                if (!sheet.data || !sheet.data[0] || !sheet.data[0].rowData) {
-                    console.warn('rowData가 없습니다.');
-                    return [];
-                }
-                
-                const rowData = sheet.data[0].rowData;
-                
-                // 각 행의 데이터와 서식 정보 추출
-                const formattedData = rowData.map(row => {
-                    if (!row.values) return { cells: [] };
-                    
-                    const cells = row.values.map(cell => {
-                        const value = cell.formattedValue || '';
-                        const format = cell.effectiveFormat || {};
-                        
-                        return {
-                            value: value,
-                            bold: format.textFormat?.bold || false,
-                            italic: format.textFormat?.italic || false,
-                            color: rgbToHex(format.textFormat?.foregroundColor),
-                            bgColor: rgbToHex(format.backgroundColor),
-                            fontSize: format.textFormat?.fontSize || 10,
-                            underline: format.textFormat?.underline || false,
-                            strikethrough: format.textFormat?.strikethrough || false
-                        };
-                    });
-                    
-                    return { cells };
-                });
-                
-                return formattedData;
-                
-            } catch (error) {
-                console.error('월간 일정 로딩 오류:', error);
-                throw error;
-            }
-        }
-
         // 로딩 상태 관리
         let isLoading = false;
         let autoRefreshInterval = null;
@@ -2434,20 +2128,18 @@
                 showToast('🔄 데이터 로딩 중...');
                 document.getElementById('statusText').textContent = '로딩 중...';
 
-                const [salesResult, monthlyResult, weeklyResult, callsResult, noticesResult, dashboardResult, scheduleResult] = await Promise.all([
+                const [salesResult, monthlyResult, weeklyResult, callsResult, noticesResult, dashboardResult] = await Promise.all([
                     getSheetData(CONFIG.SHEET_NAMES.sales),
                     getSheetData(CONFIG.SHEET_NAMES.monthlyGoals),
                     getSheetData(CONFIG.SHEET_NAMES.weeklyGoals),
                     getSheetData(CONFIG.SHEET_NAMES.calls),
                     getNoticeSheetData(CONFIG.SHEET_NAMES.notices),  // 공지 시트만 별도 함수
-                    getFormattedSheetData(CONFIG.SHEET_NAMES.dashboard),  // 대시보드 정보 (서식 포함)
-                    getScheduleData()  // 월간 일정
+                    getFormattedSheetData(CONFIG.SHEET_NAMES.dashboard)  // 대시보드 정보 (서식 포함)
                 ]);
 
                 salesData = salesResult.data;
                 monthlyGoals = monthlyResult.data;
                 weeklyGoals = weeklyResult.data;
-                scheduleData = scheduleResult;  // 월간 일정 (원본 배열 형태)
                 // 회원명이 있는 행만 필터링
                 callHistory = callsResult.data.filter(call => 
                     call['회원명'] && 
@@ -2528,7 +2220,6 @@
                 updateDashboard();
                 updateDashboardInfo(); // 오늘할일, 예정업무, 영업전략, 프로모션, 업무오더 업데이트
                 updateNoticeTableHeaders(); // 헤더 업데이트
-                initSchedule(); // 월간 일정 초기화
                 document.getElementById('statusText').textContent = '연결됨';
                 showToast('✅ 데이터 로딩 완료!');
                 
@@ -3286,7 +2977,6 @@
                 // filterSalesProductByDate 호출하지 않고 계속 진행
                 updateSalesCharts(actualData, totals);
                 displaySalesDetail(periodData);
-                updateWeeklyGoalStatus();
                 return;
             }
             
@@ -3331,115 +3021,6 @@
             
             // 상품별 매출현황 테이블을 선택된 날짜로 자동 필터링
             filterSalesProductByDate();
-            
-            // 주별 목표관리현황 업데이트
-            updateWeeklyGoalStatus();
-        }
-
-        // 주별 목표관리현황 업데이트
-        function updateWeeklyGoalStatus() {
-            const weeklyGoalData = getCurrentWeekGoal();
-            const tbody = document.getElementById('weeklyGoalTableBody');
-            
-            if (!weeklyGoalData || Object.keys(weeklyGoalData).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">주간 목표 데이터가 없습니다.</td></tr>';
-                return;
-            }
-            
-            // 주차 정보 표시
-            const weekInfo = weeklyGoalData['주차'] || '';
-            const startDate = weeklyGoalData['시작일'] || '';
-            const endDate = weeklyGoalData['종료일'] || '';
-            document.getElementById('weeklyGoalPeriod').textContent = `${weekInfo} (${startDate} ~ ${endDate})`;
-            
-            // 상품별 목표 및 달성 데이터
-            const products = [
-                { name: '컨홈', goalKey: '컨홈목표', achievementKey: '컨홈달성' },
-                { name: '기홈', goalKey: '기홈목표', achievementKey: '기홈달성' },
-                { name: '지사', goalKey: '지사목표', achievementKey: '지사달성' },
-                { name: '이너', goalKey: '이너목표', achievementKey: '이너달성' }
-            ];
-            
-            let totalGoal = 0;
-            let totalAchievement = 0;
-            let html = '';
-            
-            products.forEach(product => {
-                const goal = parseNumber(weeklyGoalData[product.goalKey]);
-                const achievement = parseNumber(weeklyGoalData[product.achievementKey]);
-                
-                totalGoal += goal;
-                totalAchievement += achievement;
-                
-                // 달성률 계산
-                const rate = goal > 0 ? Math.round((achievement / goal) * 100) : 0;
-                
-                // 달성률에 따른 색상 클래스
-                let rateClass = 'low';
-                let progressClass = 'danger';
-                if (rate >= 90) {
-                    rateClass = 'high';
-                    progressClass = 'success';
-                } else if (rate >= 70) {
-                    rateClass = 'medium';
-                    progressClass = 'warning';
-                }
-                
-                // 진행바 너비 (최대 100%)
-                const progressWidth = Math.min(rate, 100);
-                
-                html += `
-                    <tr>
-                        <td class="text-bold">${product.name}</td>
-                        <td class="text-right">${formatNumber(goal)}원</td>
-                        <td class="text-right">${formatNumber(achievement)}원</td>
-                        <td class="text-center">
-                            <span class="achievement-badge ${rateClass}">${rate}%</span>
-                        </td>
-                        <td>
-                            <div class="weekly-progress-container">
-                                <div class="weekly-progress-bar ${progressClass}" style="width: ${progressWidth}%;">
-                                    ${rate}%
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            // 합계 행
-            const totalRate = totalGoal > 0 ? Math.round((totalAchievement / totalGoal) * 100) : 0;
-            let totalRateClass = 'low';
-            let totalProgressClass = 'danger';
-            if (totalRate >= 90) {
-                totalRateClass = 'high';
-                totalProgressClass = 'success';
-            } else if (totalRate >= 70) {
-                totalRateClass = 'medium';
-                totalProgressClass = 'warning';
-            }
-            
-            const totalProgressWidth = Math.min(totalRate, 100);
-            
-            html += `
-                <tr>
-                    <td class="text-bold">합계</td>
-                    <td class="text-right">${formatNumber(totalGoal)}원</td>
-                    <td class="text-right">${formatNumber(totalAchievement)}원</td>
-                    <td class="text-center">
-                        <span class="achievement-badge ${totalRateClass}">${totalRate}%</span>
-                    </td>
-                    <td>
-                        <div class="weekly-progress-container">
-                            <div class="weekly-progress-bar ${totalProgressClass}" style="width: ${totalProgressWidth}%;">
-                                ${totalRate}%
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            
-            tbody.innerHTML = html;
         }
 
         function filterSalesProductByDate() {
@@ -5025,290 +4606,6 @@
             loadAllData();
             // 자동 새로고침은 첫 로딩 성공 후 startAutoRefresh()에서 시작됨
         });
-
-        // ============================================
-        // 월간 일정 기능
-        // ============================================
-        
-        let currentWeekIndex = 0; // 현재 보고 있는 주 인덱스
-        let allWeeks = []; // 모든 주 데이터
-        let weekHeaderRow = null; // 요일 헤더 행 (고정용)
-        
-        function initSchedule() {
-            // 년월 선택기 초기화 (현재 년월)
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            document.getElementById('scheduleYearMonth').value = `${year}-${month}`;
-            
-            // 초기 데이터 로딩
-            parseScheduleData();
-            findCurrentWeek(); // 이번 주 찾기
-            renderCurrentWeek();
-        }
-        
-        function parseScheduleData() {
-            // scheduleData를 주 단위로 파싱
-            if (!scheduleData || scheduleData.length === 0) {
-                allWeeks = [];
-                weekHeaderRow = null;
-                return;
-            }
-            
-            allWeeks = [];
-            weekHeaderRow = null;
-            let currentWeek = [];
-            let isFirstS = true;
-            
-            for (let i = 0; i < scheduleData.length; i++) {
-                const row = scheduleData[i];
-                
-                // S 열 (첫 번째 셀)이 "S"이면
-                if (row.cells && row.cells[0] && row.cells[0].value === 'S') {
-                    if (isFirstS) {
-                        // 첫 번째 S는 고정 헤더로 저장
-                        weekHeaderRow = row;
-                        isFirstS = false;
-                    } else {
-                        // 두 번째 S부터는 새 주 시작 (이전 주 저장)
-                        if (currentWeek.length > 0) {
-                            allWeeks.push(currentWeek);
-                        }
-                        currentWeek = [];
-                    }
-                } else {
-                    // 현재 주에 행 추가
-                    currentWeek.push(row);
-                }
-            }
-            
-            // 마지막 주 저장
-            if (currentWeek.length > 0) {
-                allWeeks.push(currentWeek);
-            }
-            
-            console.log('파싱된 주 개수:', allWeeks.length);
-            console.log('고정 헤더:', weekHeaderRow);
-        }
-        
-        function findCurrentWeek() {
-            // 오늘 날짜가 속한 주 찾기
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            for (let i = 0; i < allWeeks.length; i++) {
-                const week = allWeeks[i];
-                if (!week || week.length === 0) continue;
-                
-                // 첫 번째 행에서 날짜 정보 추출 (보통 날짜 행)
-                const firstRow = week[0];
-                if (!firstRow || !firstRow.cells) continue;
-                
-                // 해당 주의 모든 날짜를 수집
-                const weekDates = [];
-                for (let j = 1; j <= 5; j++) {
-                    const cell = firstRow.cells[j];
-                    if (!cell || !cell.value) continue;
-                    
-                    // 날짜 파싱 시도 (예: "11/12")
-                    const dateMatch = cell.value.match(/(\d+)\/(\d+)/);
-                    if (dateMatch) {
-                        const month = parseInt(dateMatch[1]);
-                        const day = parseInt(dateMatch[2]);
-                        const year = today.getFullYear();
-                        
-                        const cellDate = new Date(year, month - 1, day);
-                        cellDate.setHours(0, 0, 0, 0);
-                        weekDates.push(cellDate);
-                    }
-                }
-                
-                // 날짜가 있으면 범위 체크
-                if (weekDates.length > 0) {
-                    const startDate = weekDates[0];
-                    const endDate = weekDates[weekDates.length - 1];
-                    
-                    // 오늘이 이 주의 시작일~종료일 범위에 있으면
-                    if (today >= startDate && today <= endDate) {
-                        currentWeekIndex = i;
-                        console.log(`이번 주 찾음: ${i}주차 (${startDate.toLocaleDateString()} ~ ${endDate.toLocaleDateString()})`);
-                        return;
-                    }
-                    
-                    // 오늘이 시작일 이전이고, 차이가 3일 이내면 (주말 포함)
-                    const diffDays = Math.floor((startDate - today) / (24 * 60 * 60 * 1000));
-                    if (diffDays >= 0 && diffDays <= 3) {
-                        currentWeekIndex = i;
-                        console.log(`이번 주 찾음 (주말 고려): ${i}주차`);
-                        return;
-                    }
-                }
-            }
-            
-            // 못 찾으면 첫 주로
-            currentWeekIndex = 0;
-            console.log('이번 주를 못 찾아 첫 주로 설정');
-        }
-        
-        function renderCurrentWeek() {
-            const thead = document.getElementById('scheduleTableHead');
-            const tbody = document.getElementById('scheduleTableBody');
-            
-            // 데이터 없음 처리
-            if (!weekHeaderRow || allWeeks.length === 0) {
-                thead.innerHTML = '<tr><th>데이터 없음</th></tr>';
-                tbody.innerHTML = '<tr><td class="empty-state">데이터가 없습니다.</td></tr>';
-                return;
-            }
-            
-            // 인덱스 범위 체크
-            if (currentWeekIndex < 0) currentWeekIndex = 0;
-            if (currentWeekIndex >= allWeeks.length) currentWeekIndex = allWeeks.length - 1;
-            
-            const weekData = allWeeks[currentWeekIndex];
-            
-            if (!weekData || weekData.length === 0) {
-                tbody.innerHTML = '<tr><td class="empty-state">해당 주의 데이터가 없습니다.</td></tr>';
-                return;
-            }
-            
-            // === 고정 헤더 생성 (요일) ===
-            let headerHTML = '<tr style="position: sticky; top: 0; z-index: 10;">';
-            headerHTML += '<th style="min-width: 100px; background: #4A90E2; color: white; position: sticky; top: 0;">구분</th>';
-            
-            // B~F열 (월~금) - 요일만 표시 (고정)
-            const dayNames = ['월', '화', '수', '목', '금'];
-            for (let i = 1; i <= 5; i++) {
-                const dayCell = weekHeaderRow.cells[i];
-                const dayText = dayCell ? dayCell.value : dayNames[i-1];
-                
-                headerHTML += `<th style="min-width: 200px; background: #4A90E2; color: white; position: sticky; top: 0;">${dayText}</th>`;
-            }
-            headerHTML += '</tr>';
-            thead.innerHTML = headerHTML;
-            
-            // === 주 정보 및 날짜 행 ===
-            let bodyHTML = '';
-            
-            // 첫 번째 행에서 날짜 추출
-            const dateRow = weekData[0];
-            if (dateRow && dateRow.cells) {
-                const firstDateCell = dateRow.cells[1];
-                if (firstDateCell && firstDateCell.value) {
-                    document.getElementById('scheduleCurrentWeek').textContent = `${currentWeekIndex + 1}주차 (${firstDateCell.value}주)`;
-                } else {
-                    document.getElementById('scheduleCurrentWeek').textContent = `${currentWeekIndex + 1}주차`;
-                }
-                
-                // 날짜 행 렌더링
-                const dateBgColor = dateRow.cells[0]?.bgColor || '#F5F5F5';
-                const dateTextColor = dateRow.cells[0]?.color || '#000000';
-                
-                bodyHTML += `<tr style="background: ${dateBgColor}; font-weight: bold;">`;
-                bodyHTML += `<td style="background: ${dateBgColor}; color: ${dateTextColor}; text-align: center; padding: 12px 8px;">날짜</td>`;
-                
-                // B~F열 날짜
-                for (let j = 1; j <= 5; j++) {
-                    const cell = dateRow.cells[j];
-                    const dateValue = cell ? cell.value : '';
-                    const cellBgColor = cell?.bgColor || dateBgColor;
-                    const cellTextColor = cell?.color || dateTextColor;
-                    
-                    bodyHTML += `<td style="background: ${cellBgColor}; color: ${cellTextColor}; text-align: center; padding: 12px 8px; font-weight: bold;">${dateValue}</td>`;
-                }
-                bodyHTML += `</tr>`;
-            }
-            
-            // === 데이터 행 렌더링 (2번째 행부터) ===
-            for (let i = 1; i < weekData.length; i++) {
-                const row = weekData[i];
-                if (!row.cells || row.cells.length === 0) continue;
-                
-                // A열: 구분 (일정, 공통, 업무 등)
-                const categoryCell = row.cells[0];
-                const category = categoryCell ? categoryCell.value : '';
-                
-                // 빈 구분은 건너뛰기
-                if (!category.trim()) continue;
-                
-                // 구분 셀 스타일
-                const categoryBgColor = categoryCell.bgColor || '#FFFFFF';
-                const categoryTextColor = categoryCell.color || '#000000';
-                const categoryBold = categoryCell.bold ? 'font-weight: bold;' : '';
-                
-                bodyHTML += `<tr>`;
-                bodyHTML += `<td style="background: ${categoryBgColor}; color: ${categoryTextColor}; ${categoryBold} text-align: center; padding: 12px 8px;">${category}</td>`;
-                
-                // B~F열 (월~금) - 인덱스 1~5
-                for (let j = 1; j <= 5; j++) {
-                    const cell = row.cells[j];
-                    
-                    if (!cell) {
-                        bodyHTML += `<td style="padding: 12px 8px;">-</td>`;
-                        continue;
-                    }
-                    
-                    const cellValue = cell.value || '';
-                    const cellBgColor = cell.bgColor || '#FFFFFF';
-                    const cellTextColor = cell.color || '#000000';
-                    const cellBold = cell.bold ? 'font-weight: bold;' : '';
-                    const cellItalic = cell.italic ? 'font-style: italic;' : '';
-                    const cellUnderline = cell.underline ? 'text-decoration: underline;' : '';
-                    const cellStrike = cell.strikethrough ? 'text-decoration: line-through;' : '';
-                    
-                    // 줄바꿈 처리
-                    const displayContent = cellValue.replace(/\n/g, '<br>');
-                    
-                    const cellStyle = `
-                        background: ${cellBgColor}; 
-                        color: ${cellTextColor}; 
-                        ${cellBold}
-                        ${cellItalic}
-                        ${cellUnderline}
-                        ${cellStrike}
-                        padding: 12px 8px; 
-                        vertical-align: top;
-                        white-space: pre-wrap;
-                        word-break: keep-all;
-                    `;
-                    
-                    bodyHTML += `<td style="${cellStyle}">${displayContent || '-'}</td>`;
-                }
-                
-                bodyHTML += `</tr>`;
-            }
-            
-            if (bodyHTML === '') {
-                bodyHTML = '<tr><td colspan="6" class="empty-state">해당 주의 일정이 없습니다.</td></tr>';
-            }
-            
-            tbody.innerHTML = bodyHTML;
-        }
-        
-        function previousWeek() {
-            if (currentWeekIndex > 0) {
-                currentWeekIndex--;
-                renderCurrentWeek();
-            } else {
-                showToast('첫 번째 주입니다.');
-            }
-        }
-        
-        function nextWeek() {
-            if (currentWeekIndex < allWeeks.length - 1) {
-                currentWeekIndex++;
-                renderCurrentWeek();
-            } else {
-                showToast('마지막 주입니다.');
-            }
-        }
-        
-        function changeScheduleMonth() {
-            // 년월 변경 시 (실제로는 같은 스프레드시트를 사용하므로 재파싱만)
-            parseScheduleData();
-            findCurrentWeek(); // 이번 주 자동 찾기
-            renderCurrentWeek();
-        }
     </script>
 </body>
 </html>
