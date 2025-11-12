@@ -1534,7 +1534,7 @@
                                 <th colspan="3" class="text-center">기홈</th>
                                 <th colspan="3" class="text-center">지사</th>
                                 <th colspan="3" class="text-center">이너</th>
-                                <th rowspan="2">기타</th>
+                                <th rowspan="2">비고</th>
                             </tr>
                             <tr>
                                 <th class="text-right">진행</th>
@@ -1895,6 +1895,7 @@
                 
                 // 2. 서식 정보 가져오기 (textFormatRuns 포함)
                 const formatUrl = `${BASE_URL}/${CONFIG.SHEETS_ID}?ranges=${sheetName}&fields=sheets(data(rowData(values(effectiveFormat,userEnteredFormat,textFormatRuns,formattedValue))))&key=${CONFIG.API_KEY}`;
+                
                 const formatResponse = await fetch(formatUrl, {
                     cache: 'no-store',
                     headers: {
@@ -1905,7 +1906,6 @@
                 
                 if (!formatResponse.ok) {
                     console.warn('서식 정보 가져오기 실패, 일반 데이터만 사용:', formatResponse.status);
-                    // 서식 정보 실패 시 일반 데이터만 반환
                     return getSheetData(sheetName);
                 }
                 
@@ -2803,7 +2803,7 @@
                 '이너': { expected: 0, confirmed: 0 }
             };
             
-            let 기타Total = 0;
+            let 비고Total = 0;
             
             // 모든 회원 데이터 합산 (목표 행 제외)
             actualData.forEach(row => {
@@ -2826,7 +2826,7 @@
                 totalExpected += t.expected;
                 totalConfirmed += t.confirmed;
             });
-            totalConfirmed += 기타Total;  // 기타 추가
+            totalConfirmed += 비고Total;  // 비고 추가
             
             // 일목표 데이터 (목표 행의 '컨홈목표' 등 사용)
             let goalData = {};
@@ -2968,14 +2968,51 @@
                 </tr>
             `;
             
-            // 날짜 선택기 기본값 설정 (오늘)
-            const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
+            // 날짜 선택기 자동 설정 - 조회 기간에 따라
             const dateInput = document.getElementById('salesProductDate');
             
-            // 날짜 선택기가 비어있으면 오늘로 설정
-            if (!dateInput.value) {
-                dateInput.value = todayStr;
+            // dateInput이 존재하는지 확인 (방어 코드)
+            if (!dateInput) {
+                console.error('salesProductDate 요소를 찾을 수 없습니다.');
+                // filterSalesProductByDate 호출하지 않고 계속 진행
+                updateSalesCharts(actualData, totals);
+                displaySalesDetail(periodData);
+                return;
+            }
+            
+            // 로컬 타임존 기준 날짜 문자열 생성 (YYYY-MM-DD)
+            const getLocalDateString = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            const today = new Date();
+            
+            if (period === 'today') {
+                // "오늘" 조회 → 오늘 날짜로 설정
+                dateInput.value = getLocalDateString(today);
+            } else if (period === 'week') {
+                // "이번 주" 조회 → 오늘 날짜로 설정
+                dateInput.value = getLocalDateString(today);
+            } else if (period === 'month') {
+                // "이번 달" 조회 → 오늘 날짜로 설정
+                dateInput.value = getLocalDateString(today);
+            } else if (period === 'custom') {
+                // "사용자 지정" → 종료일로 설정
+                // endDate가 유효한지 확인
+                if (endDate && !isNaN(endDate.getTime())) {
+                    dateInput.value = getLocalDateString(endDate);
+                } else {
+                    // 유효하지 않으면 오늘로 설정
+                    console.warn('유효하지 않은 종료일, 오늘 날짜 사용');
+                    dateInput.value = getLocalDateString(today);
+                }
+            } else {
+                // 예상치 못한 period 값 → 오늘로 설정
+                console.warn('알 수 없는 기간:', period);
+                dateInput.value = getLocalDateString(today);
             }
             
             // 차트와 상세 테이블 업데이트
@@ -3265,7 +3302,7 @@
                 const confirmedData = periodData.map(row => 
                     parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
                     parseNumber(row['지사확정']) + parseNumber(row['이너확정']) + 
-                    parseNumber(row['기타'])
+                    parseNumber(row['비고'])
                 );
                 
                 chartInstances.salesDaily = new Chart(dailyCtx.getContext('2d'), {
@@ -3349,7 +3386,7 @@
                 const cumulativeData = periodData.map(row => {
                     cumulative += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
                                  parseNumber(row['지사확정']) + parseNumber(row['이너확정']) + 
-                                 parseNumber(row['기타']);
+                                 parseNumber(row['비고']);
                     return cumulative;
                 });
                 
@@ -3521,7 +3558,7 @@
                     기홈진행: 0, 기홈예상: 0, 기홈확정: 0,
                     지사진행: 0, 지사예상: 0, 지사확정: 0,
                     이너진행: 0, 이너예상: 0, 이너확정: 0,
-                    기타: 0
+                    비고: 0
                 };
                 
                 // 해당 날짜의 목표 행 찾기
@@ -3556,7 +3593,8 @@
                     const 이너진행 = parseNumber(row['이너진행']);
                     const 이너예상 = parseNumber(row['이너예상']);
                     const 이너확정 = parseNumber(row['이너확정']);
-                    const 기타 = parseNumber(row['기타']);
+                    const 비고Raw = row['비고'] || '';  // 원본 값 (숫자 또는 텍스트)
+                    const 비고 = parseNumber(row['비고']);  // 숫자로 파싱 (합계용)
                     
                     // 소계 누적
                     dateTotal.컨홈진행 += 컨홈진행;
@@ -3571,7 +3609,7 @@
                     dateTotal.이너진행 += 이너진행;
                     dateTotal.이너예상 += 이너예상;
                     dateTotal.이너확정 += 이너확정;
-                    dateTotal.기타 += 기타;
+                    dateTotal.비고 += 비고;
                     
                     html += '<tr>';
                     if (rowspan > 0) {
@@ -3591,7 +3629,7 @@
                         <td class="text-right">${이너진행 ? formatNumber(이너진행) : '-'}</td>
                         <td class="text-right">${이너예상 ? formatNumber(이너예상) : '-'}</td>
                         <td class="text-right">${이너확정 ? formatNumber(이너확정) : '-'}</td>
-                        <td class="text-right">${기타 ? formatNumber(기타) : '-'}</td>
+                        <td class="text-right">${비고Raw || '-'}</td>
                     `;
                     html += '</tr>';
                 });
@@ -3612,7 +3650,7 @@
                         <td class="text-right">${formatNumber(dateTotal.이너진행)}</td>
                         <td class="text-right">${formatNumber(dateTotal.이너예상)}</td>
                         <td class="text-right">${formatNumber(dateTotal.이너확정)}</td>
-                        <td class="text-right">${formatNumber(dateTotal.기타)}</td>
+                        <td class="text-right">${dateTotal.비고 ? formatNumber(dateTotal.비고) : '-'}</td>
                     </tr>
                 `;
             });
@@ -3623,7 +3661,7 @@
                 기홈진행: 0, 기홈예상: 0, 기홈확정: 0,
                 지사진행: 0, 지사예상: 0, 지사확정: 0,
                 이너진행: 0, 이너예상: 0, 이너확정: 0,
-                기타: 0
+                비고: 0
             };
             
             // 일반 데이터 합산
@@ -3640,7 +3678,7 @@
                 grandTotal.이너진행 += parseNumber(row['이너진행']);
                 grandTotal.이너예상 += parseNumber(row['이너예상']);
                 grandTotal.이너확정 += parseNumber(row['이너확정']);
-                grandTotal.기타 += parseNumber(row['기타']);
+                grandTotal.비고 += parseNumber(row['비고']);
             });
             
             // 목표 행의 확정 금액도 합산 (목표 행은 화면에 표시 안 하지만 확정 금액은 포함)
@@ -3742,7 +3780,7 @@
                     <td class="text-right">${formatNumber(grandTotal.이너진행)}</td>
                     <td class="text-right">${formatNumber(grandTotal.이너예상)}</td>
                     <td class="text-right">${formatNumber(grandTotal.이너확정)}</td>
-                    <td class="text-right">${formatNumber(grandTotal.기타)}</td>
+                    <td class="text-right">${grandTotal.비고 ? formatNumber(grandTotal.비고) : '-'}</td>
                 </tr>
             `;
             
@@ -4355,9 +4393,17 @@
 
             // 업무오더 - 마지막 데이터 중 내용이 있는 것
             let workOrderContent = '';
+            
             for (let i = dashboardInfo.length - 1; i >= 0; i--) {
                 if (dashboardInfo[i]['업무오더'] && dashboardInfo[i]['업무오더'].trim() !== '') {
                     workOrderContent = dashboardInfo[i]['업무오더_formatted'] || dashboardInfo[i]['업무오더'];
+                    
+                    // 업무오더에 색상이 없으면 강제로 빨간색 적용
+                    if (workOrderContent && !workOrderContent.includes('color:')) {
+                        // 전체를 빨간색으로 감싸기
+                        workOrderContent = `<span style="color: #ff0000">${workOrderContent}</span>`;
+                    }
+                    
                     break;
                 }
             }
