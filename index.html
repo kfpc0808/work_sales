@@ -6461,10 +6461,8 @@
                     // 로컬 스토리지에도 저장
                     localStorage.setItem('weeklyPlanData', JSON.stringify(allData));
                     
-                    // 1초 후 데이터 다시 로드하여 확인
-                    setTimeout(() => {
-                        loadWeeklyPlanFromSheet();
-                    }, 1000);
+                    // ✅ 자동 리로드 제거 (입력 중 데이터 손실 방지)
+                    // 필요 시 수동으로 새로고침 버튼 클릭
                     
                 } else {
                     // Apps Script URL이 없는 경우 클립보드 복사
