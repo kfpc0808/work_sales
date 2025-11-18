@@ -2317,7 +2317,12 @@
             document.getElementById('tab-' + tabName).classList.add('active');
             event.target.classList.add('active');
             
-            if (tabName === 'sales' && salesData.length > 0) loadSalesData();
+            if (tabName === 'sales') {
+                // Sales 탭: localStorage에서 주간 계획 데이터 복원
+                initWeeklyPlan();
+                // 매출 분석 데이터도 로드
+                if (salesData.length > 0) loadSalesData();
+            }
             else if (tabName === 'calls' && callHistory.length > 0) filterCalls();
             else if (tabName === 'notices' && noticeData.length > 0) filterNotices();
             else if (tabName === 'schedule' && scheduleData.length > 0) {
@@ -5759,23 +5764,41 @@
         
         function initWeeklyPlan() {
             if (document.getElementById('weeklyPlanSection')) {
-                // 이미 초기화되었으면 다시 실행하지 않음
-                if (weeklyPlanInitialized) {
-                    console.log('✅ 주간 계획이 이미 초기화되었습니다. (데이터 보존)');
-                    return;
+                console.log('주간 계획 탭 초기화');
+                
+                // localStorage에서 저장된 데이터 확인
+                try {
+                    const savedData = localStorage.getItem('weeklyPlanData');
+                    if (savedData) {
+                        console.log('localStorage에서 이전 데이터를 복원합니다.');
+                        const parsedData = JSON.parse(savedData);
+                        processSheetData(parsedData);
+                        return;
+                    }
+                } catch (e) {
+                    console.log('localStorage 데이터 로드 실패:', e);
                 }
                 
-                // Apps Script URL 설정 완료
-                console.log('Apps Script URL 설정 완료: 자동 저장 기능 활성화');
-                
-                // sheet7에서 데이터 자동 로드 (최초 1회만, force=true)
-                setTimeout(() => {
-                    loadWeeklyPlanFromSheet(true);  // 페이지 로드 시는 강제 로드
-                    // 자동 저장 기능 활성화
-                    enableAutoSave();
-                    console.log('주간 매출 계획 자동 저장 기능이 활성화되었습니다.');
-                    weeklyPlanInitialized = true;  // 초기화 완료 플래그
-                }, 500);
+                // 저장된 데이터가 없으면 안내 메시지 표시
+                document.getElementById('weeklyPlanContainer').innerHTML = `
+                    <div style="padding: 40px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 15px;">
+                            구글 시트 <strong>sheet7</strong>에 데이터를 입력하고
+                        </div>
+                        <div style="font-size: 18px; color: #666; margin-bottom: 30px;">
+                            <strong style="color: #17a2b8;">🔄 불러오기</strong> 버튼을 클릭하세요
+                        </div>
+                        <div style="padding: 15px; background: #e7f3ff; border-radius: 8px; display: inline-block;">
+                            <div style="font-size: 14px; color: #1976D2; text-align: left;">
+                                💡 <strong>사용 방법</strong><br>
+                                1️⃣ 구글 시트 sheet7에서 주간 계획 입력<br>
+                                2️⃣ 이 화면에서 🔄 불러오기 클릭<br>
+                                3️⃣ 데이터가 자동으로 표시됨
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
         }
         
@@ -6348,12 +6371,32 @@
                 return;
             }
             
+            // localStorage에 데이터 저장 (탭 전환 시 유지)
+            try {
+                localStorage.setItem('weeklyPlanData', JSON.stringify(values));
+                console.log('데이터를 localStorage에 저장했습니다.');
+            } catch (e) {
+                console.log('localStorage 저장 실패:', e);
+            }
+            
             // 헤더 제외하고 데이터 처리
             const rows = values.slice(1);
             console.log('처리할 행 수:', rows.length);
             
+            // 날짜 형식 변환 함수 (2025/11/17 → 11/17)
+            function formatDate(dateStr) {
+                if (!dateStr) return '';
+                const parts = String(dateStr).split('/');
+                if (parts.length === 3) {
+                    return `${parts[1]}/${parts[2]}`; // MM/DD
+                }
+                return dateStr;
+            }
+            
             // 주차별로 그룹화
             const weekGroups = {};
+            const allProducts = {}; // 전체 상품별 합계
+            
             rows.forEach((row, index) => {
                 if (row[0]) { // 주차가 있는 경우만
                     const weekNum = row[0];
@@ -6373,25 +6416,31 @@
                     if (dayNum > 0) {
                         if (!weekGroups[weekNum][dayNum]) {
                             weekGroups[weekNum][dayNum] = {
-                                date: date,
+                                date: formatDate(date), // 날짜 형식 변환
                                 dayName: dayName,
                                 items: []
                             };
                         }
                         
                         if (name || product || amount) {
+                            const itemAmount = parseInt(String(amount).replace(/,/g, '')) || 0;
                             weekGroups[weekNum][dayNum].items.push({
                                 name: name,
                                 product: product,
                                 amount: amount,
                                 note: note
                             });
+                            
+                            // 전체 상품별 합계 계산
+                            const productKey = product || '기타';
+                            allProducts[productKey] = (allProducts[productKey] || 0) + itemAmount;
                         }
                     }
                 }
             });
             
             console.log('weekGroups:', weekGroups);
+            console.log('전체 상품별 합계:', allProducts);
             
             // UI 생성
             const container = document.getElementById('weeklyPlanContainer');
@@ -6482,8 +6531,30 @@
                 container.appendChild(weekBox);
             });
             
-            // 전체 상품별 합계 계산 및 표시
-            updateProductSummary();
+            // 전체 상품별 기간 합계 표시
+            if (Object.keys(allProducts).length > 0) {
+                const totalAmount = Object.values(allProducts).reduce((a, b) => a + b, 0);
+                
+                const summaryBox = document.createElement('div');
+                summaryBox.style.cssText = 'margin-top: 30px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
+                summaryBox.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #27ae60;">
+                        <h3 style="color: #27ae60; margin: 0;">📊 상품별 기간 합계</h3>
+                        <div style="font-size: 18px; font-weight: bold; color: #2c3e50;">
+                            전체 합계: <span style="color: #e74c3c;">${totalAmount.toLocaleString('ko-KR')}원</span>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                        ${Object.entries(allProducts).sort((a, b) => b[1] - a[1]).map(([product, amount]) => `
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; text-align: center; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
+                                <div style="font-size: 16px; font-weight: 600; margin-bottom: 10px;">${product}</div>
+                                <div style="font-size: 24px; font-weight: bold;">${amount.toLocaleString('ko-KR')}원</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(summaryBox);
+            }
             
             console.log('=== UI 생성 완료 ===');
             showToast('주간 계획을 불러왔습니다.');
