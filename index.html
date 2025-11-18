@@ -1608,9 +1608,44 @@
             position: absolute;
             top: 5px;
             right: 5px;
-            cursor: help;
-            color: #4A90E2;
-            font-size: 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #4A90E2;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(74, 144, 226, 0.4);
+            border: 2px solid white;
+        }
+        
+        .plan-item .note-indicator:hover {
+            transform: scale(1.15);
+            box-shadow: 0 3px 10px rgba(74, 144, 226, 0.6);
+        }
+        
+        .plan-item .note-indicator.has-note {
+            background: #ff9800;
+            box-shadow: 0 2px 6px rgba(255, 152, 0, 0.4);
+            animation: pulse-note 2s ease-in-out infinite;
+        }
+        
+        .plan-item .note-indicator.has-note:hover {
+            box-shadow: 0 3px 10px rgba(255, 152, 0, 0.6);
+        }
+        
+        @keyframes pulse-note {
+            0%, 100% { 
+                box-shadow: 0 2px 6px rgba(255, 152, 0, 0.4);
+            }
+            50% { 
+                box-shadow: 0 2px 10px rgba(255, 152, 0, 0.7);
+            }
         }
         
         .plan-item .note-tooltip {
@@ -5731,17 +5766,26 @@
         let currentWeekPlanId = 0;
         
         // 주간 계획 초기화 체크
+        let weeklyPlanInitialized = false;  // 초기화 플래그 추가
+        
         function initWeeklyPlan() {
             if (document.getElementById('weeklyPlanSection')) {
+                // 이미 초기화되었으면 다시 실행하지 않음
+                if (weeklyPlanInitialized) {
+                    console.log('✅ 주간 계획이 이미 초기화되었습니다. (데이터 보존)');
+                    return;
+                }
+                
                 // Apps Script URL 설정 완료
                 console.log('Apps Script URL 설정 완료: 자동 저장 기능 활성화');
                 
-                // sheet7에서 데이터 자동 로드
+                // sheet7에서 데이터 자동 로드 (최초 1회만, force=true)
                 setTimeout(() => {
-                    loadWeeklyPlanFromSheet();
+                    loadWeeklyPlanFromSheet(true);  // 페이지 로드 시는 강제 로드
                     // 자동 저장 기능 활성화
                     enableAutoSave();
                     console.log('주간 매출 계획 자동 저장 기능이 활성화되었습니다.');
+                    weeklyPlanInitialized = true;  // 초기화 완료 플래그
                 }, 500);
             }
         }
@@ -5878,7 +5922,7 @@
                 <input type="text" placeholder="메모 (선택)" class="note-input" id="${itemId}_note" 
                        onchange="updateNoteIndicator('${itemId}')" 
                        onkeydown="handleKeyNavigation(event, '${itemId}', 'note')" style="display:none;">
-                <span class="note-indicator" id="${itemId}_note_icon" onclick="toggleNoteInput('${itemId}')" title="메모 추가">💬</span>
+                <span class="note-indicator" id="${itemId}_note_icon" onclick="toggleNoteInput('${itemId}')" title="메모 추가">메</span>
                 <div class="note-tooltip" id="${itemId}_tooltip"></div>
             `;
             
@@ -6078,11 +6122,13 @@
             const tooltip = document.getElementById(`${itemId}_tooltip`);
             
             if (noteInput && noteInput.value) {
-                noteIcon.style.color = '#ff9800';
+                // 메모가 있을 때
+                noteIcon.classList.add('has-note');
                 noteIcon.title = noteInput.value;
                 tooltip.textContent = noteInput.value;
             } else {
-                noteIcon.style.color = '#4A90E2';
+                // 메모가 없을 때
+                noteIcon.classList.remove('has-note');
                 noteIcon.title = '메모 추가';
                 tooltip.textContent = '';
             }
@@ -6208,11 +6254,52 @@
         }
         
         // Google Apps Script Web App URL (배포 후 여기에 URL 입력)
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiu3Bm3adM7iClhnM-W7QBbE35n3p57QEYRUg-22y7y9l6yFuBsKioMcMeqww--c0Ohw/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzf3gCKJ4nAhpXiDMRx7HtWuFYLdWzw_S6VUFA1Snk7Nhj9iwtBLROtYVxPPm5F_IwTbw/exec';
         
-        // 구글 시트에서 데이터 로드
-        async function loadWeeklyPlanFromSheet() {
+        // 구글 시트에서 데이터 로드 (안전 버전)
+        async function loadWeeklyPlanFromSheet(force = false) {
             console.log('주간 계획 데이터 로드 시작');
+            
+            // 강제 로드가 아니고, 화면에 데이터가 있으면 확인
+            if (!force) {
+                const weekBoxes = document.getElementsByClassName('week-plan-box');
+                let hasData = false;
+                
+                // 데이터가 있는지 확인
+                if (weekBoxes.length > 0) {
+                    for (let weekBox of weekBoxes) {
+                        const items = weekBox.getElementsByClassName('plan-item');
+                        for (let item of items) {
+                            const nameInput = item.querySelector('.name-input');
+                            const productInput = item.querySelector('.product-input');
+                            const amountInput = item.querySelector('.amount-input');
+                            
+                            if ((nameInput && nameInput.value) || 
+                                (productInput && productInput.value) || 
+                                (amountInput && amountInput.value)) {
+                                hasData = true;
+                                break;
+                            }
+                        }
+                        if (hasData) break;
+                    }
+                }
+                
+                // 데이터가 있으면 확인 메시지
+                if (hasData) {
+                    const confirmLoad = confirm(
+                        '⚠️ 화면에 입력된 데이터가 있습니다.\n' +
+                        '불러오기를 하면 현재 입력한 내용이 사라집니다.\n\n' +
+                        '계속하시겠습니까?\n\n' +
+                        '💡 팁: 먼저 "저장" 버튼을 눌러 데이터를 저장하세요.'
+                    );
+                    
+                    if (!confirmLoad) {
+                        console.log('사용자가 불러오기를 취소했습니다.');
+                        return;
+                    }
+                }
+            }
             
             // 불러오기 버튼 찾기 및 상태 표시
             const loadBtn = Array.from(document.querySelectorAll('button')).find(btn => 
