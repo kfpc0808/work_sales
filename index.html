@@ -2050,14 +2050,6 @@
                 <div id="weeklyPlanContainer">
                     <!-- 동적으로 주간 계획이 추가될 영역 -->
                 </div>
-                
-                <!-- 상품별 합계 표시 영역 -->
-                <div class="weekly-summary" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div class="section-title" style="margin-bottom: 10px; font-size: 16px;">📊 상품별 기간 합계</div>
-                    <div id="productSummary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                        <!-- 상품별 합계가 동적으로 표시될 영역 -->
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -6383,14 +6375,19 @@
             const rows = values.slice(1);
             console.log('처리할 행 수:', rows.length);
             
-            // 날짜 형식 변환 함수 (2025/11/17 → 11/17)
+            // 날짜 형식 변환 함수 - 모든 형식 처리
             function formatDate(dateStr) {
                 if (!dateStr) return '';
-                const parts = String(dateStr).split('/');
+                
+                // ISO 형식 제거 (2025-11-16T15:00:00.000Z → 2025/11/17)
+                let cleanDate = String(dateStr).replace(/T.*/, '').replace(/-/g, '/');
+                
+                // MM/DD 형식으로 변환
+                const parts = cleanDate.split('/');
                 if (parts.length === 3) {
                     return `${parts[1]}/${parts[2]}`; // MM/DD
                 }
-                return dateStr;
+                return cleanDate;
             }
             
             // 주차별로 그룹화
@@ -6495,17 +6492,15 @@
                             return `<div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
                                 <div style="font-weight: bold; color: #2c3e50; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #dee2e6;">
                                     ${dayName}<br>
-                                    <span style="font-size: 12px; color: #6c757d;">${dayData.date}</span>
+                                    <span style="font-size: 14px; color: #6c757d; font-weight: normal;">${dayData.date}</span>
                                 </div>
                                 ${dayData.items.map(item => `
                                     <div style="background: white; padding: 10px; margin-bottom: 8px; border-radius: 6px; border-left: 3px solid #4A90E2; position: relative;">
+                                        ${item.note ? `<div style="position: absolute; top: 8px; right: 8px; width: 12px; height: 12px; background: #ff9800; border-radius: 50%; border: 1px solid white; box-shadow: 0 2px 4px rgba(255,152,0,0.4);"></div>` : ''}
                                         <div style="font-weight: 600; color: #2c3e50; margin-bottom: 3px;">${item.name}</div>
                                         <div style="font-size: 13px; color: #6c757d; margin-bottom: 3px;">${item.product}</div>
                                         <div style="font-weight: bold; color: #e74c3c;">${parseInt(String(item.amount).replace(/,/g, '')).toLocaleString('ko-KR')}원</div>
-                                        ${item.note ? `
-                                            <div style="position: absolute; top: 8px; right: 8px; width: 12px; height: 12px; background: #ff9800; border-radius: 50%; border: 1px solid white; box-shadow: 0 2px 4px rgba(255,152,0,0.4);" title="${item.note}"></div>
-                                            <div style="margin-top: 5px; font-size: 12px; color: #ff9800; font-style: italic;">💬 ${item.note}</div>
-                                        ` : ''}
+                                        ${item.note ? `<div style="margin-top: 5px; font-size: 12px; color: #ff9800; font-style: italic;">💬 ${item.note}</div>` : ''}
                                     </div>
                                 `).join('')}
                                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #dee2e6; font-weight: bold; color: #2c3e50;">
