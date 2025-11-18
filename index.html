@@ -5805,11 +5805,10 @@
             weekBox.className = 'week-plan-box';
             weekBox.id = weekId;
             
-            // 현재 날짜 기준으로 이번 주 월요일 찾기
-            const today = new Date();
-            const day = today.getDay();
-            const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-            const monday = new Date(today.setDate(diff));
+            // 고정 기준일: 2025년 11월 17일 (1주차 월요일)
+            const baseMonday = new Date(2025, 10, 17); // 월은 0부터 시작
+            const monday = new Date(baseMonday);
+            monday.setDate(baseMonday.getDate() + (currentWeekPlanId - 1) * 7);
             
             weekBox.innerHTML = `
                 <div class="week-plan-header">
@@ -5857,17 +5856,12 @@
             
             container.appendChild(weekBox);
             
-            // 월요일 날짜 자동 설정
+            // 월요일 날짜 자동 설정 (고정 기준일 사용)
             const mondayInput = document.getElementById(`${weekId}_date_1`);
             if (mondayInput) {
-                const mondayDate = new Date();
-                const dayOfWeek = mondayDate.getDay();
-                const diffToMonday = mondayDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-                mondayDate.setDate(diffToMonday);
-                
-                const year = mondayDate.getFullYear();
-                const month = String(mondayDate.getMonth() + 1).padStart(2, '0');
-                const date = String(mondayDate.getDate()).padStart(2, '0');
+                const year = monday.getFullYear();
+                const month = String(monday.getMonth() + 1).padStart(2, '0');
+                const date = String(monday.getDate()).padStart(2, '0');
                 mondayInput.value = `${year}-${month}-${date}`;
                 
                 // 나머지 요일도 자동 설정
