@@ -5808,8 +5808,9 @@
             // 현재 날짜 기준으로 이번 주 월요일 찾기
             const now = new Date();
             const dayOfWeek = now.getDay(); // 0(일) ~ 6(토)
-            const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-            const thisMonday = new Date(now.getFullYear(), now.getMonth(), diffToMonday);
+            const daysToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+            const thisMonday = new Date(now);
+            thisMonday.setDate(now.getDate() + daysToMonday);
             
             // 해당 주차의 월요일 계산 (1주차 = 이번 주, 2주차 = 다음 주...)
             const monday = new Date(thisMonday);
