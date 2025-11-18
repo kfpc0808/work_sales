@@ -2000,6 +2000,9 @@
                         <button class="btn btn-success" style="padding: 6px 12px; font-size: 14px; margin-right: 5px;" onclick="saveWeeklyPlanToSheet()">
                             💾 저장
                         </button>
+                        <button class="btn btn-info" style="padding: 6px 12px; font-size: 14px; margin-right: 5px; background: #17a2b8; color: white; border: none;" onclick="loadWeeklyPlanFromSheet()">
+                            🔄 불러오기
+                        </button>
                         <button class="btn btn-primary" style="padding: 6px 12px; font-size: 14px;" onclick="addNewWeekPlan()">
                             + 새 주 추가
                         </button>
@@ -6211,6 +6214,16 @@
         async function loadWeeklyPlanFromSheet() {
             console.log('주간 계획 데이터 로드 시작');
             
+            // 불러오기 버튼 찾기 및 상태 표시
+            const loadBtn = Array.from(document.querySelectorAll('button')).find(btn => 
+                btn.textContent.includes('불러오기')
+            );
+            
+            if (loadBtn) {
+                loadBtn.innerHTML = '⏳ 불러오는 중...';
+                loadBtn.disabled = true;
+            }
+            
             try {
                 // 먼저 Apps Script 방식 시도
                 if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
@@ -6220,6 +6233,14 @@
                         
                         if (result.success && result.data) {
                             processSheetData(result.data);
+                            showToast('✅ 데이터를 성공적으로 불러왔습니다!');
+                            if (loadBtn) {
+                                loadBtn.innerHTML = '✅ 완료!';
+                                setTimeout(() => {
+                                    loadBtn.innerHTML = '🔄 불러오기';
+                                    loadBtn.disabled = false;
+                                }, 1500);
+                            }
                             return;
                         }
                     } catch (appsScriptError) {
@@ -6239,15 +6260,35 @@
                 
                 if (data.values && data.values.length > 1) {
                     processSheetData(data.values);
+                    showToast('✅ 데이터를 성공적으로 불러왔습니다!');
+                    if (loadBtn) {
+                        loadBtn.innerHTML = '✅ 완료!';
+                        setTimeout(() => {
+                            loadBtn.innerHTML = '🔄 불러오기';
+                            loadBtn.disabled = false;
+                        }, 1500);
+                    }
                 } else {
                     console.log('sheet7에 데이터가 없습니다.');
+                    showToast('ℹ️ sheet7에 데이터가 없습니다.');
                     addNewWeekPlan();
+                    if (loadBtn) {
+                        loadBtn.innerHTML = '🔄 불러오기';
+                        loadBtn.disabled = false;
+                    }
                 }
                 
             } catch (error) {
                 console.error('sheet7 로드 오류:', error);
-                showToast('데이터 로드 중 오류가 발생했습니다.');
+                showToast('❌ 데이터 로드 중 오류가 발생했습니다.');
                 addNewWeekPlan();
+                if (loadBtn) {
+                    loadBtn.innerHTML = '❌ 실패';
+                    setTimeout(() => {
+                        loadBtn.innerHTML = '🔄 불러오기';
+                        loadBtn.disabled = false;
+                    }, 1500);
+                }
             }
         }
         
