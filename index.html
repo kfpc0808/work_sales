@@ -1609,33 +1609,36 @@
             top: 5px;
             right: 5px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 0;
             font-weight: 700;
-            width: 28px;
-            height: 28px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #4A90E2;
+            background: transparent;
             color: white;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 6px rgba(74, 144, 226, 0.4);
-            border: 2px solid white;
+            box-shadow: none;
+            border: 1px solid #ddd;
         }
         
         .plan-item .note-indicator:hover {
-            transform: scale(1.15);
-            box-shadow: 0 3px 10px rgba(74, 144, 226, 0.6);
+            transform: scale(1.2);
+            background: #f0f0f0;
+            border-color: #ccc;
         }
         
         .plan-item .note-indicator.has-note {
             background: #ff9800;
             box-shadow: 0 2px 6px rgba(255, 152, 0, 0.4);
+            border: 1px solid white;
             animation: pulse-note 2s ease-in-out infinite;
         }
         
         .plan-item .note-indicator.has-note:hover {
+            transform: scale(1.2);
             box-shadow: 0 3px 10px rgba(255, 152, 0, 0.6);
         }
         
@@ -2032,29 +2035,15 @@
                 <div class="section-title">
                     📅 주간 매출 계획
                     <div style="float: right;">
-                        <button class="btn btn-success" style="padding: 6px 12px; font-size: 14px; margin-right: 5px;" onclick="saveWeeklyPlanToSheet()">
-                            💾 저장
-                        </button>
-                        <button class="btn btn-info" style="padding: 6px 12px; font-size: 14px; margin-right: 5px; background: #17a2b8; color: white; border: none;" onclick="loadWeeklyPlanFromSheet()">
+                        <button class="btn btn-info" style="padding: 8px 16px; font-size: 14px; background: #17a2b8; color: white; border: none;" onclick="loadWeeklyPlanFromSheet()">
                             🔄 불러오기
-                        </button>
-                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 14px;" onclick="addNewWeekPlan()">
-                            + 새 주 추가
                         </button>
                     </div>
                 </div>
                 
-                <!-- Apps Script 설정 안내 (초기에만 표시) -->
-                <div id="appsScriptSetupGuide" style="display: none; margin: 15px 0; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;">
-                    <div style="font-weight: bold; color: #856404; margin-bottom: 10px;">
-                        ⚠️ 자동 저장을 위한 설정이 필요합니다
-                    </div>
-                    <div style="font-size: 14px; color: #856404; line-height: 1.6;">
-                        1. Google Sheets에서 <strong>확장 프로그램 → Apps Script</strong> 클릭<br>
-                        2. 제공된 코드 붙여넣기 후 저장<br>
-                        3. <strong>배포 → 새 배포 → 웹앱</strong> 선택<br>
-                        4. 배포 후 받은 URL을 코드의 APPS_SCRIPT_URL에 입력<br>
-                        <button class="btn btn-secondary" style="margin-top: 10px; padding: 4px 10px; font-size: 13px;" onclick="document.getElementById('appsScriptSetupGuide').style.display='none'">닫기</button>
+                <div style="margin: 15px 0; padding: 12px; background: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+                    <div style="font-size: 13px; color: #1976D2;">
+                        ℹ️ <strong>구글 시트에서 데이터를 입력</strong>하고 이 화면에서 확인하세요. (읽기 전용)
                     </div>
                 </div>
                 
@@ -5901,11 +5890,14 @@
             }
         }
         
+        // 고유 ID 생성을 위한 카운터
+        let itemIdCounter = 0;
+        
         function addPlanItem(weekId, dayNum) {
             const itemsContainer = document.getElementById(`${weekId}_items_${dayNum}`);
             if (!itemsContainer) return;
             
-            const itemId = `${weekId}_${dayNum}_${Date.now()}`;
+            const itemId = `${weekId}_${dayNum}_${Date.now()}_${itemIdCounter++}`;
             const itemDiv = document.createElement('div');
             itemDiv.className = 'plan-item';
             itemDiv.id = itemId;
@@ -5922,7 +5914,7 @@
                 <input type="text" placeholder="메모 (선택)" class="note-input" id="${itemId}_note" 
                        onchange="updateNoteIndicator('${itemId}')" 
                        onkeydown="handleKeyNavigation(event, '${itemId}', 'note')" style="display:none;">
-                <span class="note-indicator" id="${itemId}_note_icon" onclick="toggleNoteInput('${itemId}')" title="메모 추가">메</span>
+                <span class="note-indicator" id="${itemId}_note_icon" onclick="toggleNoteInput('${itemId}')" title="메모 추가"></span>
                 <div class="note-tooltip" id="${itemId}_tooltip"></div>
             `;
             
@@ -6260,46 +6252,7 @@
         async function loadWeeklyPlanFromSheet(force = false) {
             console.log('주간 계획 데이터 로드 시작');
             
-            // 강제 로드가 아니고, 화면에 데이터가 있으면 확인
-            if (!force) {
-                const weekBoxes = document.getElementsByClassName('week-plan-box');
-                let hasData = false;
-                
-                // 데이터가 있는지 확인
-                if (weekBoxes.length > 0) {
-                    for (let weekBox of weekBoxes) {
-                        const items = weekBox.getElementsByClassName('plan-item');
-                        for (let item of items) {
-                            const nameInput = item.querySelector('.name-input');
-                            const productInput = item.querySelector('.product-input');
-                            const amountInput = item.querySelector('.amount-input');
-                            
-                            if ((nameInput && nameInput.value) || 
-                                (productInput && productInput.value) || 
-                                (amountInput && amountInput.value)) {
-                                hasData = true;
-                                break;
-                            }
-                        }
-                        if (hasData) break;
-                    }
-                }
-                
-                // 데이터가 있으면 확인 메시지
-                if (hasData) {
-                    const confirmLoad = confirm(
-                        '⚠️ 화면에 입력된 데이터가 있습니다.\n' +
-                        '불러오기를 하면 현재 입력한 내용이 사라집니다.\n\n' +
-                        '계속하시겠습니까?\n\n' +
-                        '💡 팁: 먼저 "저장" 버튼을 눌러 데이터를 저장하세요.'
-                    );
-                    
-                    if (!confirmLoad) {
-                        console.log('사용자가 불러오기를 취소했습니다.');
-                        return;
-                    }
-                }
-            }
+            // force 플래그와 관계없이 항상 로드 (구글 시트 중심 작업)
             
             // 불러오기 버튼 찾기 및 상태 표시
             const loadBtn = Array.from(document.querySelectorAll('button')).find(btn => 
@@ -6311,12 +6264,25 @@
                 loadBtn.disabled = true;
             }
             
+            // 타임아웃 설정 (10초)
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('타임아웃')), 10000)
+            );
+            
             try {
                 // 먼저 Apps Script 방식 시도
                 if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
                     try {
-                        const response = await fetch(APPS_SCRIPT_URL);
+                        console.log('Apps Script URL 호출 시작:', APPS_SCRIPT_URL);
+                        
+                        const response = await Promise.race([
+                            fetch(APPS_SCRIPT_URL),
+                            timeoutPromise
+                        ]);
+                        
+                        console.log('Apps Script 응답 받음:', response.status);
                         const result = await response.json();
+                        console.log('Apps Script 결과:', result);
                         
                         if (result.success && result.data) {
                             processSheetData(result.data);
@@ -6329,40 +6295,32 @@
                                 }, 1500);
                             }
                             return;
+                        } else {
+                            throw new Error('데이터 형식 오류');
                         }
                     } catch (appsScriptError) {
-                        console.log('Apps Script 로드 실패, API 방식으로 전환');
-                    }
-                }
-                
-                // API 방식 (읽기 전용)
-                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/${CONFIG.SHEET_NAMES.weeklyPlan}?key=${CONFIG.API_KEY}`;
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.values && data.values.length > 1) {
-                    processSheetData(data.values);
-                    showToast('✅ 데이터를 성공적으로 불러왔습니다!');
-                    if (loadBtn) {
-                        loadBtn.innerHTML = '✅ 완료!';
-                        setTimeout(() => {
+                        console.error('Apps Script 로드 실패:', appsScriptError.message);
+                        showToast('⚠️ Apps Script 로드 실패, 빈 화면으로 시작합니다.');
+                        
+                        // 빈 화면으로 시작
+                        addNewWeekPlan();
+                        
+                        if (loadBtn) {
                             loadBtn.innerHTML = '🔄 불러오기';
                             loadBtn.disabled = false;
-                        }, 1500);
+                        }
+                        return;
                     }
-                } else {
-                    console.log('sheet7에 데이터가 없습니다.');
-                    showToast('ℹ️ sheet7에 데이터가 없습니다.');
-                    addNewWeekPlan();
-                    if (loadBtn) {
-                        loadBtn.innerHTML = '🔄 불러오기';
-                        loadBtn.disabled = false;
-                    }
+                }
+                
+                // Apps Script URL이 없거나 로드 실패 시
+                console.log('Apps Script를 사용할 수 없습니다. 빈 화면으로 시작합니다.');
+                showToast('ℹ️ 빈 화면으로 시작합니다. 데이터를 입력해주세요.');
+                addNewWeekPlan();
+                
+                if (loadBtn) {
+                    loadBtn.innerHTML = '🔄 불러오기';
+                    loadBtn.disabled = false;
                 }
                 
             } catch (error) {
@@ -6381,21 +6339,22 @@
         
         // 시트 데이터 처리 함수
         function processSheetData(values) {
+            console.log('=== processSheetData 시작 (읽기 전용 모드) ===');
+            console.log('받은 데이터:', values);
+            
             if (!values || values.length <= 1) {
-                addNewWeekPlan();
+                console.log('데이터가 없거나 헤더만 있음');
+                document.getElementById('weeklyPlanContainer').innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">구글 시트 sheet7에 데이터를 입력하고 불러오기를 클릭하세요.</div>';
                 return;
             }
             
             // 헤더 제외하고 데이터 처리
             const rows = values.slice(1);
-            
-            // 기존 UI 초기화
-            document.getElementById('weeklyPlanContainer').innerHTML = '';
-            currentWeekPlanId = 0;
+            console.log('처리할 행 수:', rows.length);
             
             // 주차별로 그룹화
             const weekGroups = {};
-            rows.forEach(row => {
+            rows.forEach((row, index) => {
                 if (row[0]) { // 주차가 있는 경우만
                     const weekNum = row[0];
                     if (!weekGroups[weekNum]) {
@@ -6413,20 +6372,9 @@
                     
                     if (dayNum > 0) {
                         if (!weekGroups[weekNum][dayNum]) {
-                            // 날짜를 date input 형식으로 변환 (2025/11/18 -> 2025-11-18)
-                            let formattedDate = '';
-                            if (date) {
-                                const dateParts = date.split('/');
-                                if (dateParts.length === 3) {
-                                    const year = dateParts[0];
-                                    const month = dateParts[1].padStart(2, '0');
-                                    const day = dateParts[2].padStart(2, '0');
-                                    formattedDate = `${year}-${month}-${day}`;
-                                }
-                            }
-                            
                             weekGroups[weekNum][dayNum] = {
-                                date: formattedDate,
+                                date: date,
+                                dayName: dayName,
                                 items: []
                             };
                         }
@@ -6443,52 +6391,101 @@
                 }
             });
             
-            // UI에 반영
-            Object.keys(weekGroups).forEach(weekNum => {
-                addNewWeekPlan();
-                const weekId = `week_${currentWeekPlanId}`;
+            console.log('weekGroups:', weekGroups);
+            
+            // UI 생성
+            const container = document.getElementById('weeklyPlanContainer');
+            container.innerHTML = '';
+            
+            Object.keys(weekGroups).sort().forEach(weekNum => {
+                const weekData = weekGroups[weekNum];
                 
-                for (let dayNum = 1; dayNum <= 5; dayNum++) {
-                    if (weekGroups[weekNum][dayNum]) {
-                        const dateInput = document.getElementById(`${weekId}_date_${dayNum}`);
-                        if (dateInput && weekGroups[weekNum][dayNum].date) {
-                            dateInput.value = weekGroups[weekNum][dayNum].date;
-                        }
-                        
-                        weekGroups[weekNum][dayNum].items.forEach(item => {
-                            addPlanItem(weekId, dayNum);
+                // 주차별 합계 계산
+                let weekTotal = {};
+                Object.keys(weekData).forEach(dayNum => {
+                    weekData[dayNum].items.forEach(item => {
+                        const product = item.product || '기타';
+                        const amount = parseInt(String(item.amount).replace(/,/g, '')) || 0;
+                        weekTotal[product] = (weekTotal[product] || 0) + amount;
+                    });
+                });
+                
+                const grandTotal = Object.values(weekTotal).reduce((a, b) => a + b, 0);
+                
+                const weekBox = document.createElement('div');
+                weekBox.className = 'week-plan-box';
+                weekBox.style.cssText = 'margin-bottom: 30px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
+                
+                weekBox.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #4A90E2;">
+                        <h3 style="color: #4A90E2; margin: 0;">${weekNum}</h3>
+                        <div style="font-size: 18px; font-weight: bold; color: #2c3e50;">
+                            주간 합계: <span style="color: #e74c3c;">${grandTotal.toLocaleString('ko-KR')}원</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px;">
+                        ${[1, 2, 3, 4, 5].map(dayNum => {
+                            const dayData = weekData[dayNum];
+                            const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+                            const dayName = dayNames[dayNum - 1];
                             
-                            const itemsContainer = document.getElementById(`${weekId}_items_${dayNum}`);
-                            const items = itemsContainer.getElementsByClassName('plan-item');
-                            const lastItem = items[items.length - 1];
-                            
-                            if (lastItem) {
-                                const itemId = lastItem.id;
-                                document.getElementById(`${itemId}_name`).value = item.name;
-                                document.getElementById(`${itemId}_product`).value = item.product;
-                                
-                                const amountInput = document.getElementById(`${itemId}_amount`);
-                                if (item.amount) {
-                                    amountInput.value = parseInt(item.amount).toLocaleString('ko-KR');
-                                }
-                                
-                                if (item.note) {
-                                    const noteInput = document.getElementById(`${itemId}_note`);
-                                    if (noteInput) {
-                                        noteInput.value = item.note;
-                                        updateNoteIndicator(itemId);
-                                    }
-                                }
+                            if (!dayData) {
+                                return `<div style="background: #f8f9fa; padding: 15px; border-radius: 8px; min-height: 150px;">
+                                    <div style="font-weight: bold; color: #6c757d; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #dee2e6;">
+                                        ${dayName}
+                                    </div>
+                                    <div style="text-align: center; color: #adb5bd; padding: 20px 0;">데이터 없음</div>
+                                </div>`;
                             }
-                        });
-                    }
-                }
+                            
+                            const dayTotal = dayData.items.reduce((sum, item) => {
+                                return sum + (parseInt(String(item.amount).replace(/,/g, '')) || 0);
+                            }, 0);
+                            
+                            return `<div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                <div style="font-weight: bold; color: #2c3e50; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #dee2e6;">
+                                    ${dayName}<br>
+                                    <span style="font-size: 12px; color: #6c757d;">${dayData.date}</span>
+                                </div>
+                                ${dayData.items.map(item => `
+                                    <div style="background: white; padding: 10px; margin-bottom: 8px; border-radius: 6px; border-left: 3px solid #4A90E2; position: relative;">
+                                        <div style="font-weight: 600; color: #2c3e50; margin-bottom: 3px;">${item.name}</div>
+                                        <div style="font-size: 13px; color: #6c757d; margin-bottom: 3px;">${item.product}</div>
+                                        <div style="font-weight: bold; color: #e74c3c;">${parseInt(String(item.amount).replace(/,/g, '')).toLocaleString('ko-KR')}원</div>
+                                        ${item.note ? `
+                                            <div style="position: absolute; top: 8px; right: 8px; width: 12px; height: 12px; background: #ff9800; border-radius: 50%; border: 1px solid white; box-shadow: 0 2px 4px rgba(255,152,0,0.4);" title="${item.note}"></div>
+                                            <div style="margin-top: 5px; font-size: 12px; color: #ff9800; font-style: italic;">💬 ${item.note}</div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #dee2e6; font-weight: bold; color: #2c3e50;">
+                                    소계: ${dayTotal.toLocaleString('ko-KR')}원
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 15px; background: #e8f5e9; border-radius: 8px;">
+                        <div style="font-weight: bold; color: #2c3e50; margin-bottom: 10px;">📊 상품별 합계</div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                            ${Object.entries(weekTotal).map(([product, amount]) => `
+                                <div style="background: white; padding: 10px; border-radius: 6px; text-align: center;">
+                                    <div style="font-weight: 600; color: #2c3e50; margin-bottom: 5px;">${product}</div>
+                                    <div style="font-weight: bold; color: #27ae60;">${amount.toLocaleString('ko-KR')}원</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(weekBox);
             });
             
-            updateWeekTotal();
+            // 전체 상품별 합계 계산 및 표시
             updateProductSummary();
             
-            console.log(`${Object.keys(weekGroups).length}개 주차 데이터를 로드했습니다.`);
+            console.log('=== UI 생성 완료 ===');
             showToast('주간 계획을 불러왔습니다.');
         }
         
