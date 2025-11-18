@@ -6379,15 +6379,31 @@
             function formatDate(dateStr) {
                 if (!dateStr) return '';
                 
-                // ISO 형식 제거 (2025-11-16T15:00:00.000Z → 2025/11/17)
-                let cleanDate = String(dateStr).replace(/T.*/, '').replace(/-/g, '/');
+                // 문자열로 변환
+                const str = String(dateStr).trim();
                 
-                // MM/DD 형식으로 변환
-                const parts = cleanDate.split('/');
-                if (parts.length === 3) {
-                    return `${parts[1]}/${parts[2]}`; // MM/DD
+                // "2025/11/24" 형식 처리
+                if (str.includes('/')) {
+                    const parts = str.split('/');
+                    if (parts.length === 3) {
+                        const month = parts[1].padStart(2, '0');
+                        const day = parts[2].padStart(2, '0');
+                        return `${month}/${day}`;
+                    }
                 }
-                return cleanDate;
+                
+                // "2025-11-24" 또는 "2025-11-24T..." 형식 처리
+                if (str.includes('-')) {
+                    const datePart = str.split('T')[0]; // 타임스탬프 제거
+                    const parts = datePart.split('-');
+                    if (parts.length === 3) {
+                        const month = parts[1].padStart(2, '0');
+                        const day = parts[2].padStart(2, '0');
+                        return `${month}/${day}`;
+                    }
+                }
+                
+                return str;
             }
             
             // 주차별로 그룹화
