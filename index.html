@@ -6519,14 +6519,32 @@
             const rows = values.slice(1);
             console.log('처리할 행 수:', rows.length);
             
-            // 날짜 형식 변환 함수 - 모든 형식 처리
+            // 날짜 형식 변환 함수 - 타임존 문제 해결
             function formatDate(dateStr) {
                 if (!dateStr) return '';
                 
-                // 문자열로 변환
+                // 1) Date 객체로 들어온 경우 바로 처리
+                if (dateStr instanceof Date) {
+                    const d = dateStr;
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${month}/${day}`;
+                }
+                
+                // 2) 문자열로 통일
                 const str = String(dateStr).trim();
                 
-                // "2025/11/24" 형식 처리
+                // 3) ISO / "2025-11-24" / "2025-11-24T..." 형식은 Date로 파싱해서 사용
+                if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+                    const d = new Date(str);   // 타임존까지 반영해서 실제 날짜 계산
+                    if (!isNaN(d.getTime())) {
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return `${month}/${day}`;
+                    }
+                }
+                
+                // 4) "2025/11/24" 형식
                 if (str.includes('/')) {
                     const parts = str.split('/');
                     if (parts.length === 3) {
@@ -6536,17 +6554,7 @@
                     }
                 }
                 
-                // "2025-11-24" 또는 "2025-11-24T..." 형식 처리
-                if (str.includes('-')) {
-                    const datePart = str.split('T')[0]; // 타임스탬프 제거
-                    const parts = datePart.split('-');
-                    if (parts.length === 3) {
-                        const month = parts[1].padStart(2, '0');
-                        const day = parts[2].padStart(2, '0');
-                        return `${month}/${day}`;
-                    }
-                }
-                
+                // 5) 그 외는 그냥 반환 (혹시 모를 예외용)
                 return str;
             }
             
