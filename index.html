@@ -1795,6 +1795,10 @@
             .week-header-mobile {
                 margin-bottom: 12px !important;
                 padding-bottom: 8px !important;
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 100 !important;
+                background: white !important;
             }
             
             .week-total-mobile {
@@ -6633,7 +6637,7 @@
                 weekBox.innerHTML = `
                     <div class="week-header-mobile" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #4A90E2;">
                         <h3 style="color: #4A90E2; margin: 0;">${weekNum}</h3>
-                        <div class="week-total-mobile" style="font-size: 18px; font-weight: bold; color: #2c3e50;">
+                        <div class="week-total-mobile" style="font-size: 18px; font-weight: bold; color: #2c3e50; white-space: nowrap;">
                             주간 합계: <span style="color: #e74c3c;">${grandTotal.toLocaleString('ko-KR')}원</span>
                         </div>
                     </div>
@@ -6668,12 +6672,12 @@
                                         <div style="font-size: 13px; color: #6c757d; margin-bottom: 3px; word-wrap: break-word;">${item.product}</div>
                                         ${(() => {
                                             const amt = parseInt(String(item.amount || '').replace(/,/g, ''));
-                                            return !isNaN(amt) && amt > 0 ? `<div style="font-weight: bold; color: #e74c3c;">${amt.toLocaleString('ko-KR')}원</div>` : '';
+                                            return !isNaN(amt) && amt > 0 ? `<div style="font-weight: bold; color: #e74c3c; white-space: nowrap;">${amt.toLocaleString('ko-KR')}원</div>` : '';
                                         })()}
                                         ${item.note ? `<div style="margin-top: 5px; font-size: 12px; color: #ff9800; font-style: italic; word-wrap: break-word; word-break: break-word;">💬 ${item.note}</div>` : ''}
                                     </div>
                                 `).join('')}
-                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #dee2e6; font-weight: bold; color: #2c3e50;">
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #dee2e6; font-weight: bold; color: #2c3e50; white-space: nowrap;">
                                     소계: ${dayTotal.toLocaleString('ko-KR')}원
                                 </div>
                             </div>`;
@@ -6686,7 +6690,7 @@
                             ${Object.entries(weekTotal).map(([product, amount]) => `
                                 <div class="product-summary-item-mobile" style="background: white; padding: 10px; border-radius: 6px; text-align: center;">
                                     <div style="font-weight: 600; color: #2c3e50; margin-bottom: 5px;">${product}</div>
-                                    <div style="font-weight: bold; color: #27ae60;">${amount.toLocaleString('ko-KR')}원</div>
+                                    <div style="font-weight: bold; color: #27ae60; white-space: nowrap;">${amount.toLocaleString('ko-KR')}원</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -6706,7 +6710,7 @@
                 summaryBox.innerHTML = `
                     <div class="total-summary-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #27ae60;">
                         <h3 style="color: #27ae60; margin: 0;">📊 상품별 기간 합계</h3>
-                        <div class="total-summary-amount" style="font-size: 18px; font-weight: bold; color: #2c3e50;">
+                        <div class="total-summary-amount" style="font-size: 18px; font-weight: bold; color: #2c3e50; white-space: nowrap;">
                             전체 합계: <span style="color: #e74c3c;">${totalAmount.toLocaleString('ko-KR')}원</span>
                         </div>
                     </div>
@@ -6714,7 +6718,7 @@
                         ${Object.entries(allProducts).sort((a, b) => b[1] - a[1]).map(([product, amount]) => `
                             <div class="total-summary-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; text-align: center; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
                                 <div style="font-size: 16px; font-weight: 600; margin-bottom: 10px;">${product}</div>
-                                <div style="font-size: 24px; font-weight: bold;">${amount.toLocaleString('ko-KR')}원</div>
+                                <div style="font-size: 24px; font-weight: bold; white-space: nowrap;">${amount.toLocaleString('ko-KR')}원</div>
                             </div>
                         `).join('')}
                     </div>
