@@ -1761,7 +1761,6 @@
             .week-plan-box {
                 margin-bottom: 20px !important;
                 padding: 12px !important;
-                overflow-x: hidden !important;
             }
             
             .week-plan-dates,
@@ -6640,7 +6639,8 @@
                         </div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; min-width: 600px; overflow-x: auto;">${[1, 2, 3, 4, 5].map(dayNum => {
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; min-width: 600px;">${[1, 2, 3, 4, 5].map(dayNum => {
                             const dayData = weekData[dayNum];
                             const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일'];
                             const dayName = dayNames[dayNum - 1];
@@ -6680,6 +6680,7 @@
                                 </div>
                             </div>`;
                         }).join('')}
+                        </div>
                     </div>
                     
                     <div class="product-summary-mobile" style="margin-top: 15px; padding: 15px; background: #e8f5e9; border-radius: 8px;">
