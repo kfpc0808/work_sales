@@ -1896,6 +1896,17 @@
                 font-size: 16px !important;
             }
         }
+        
+        /* 비고 및 가망리스트 모바일 최적화 */
+        @media (max-width: 768px) {
+            div[style*="📝 비고"] + div,
+            div[style*="👥 가망리스트"] + div {
+                font-size: 13px !important;
+                padding: 12px !important;
+                line-height: 1.7 !important;
+            }
+        }
+    
     </style>
 </head>
 <body>
@@ -6563,6 +6574,33 @@
             const weekGroups = {};
             const allProducts = {}; // 전체 상품별 합계
             
+            // 비고(G열)와 가망리스트(H열)의 모든 행 읽기 (빈 행 포함)
+            const memoLines = [];
+            const prospectLines = [];
+            
+            rows.forEach((row, index) => {
+                // 헤더(1행)는 제외하고 내용 수집
+                if (index > 0) {
+                    const memoCell = row[6] || '';
+                    const prospectCell = row[7] || '';
+                    
+                    // 빈 행도 포함 (줄바꿈 유지)
+                    memoLines.push(memoCell);
+                    prospectLines.push(prospectCell);
+                }
+            });
+            
+            // 마지막 빈 행들 제거
+            while (memoLines.length > 0 && !memoLines[memoLines.length - 1].trim()) {
+                memoLines.pop();
+            }
+            while (prospectLines.length > 0 && !prospectLines[prospectLines.length - 1].trim()) {
+                prospectLines.pop();
+            }
+            
+            const memoContent = memoLines.join('\n');
+            const prospectListContent = prospectLines.join('\n');
+            
             rows.forEach((row, index) => {
                 if (row[0]) { // 주차가 있는 경우만
                     const weekNum = row[0];
@@ -6723,6 +6761,32 @@
                     </div>
                 `;
                 container.appendChild(summaryBox);
+            }
+            
+            // 비고 섹션 표시
+            if (memoContent && memoContent.trim()) {
+                const memoBox = document.createElement('div');
+                memoBox.style.cssText = 'margin-top: 20px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
+                memoBox.innerHTML = `
+                    <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #3498db;">
+                        <h3 style="color: #3498db; margin: 0;">📝 비고</h3>
+                    </div>
+                    <div style="white-space: pre-wrap; word-wrap: break-word; line-height: 1.8; color: #2c3e50; background: #f8f9fa; padding: 15px; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif;">${memoContent}</div>
+                `;
+                container.appendChild(memoBox);
+            }
+            
+            // 가망리스트 섹션 표시
+            if (prospectListContent && prospectListContent.trim()) {
+                const prospectBox = document.createElement('div');
+                prospectBox.style.cssText = 'margin-top: 20px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
+                prospectBox.innerHTML = `
+                    <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e67e22;">
+                        <h3 style="color: #e67e22; margin: 0;">👥 가망리스트</h3>
+                    </div>
+                    <div style="white-space: pre-wrap; word-wrap: break-word; line-height: 1.8; color: #2c3e50; background: #fff5e6; padding: 15px; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif;">${prospectListContent}</div>
+                `;
+                container.appendChild(prospectBox);
             }
             
             console.log('=== UI 생성 완료 ===');
