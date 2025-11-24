@@ -6574,32 +6574,57 @@
             const weekGroups = {};
             const allProducts = {}; // 전체 상품별 합계
             
-            // 비고(G열)와 가망리스트(H열)의 모든 행 읽기 (빈 행 포함)
+            // 비고(G열)와 가망리스트(H열)의 모든 행 읽기
             const memoLines = [];
             const prospectLines = [];
             
             rows.forEach((row, index) => {
-                // 헤더(1행)는 제외하고 내용 수집
-                if (index > 0) {
-                    const memoCell = row[6] || '';
-                    const prospectCell = row[7] || '';
-                    
-                    // 빈 행도 포함 (줄바꿈 유지)
+                const memoCell = row[6] || '';
+                const prospectCell = row[7] || '';
+                
+                // 헤더 제외 (G1="비고", H1="가망리스트")
+                if (memoCell && memoCell !== '비고') {
                     memoLines.push(memoCell);
+                } else if (!memoCell) {
+                    memoLines.push(''); // 빈 행 유지
+                }
+                
+                if (prospectCell && prospectCell !== '가망리스트') {
                     prospectLines.push(prospectCell);
+                } else if (!prospectCell) {
+                    prospectLines.push(''); // 빈 행 유지
                 }
             });
             
-            // 마지막 빈 행들 제거
-            while (memoLines.length > 0 && !memoLines[memoLines.length - 1].trim()) {
-                memoLines.pop();
-            }
-            while (prospectLines.length > 0 && !prospectLines[prospectLines.length - 1].trim()) {
-                prospectLines.pop();
+            // 연속된 빈 행을 하나로 압축하는 함수
+            function compressEmptyLines(lines) {
+                const result = [];
+                let lastWasEmpty = false;
+                
+                for (let line of lines) {
+                    const isEmpty = !line.trim();
+                    
+                    if (isEmpty) {
+                        if (!lastWasEmpty) {
+                            result.push(''); // 빈 줄 하나만 추가
+                            lastWasEmpty = true;
+                        }
+                    } else {
+                        result.push(line);
+                        lastWasEmpty = false;
+                    }
+                }
+                
+                // 마지막 빈 행들 제거
+                while (result.length > 0 && !result[result.length - 1].trim()) {
+                    result.pop();
+                }
+                
+                return result;
             }
             
-            const memoContent = memoLines.join('\n');
-            const prospectListContent = prospectLines.join('\n');
+            const memoContent = compressEmptyLines(memoLines).join('\n');
+            const prospectListContent = compressEmptyLines(prospectLines).join('\n');
             
             rows.forEach((row, index) => {
                 if (row[0]) { // 주차가 있는 경우만
