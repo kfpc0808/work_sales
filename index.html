@@ -6574,15 +6574,15 @@
             const weekGroups = {};
             const allProducts = {}; // 전체 상품별 합계
             
-            // 비고(G열)와 가망리스트(H열)의 모든 행 읽기
+            // 비고(H열)와 가망리스트(I열)의 모든 행 읽기
             const memoLines = [];
             const prospectLines = [];
             
             rows.forEach((row, index) => {
-                const memoCell = row[6] || '';
-                const prospectCell = row[7] || '';
+                const memoCell = row[7] || '';  // H열 = 비고
+                const prospectCell = row[8] || '';  // I열 = 가망리스트
                 
-                // 헤더 제외 (G1="비고", H1="가망리스트")
+                // 헤더 제외 (H1="비고", I1="가망리스트")
                 if (memoCell && memoCell !== '비고') {
                     memoLines.push(memoCell);
                 } else if (!memoCell) {
