@@ -2910,9 +2910,27 @@
                 const container = document.getElementById('prospectsContainer');
                 container.innerHTML = '<div class="loading" style="grid-column: 1 / -1; text-align: center; padding: 40px;"><div class="spinner"></div>데이터 로딩 중...</div>';
                 
-                const data = await getSheetData('sheet8', 'A:I');
-                if (data && data.length > 1) {
-                    prospectsData = data;
+                // 직접 API 호출
+                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/sheet8!A:I?key=${CONFIG.API_KEY}`;
+                console.log('👥 API URL:', url);
+                
+                const response = await fetch(url, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('👥 API 응답:', result);
+                
+                if (result.values && result.values.length > 1) {
+                    prospectsData = result.values;
                     renderProspects();
                     showToast('가망관리 데이터를 불러왔습니다.');
                 } else {
@@ -2921,7 +2939,7 @@
             } catch (error) {
                 console.error('가망관리 데이터 로딩 오류:', error);
                 document.getElementById('prospectsContainer').innerHTML = 
-                    '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #e74c3c;">데이터 로딩 실패</div>';
+                    '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #e74c3c;">데이터 로딩 실패: ' + error.message + '</div>';
             }
         }
         
