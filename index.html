@@ -1899,11 +1899,81 @@
         
         /* 비고 및 가망리스트 모바일 최적화 */
         @media (max-width: 768px) {
-            div[style*="📝 비고"] + div,
-            div[style*="👥 가망리스트"] + div {
+            .memo-section-box,
+            .prospect-section-box {
+                margin-top: 15px !important;
+                padding: 15px !important;
+            }
+            
+            .memo-section-box h3,
+            .prospect-section-box h3 {
+                font-size: 14px !important;
+            }
+            
+            .memo-content,
+            .prospect-content {
                 font-size: 13px !important;
                 padding: 12px !important;
-                line-height: 1.7 !important;
+                line-height: 1.6 !important;
+            }
+        }
+        
+        /* 가망관리 탭 스타일 */
+        #prospectsContainer {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        
+        .prospect-group {
+            min-height: 200px;
+        }
+        
+        .prospect-group-header:hover {
+            opacity: 0.9;
+        }
+        
+        .prospect-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .prospect-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .prospect-list::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+        
+        /* 가망관리 탭 모바일 */
+        @media (max-width: 1024px) {
+            #prospectsContainer {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 15px !important;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            #prospectsContainer {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            
+            .prospect-group-header {
+                padding: 10px 12px !important;
+            }
+            
+            .prospect-group-header span:first-child {
+                font-size: 14px !important;
+            }
+            
+            .prospect-item {
+                padding: 8px 12px !important;
+            }
+            
+            #prospectSearchInput {
+                width: 150px !important;
             }
         }
     
@@ -1929,6 +1999,7 @@
             <button class="tab-btn" onclick="switchTab('sales')">📊 매출 분석</button>
             <button class="tab-btn" onclick="switchTab('calls')">📞 업무 기록</button>
             <button class="tab-btn" onclick="switchTab('notices')">✅ 공지 관리</button>
+            <button class="tab-btn" onclick="switchTab('prospects')">👥 가망관리</button>
             <button class="tab-btn" onclick="switchTab('schedule')">📅 월간 일정</button>
         </div>
     </div>
@@ -2387,7 +2458,28 @@
             </div>
         </div>
 
-        <!-- 탭 5: 월간 일정 -->
+        <!-- 탭 5: 가망관리 -->
+        <div id="tab-prospects" class="tab-content">
+            <div class="section">
+                <div class="section-title" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        👥 상품별 가망리스트
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="prospectSearchInput" placeholder="이름 또는 메모 검색..." style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; width: 200px;" oninput="searchProspects()">
+                        <button onclick="loadProspectsData()" class="btn btn-primary" style="padding: 8px 16px;">🔄 새로고침</button>
+                    </div>
+                </div>
+                
+                <div id="prospectsContainer" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 15px;">
+                    <div class="loading" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                        <div class="spinner"></div>데이터 로딩 중...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 탭 6: 월간 일정 -->
         <div id="tab-schedule" class="tab-content">
             <div class="section">
                 <div class="section-title" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
@@ -2443,6 +2535,8 @@
         let noticeData = [];
         let noticeHeaders = {}; // 공지 시트 헤더 정보
         let scheduleData = []; // 월간 일정 데이터
+        let prospectsData = []; // 가망관리 데이터
+        let prospectsSortOrder = { A: 'asc', C: 'asc', E: 'asc', G: 'asc' }; // 정렬 상태
         let dashboardInfo = []; // 대시보드 정보 (오늘할일, 예정업무, 영업전략, 프로모션, 업무오더)
         let currentPeriodData = []; // 현재 조회 기간의 매출 데이터
         let chartInstances = {};
@@ -2473,6 +2567,13 @@
             }
             else if (tabName === 'calls' && callHistory.length > 0) filterCalls();
             else if (tabName === 'notices' && noticeData.length > 0) filterNotices();
+            else if (tabName === 'prospects') {
+                if (prospectsData.length === 0) {
+                    loadProspectsData();
+                } else {
+                    renderProspects();
+                }
+            }
             else if (tabName === 'schedule' && scheduleData.length > 0) {
                 console.log('📅 월간일정 탭 열림 - initSchedule 호출');
                 initSchedule(); // parseScheduleData + findCurrentWeek + renderCurrentWeek 모두 실행
@@ -2798,6 +2899,121 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
+        }
+
+        // ===== 가망관리 (sheet8) 관련 함수들 =====
+        
+        // 가망관리 데이터 로딩
+        async function loadProspectsData() {
+            try {
+                console.log('👥 가망관리 데이터 로딩 시작...');
+                const container = document.getElementById('prospectsContainer');
+                container.innerHTML = '<div class="loading" style="grid-column: 1 / -1; text-align: center; padding: 40px;"><div class="spinner"></div>데이터 로딩 중...</div>';
+                
+                const data = await getSheetData('sheet8', 'A:I');
+                if (data && data.length > 1) {
+                    prospectsData = data;
+                    renderProspects();
+                    showToast('가망관리 데이터를 불러왔습니다.');
+                } else {
+                    container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #999;">데이터가 없습니다.</div>';
+                }
+            } catch (error) {
+                console.error('가망관리 데이터 로딩 오류:', error);
+                document.getElementById('prospectsContainer').innerHTML = 
+                    '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #e74c3c;">데이터 로딩 실패</div>';
+            }
+        }
+        
+        // 가망관리 렌더링
+        function renderProspects(searchTerm = '') {
+            const container = document.getElementById('prospectsContainer');
+            if (!prospectsData || prospectsData.length < 2) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #999;">데이터가 없습니다.</div>';
+                return;
+            }
+            
+            const headers = prospectsData[0]; // 1행: 헤더
+            const rows = prospectsData.slice(1); // 2행부터 데이터
+            
+            // 4개 상품 그룹 정의 (A-B, C-D, E-F, G-H)
+            const groups = [
+                { nameCol: 0, memoCol: 1, title: headers[0] || '지사', color: '#3498db' },
+                { nameCol: 2, memoCol: 3, title: headers[2] || '이너서클', color: '#27ae60' },
+                { nameCol: 4, memoCol: 5, title: headers[4] || '컨홈회원', color: '#e67e22' },
+                { nameCol: 6, memoCol: 7, title: headers[6] || '기업회원', color: '#9b59b6' }
+            ];
+            
+            let html = '';
+            
+            groups.forEach((group, groupIndex) => {
+                // 해당 그룹의 데이터 추출
+                let items = [];
+                rows.forEach(row => {
+                    const name = row[group.nameCol] || '';
+                    const memo = row[group.memoCol] || '';
+                    if (name.trim()) {
+                        items.push({ name, memo });
+                    }
+                });
+                
+                // 검색 필터링
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    items = items.filter(item => 
+                        item.name.toLowerCase().includes(term) || 
+                        item.memo.toLowerCase().includes(term)
+                    );
+                }
+                
+                // 정렬 키 (A, C, E, G)
+                const sortKey = ['A', 'C', 'E', 'G'][groupIndex];
+                const sortOrder = prospectsSortOrder[sortKey];
+                
+                // 정렬
+                items.sort((a, b) => {
+                    const compare = a.name.localeCompare(b.name, 'ko');
+                    return sortOrder === 'asc' ? compare : -compare;
+                });
+                
+                html += `
+                    <div class="prospect-group" style="background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                        <div class="prospect-group-header" style="background: ${group.color}; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="sortProspects('${sortKey}')">
+                            <span style="font-weight: bold; font-size: 15px;">${group.title}</span>
+                            <span style="font-size: 12px; opacity: 0.9;">
+                                ${items.length}명 
+                                <span style="margin-left: 5px;">${sortOrder === 'asc' ? '▲' : '▼'}</span>
+                            </span>
+                        </div>
+                        <div class="prospect-list" style="max-height: 400px; overflow-y: auto;">
+                            ${items.length > 0 ? items.map(item => `
+                                <div class="prospect-item" style="padding: 10px 15px; border-bottom: 1px solid #eee;">
+                                    <div style="font-weight: 600; color: #2c3e50; margin-bottom: 3px;">${escapeHtml(item.name)}</div>
+                                    ${item.memo ? `<div style="font-size: 12px; color: #7f8c8d;">${escapeHtml(item.memo)}</div>` : ''}
+                                </div>
+                            `).join('') : '<div style="padding: 20px; text-align: center; color: #999;">데이터 없음</div>'}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // 가망관리 정렬
+        function sortProspects(column) {
+            // 정렬 순서 토글
+            prospectsSortOrder[column] = prospectsSortOrder[column] === 'asc' ? 'desc' : 'asc';
+            
+            // 현재 검색어 가져오기
+            const searchTerm = document.getElementById('prospectSearchInput').value;
+            renderProspects(searchTerm);
+        }
+        
+        // 가망관리 검색
+        function searchProspects() {
+            const searchTerm = document.getElementById('prospectSearchInput').value;
+            renderProspects(searchTerm);
         }
 
         // 월간 일정 데이터 로딩 함수
@@ -6791,12 +7007,13 @@
             // 비고 섹션 표시
             if (memoContent && memoContent.trim()) {
                 const memoBox = document.createElement('div');
+                memoBox.className = 'memo-section-box';
                 memoBox.style.cssText = 'margin-top: 20px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
                 memoBox.innerHTML = `
                     <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #3498db;">
-                        <h3 style="color: #3498db; margin: 0;">📝 비고</h3>
+                        <h3 style="color: #3498db; margin: 0; font-size: 16px;">📝 비고</h3>
                     </div>
-                    <div style="white-space: pre-wrap; word-wrap: break-word; line-height: 1.8; color: #2c3e50; background: #f8f9fa; padding: 15px; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif;">${memoContent}</div>
+                    <div class="memo-content" style="white-space: pre-wrap; word-wrap: break-word; line-height: 1.8; color: #2c3e50; background: #f8f9fa; padding: 15px; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif; font-size: 14px;">${memoContent}</div>
                 `;
                 container.appendChild(memoBox);
             }
@@ -6804,12 +7021,13 @@
             // 가망리스트 섹션 표시
             if (prospectListContent && prospectListContent.trim()) {
                 const prospectBox = document.createElement('div');
+                prospectBox.className = 'prospect-section-box';
                 prospectBox.style.cssText = 'margin-top: 20px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
                 prospectBox.innerHTML = `
                     <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e67e22;">
-                        <h3 style="color: #e67e22; margin: 0;">👥 가망리스트</h3>
+                        <h3 style="color: #e67e22; margin: 0; font-size: 16px;">👥 가망리스트</h3>
                     </div>
-                    <div style="white-space: pre-wrap; word-wrap: break-word; line-height: 1.8; color: #2c3e50; background: #fff5e6; padding: 15px; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif;">${prospectListContent}</div>
+                    <div class="prospect-content" style="white-space: pre-wrap; word-wrap: break-word; line-height: 1.8; color: #2c3e50; background: #fff5e6; padding: 15px; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif; font-size: 14px;">${prospectListContent}</div>
                 `;
                 container.appendChild(prospectBox);
             }
