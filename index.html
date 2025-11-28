@@ -2548,7 +2548,7 @@
         let callsSortField = '';
         let callsSortOrder = 'asc';
         let currentNoticesPage = 1;
-        const NOTICES_PER_PAGE = 20;
+        const NOTICES_PER_PAGE = 15;
         let currentNoticesData = [];
         let noticesSortField = '';
         let noticesSortOrder = 'asc';
@@ -3295,29 +3295,68 @@
         function updateNoticeTableHeaders() {
             // 공지 테이블 헤더를 동적으로 업데이트 (원본 헤더명 사용)
             if (noticeHeaders.displayHeaders) {
+                const headers = noticeHeaders.displayHeaders;
+                const headerCount = headers.length;
+                
+                // 공지1 (C,D,E열 = index 2,3,4)
                 const header1 = document.getElementById('noticeHeader1');
-                if (header1 && noticeHeaders.displayHeaders[2]) {
-                    const text = noticeHeaders.displayHeaders[2].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                if (header1 && headers[2]) {
+                    const text = headers[2].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
                     header1.textContent = text;
                 }
                 
+                // 공지2 (F,G,H열 = index 5,6,7) - 없으면 숨김
                 const header2 = document.getElementById('noticeHeader2');
-                if (header2 && noticeHeaders.displayHeaders[5]) {
-                    const text = noticeHeaders.displayHeaders[5].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
-                    header2.textContent = text;
+                const notice2Exists = headerCount > 5 && headers[5];
+                if (header2) {
+                    if (notice2Exists) {
+                        const text = headers[5].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                        header2.textContent = text;
+                    }
+                    header2.closest('th').style.display = notice2Exists ? '' : 'none';
                 }
                 
+                // 공지3 (I,J,K열 = index 8,9,10) - 없으면 숨김
                 const header3 = document.getElementById('noticeHeader3');
-                if (header3 && noticeHeaders.displayHeaders[8]) {
-                    const text = noticeHeaders.displayHeaders[8].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
-                    header3.textContent = text;
+                const notice3Exists = headerCount > 8 && headers[8];
+                if (header3) {
+                    if (notice3Exists) {
+                        const text = headers[8].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                        header3.textContent = text;
+                    }
+                    header3.closest('th').style.display = notice3Exists ? '' : 'none';
                 }
                 
+                // 공지4 (L,M,N열 = index 11,12,13) - 없으면 숨김  
                 const header4 = document.getElementById('noticeHeader4');
-                if (header4 && noticeHeaders.displayHeaders[11]) {
-                    const text = noticeHeaders.displayHeaders[11].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
-                    header4.textContent = text;
+                const notice4Exists = headerCount > 11 && headers[11];
+                if (header4) {
+                    if (notice4Exists) {
+                        const text = headers[11].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
+                        header4.textContent = text;
+                    }
+                    header4.closest('th').style.display = notice4Exists ? '' : 'none';
                 }
+                
+                // 테이블 헤더의 완료/완료일 컬럼도 숨김 처리
+                const theadRow = document.querySelector('#noticesTableHead tr');
+                if (theadRow) {
+                    const ths = theadRow.querySelectorAll('th');
+                    // 공지2 완료, 완료일 (index 6,7)
+                    if (ths[6]) ths[6].style.display = notice2Exists ? '' : 'none';
+                    if (ths[7]) ths[7].style.display = notice2Exists ? '' : 'none';
+                    // 공지3 완료, 완료일 (index 9,10)
+                    if (ths[9]) ths[9].style.display = notice3Exists ? '' : 'none';
+                    if (ths[10]) ths[10].style.display = notice3Exists ? '' : 'none';
+                    // 공지4 완료, 완료일 (index 12,13)
+                    if (ths[12]) ths[12].style.display = notice4Exists ? '' : 'none';
+                    if (ths[13]) ths[13].style.display = notice4Exists ? '' : 'none';
+                }
+                
+                // 숨김 상태 저장 (displayNoticesPage에서 사용)
+                noticeHeaders.notice2Exists = notice2Exists;
+                noticeHeaders.notice3Exists = notice3Exists;
+                noticeHeaders.notice4Exists = notice4Exists;
             }
         }
 
@@ -5325,6 +5364,11 @@
                 const check4 = (value4 === 'TRUE' || value4 === 'O') ? 
                     '<span class="status-check completed">✓</span>' : '-';
                 
+                // 숨김 처리용 스타일
+                const hide2 = noticeHeaders.notice2Exists === false ? 'style="display:none;"' : '';
+                const hide3 = noticeHeaders.notice3Exists === false ? 'style="display:none;"' : '';
+                const hide4 = noticeHeaders.notice4Exists === false ? 'style="display:none;"' : '';
+                
                 return `
                     <tr>
                         <td class="text-bold">${notice['회원명'] || '-'}</td>
@@ -5332,15 +5376,15 @@
                         <td>${notice[col2Name] || '-'}</td>
                         <td class="checkbox-cell">${check1}</td>
                         <td>${notice[col4Name] || '-'}</td>
-                        <td>${notice[col5Name] || '-'}</td>
-                        <td class="checkbox-cell">${check2}</td>
-                        <td>${notice[col7Name] || '-'}</td>
-                        <td>${notice[col8Name] || '-'}</td>
-                        <td class="checkbox-cell">${check3}</td>
-                        <td>${notice[col10Name] || '-'}</td>
-                        <td>${notice[col11Name] || '-'}</td>
-                        <td class="checkbox-cell">${check4}</td>
-                        <td>${notice[col13Name] || '-'}</td>
+                        <td ${hide2}>${notice[col5Name] || '-'}</td>
+                        <td ${hide2} class="checkbox-cell">${check2}</td>
+                        <td ${hide2}>${notice[col7Name] || '-'}</td>
+                        <td ${hide3}>${notice[col8Name] || '-'}</td>
+                        <td ${hide3} class="checkbox-cell">${check3}</td>
+                        <td ${hide3}>${notice[col10Name] || '-'}</td>
+                        <td ${hide4}>${notice[col11Name] || '-'}</td>
+                        <td ${hide4} class="checkbox-cell">${check4}</td>
+                        <td ${hide4}>${notice[col13Name] || '-'}</td>
                         <td>${notice['비고'] || '-'}</td>
                     </tr>
                 `;
