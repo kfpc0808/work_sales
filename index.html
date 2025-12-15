@@ -2405,24 +2405,14 @@
             <!-- 공지 완료 현황 -->
             <div class="cards-grid notices-completion-cards">
                 <div class="card">
-                    <div class="card-title">공지1 완료</div>
+                    <div class="card-title">기홈(런칭+프로모션) 완료</div>
                     <div class="card-value" id="noticesCompleted1">0명</div>
                     <div class="card-sub">완료율: <span id="noticesRate1">0%</span></div>
                 </div>
                 <div class="card">
-                    <div class="card-title">공지2 완료</div>
+                    <div class="card-title">기업마당 완료</div>
                     <div class="card-value" id="noticesCompleted2">0명</div>
                     <div class="card-sub">완료율: <span id="noticesRate2">0%</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">공지3 완료</div>
-                    <div class="card-value" id="noticesCompleted3">0명</div>
-                    <div class="card-sub">완료율: <span id="noticesRate3">0%</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">공지4 완료</div>
-                    <div class="card-value" id="noticesCompleted4">0명</div>
-                    <div class="card-sub">완료율: <span id="noticesRate4">0%</span></div>
                 </div>
             </div>
 
@@ -2434,23 +2424,14 @@
                             <tr>
                                 <th onclick="sortNotices('이름')" style="cursor: pointer;">이름 <span id="sortArrow이름">↕</span></th>
                                 <th>그룹</th>
-                                <th id="noticeHeader1">공지1 내용</th>
-                                <th class="text-center" onclick="sortNotices('완료1')" style="cursor: pointer;">완료 <span id="sortArrow완료1">↕</span></th>
+                                <th id="noticeHeader1" class="text-center" onclick="sortNotices('완료1')" style="cursor: pointer;">기홈(런칭+프로모션) <span id="sortArrow완료1">↕</span></th>
                                 <th>완료일</th>
-                                <th id="noticeHeader2">공지2 내용</th>
-                                <th class="text-center" onclick="sortNotices('완료2')" style="cursor: pointer;">완료 <span id="sortArrow완료2">↕</span></th>
+                                <th id="noticeHeader2" class="text-center" onclick="sortNotices('완료2')" style="cursor: pointer;">기업마당 <span id="sortArrow완료2">↕</span></th>
                                 <th>완료일</th>
-                                <th id="noticeHeader3">공지3 내용</th>
-                                <th class="text-center" onclick="sortNotices('완료3')" style="cursor: pointer;">완료 <span id="sortArrow완료3">↕</span></th>
-                                <th>완료일</th>
-                                <th id="noticeHeader4">공지4 내용</th>
-                                <th class="text-center" onclick="sortNotices('완료4')" style="cursor: pointer;">완료 <span id="sortArrow완료4">↕</span></th>
-                                <th>완료일</th>
-                                <th>비고</th>
                             </tr>
                         </thead>
                         <tbody id="noticesTableBody">
-                            <tr><td colspan="15" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                            <tr><td colspan="6" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -3294,69 +3275,21 @@
 
         function updateNoticeTableHeaders() {
             // 공지 테이블 헤더를 동적으로 업데이트 (원본 헤더명 사용)
+            // 시트 구조: A회원명, B그룹, C기홈, D완료일, E기업마당, F완료일
             if (noticeHeaders.displayHeaders) {
                 const headers = noticeHeaders.displayHeaders;
-                const headerCount = headers.length;
                 
-                // 공지1 (C,D,E열 = index 2,3,4)
+                // 기홈(런칭+프로모션) (C열 = index 2)
                 const header1 = document.getElementById('noticeHeader1');
                 if (header1 && headers[2]) {
-                    const text = headers[2].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
-                    header1.textContent = text;
+                    header1.innerHTML = headers[2] + ' <span id="sortArrow완료1">↕</span>';
                 }
                 
-                // 공지2 (F,G,H열 = index 5,6,7) - 없으면 숨김
+                // 기업마당 (E열 = index 4)
                 const header2 = document.getElementById('noticeHeader2');
-                const notice2Exists = headerCount > 5 && headers[5];
-                if (header2) {
-                    if (notice2Exists) {
-                        const text = headers[5].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
-                        header2.textContent = text;
-                    }
-                    header2.closest('th').style.display = notice2Exists ? '' : 'none';
+                if (header2 && headers[4]) {
+                    header2.innerHTML = headers[4] + ' <span id="sortArrow완료2">↕</span>';
                 }
-                
-                // 공지3 (I,J,K열 = index 8,9,10) - 없으면 숨김
-                const header3 = document.getElementById('noticeHeader3');
-                const notice3Exists = headerCount > 8 && headers[8];
-                if (header3) {
-                    if (notice3Exists) {
-                        const text = headers[8].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
-                        header3.textContent = text;
-                    }
-                    header3.closest('th').style.display = notice3Exists ? '' : 'none';
-                }
-                
-                // 공지4 (L,M,N열 = index 11,12,13) - 없으면 숨김  
-                const header4 = document.getElementById('noticeHeader4');
-                const notice4Exists = headerCount > 11 && headers[11];
-                if (header4) {
-                    if (notice4Exists) {
-                        const text = headers[11].replace(/^(지사|이너|컨플|기업)공지\d+_/, '');
-                        header4.textContent = text;
-                    }
-                    header4.closest('th').style.display = notice4Exists ? '' : 'none';
-                }
-                
-                // 테이블 헤더의 완료/완료일 컬럼도 숨김 처리
-                const theadRow = document.querySelector('#noticesTableHead tr');
-                if (theadRow) {
-                    const ths = theadRow.querySelectorAll('th');
-                    // 공지2 완료, 완료일 (index 6,7)
-                    if (ths[6]) ths[6].style.display = notice2Exists ? '' : 'none';
-                    if (ths[7]) ths[7].style.display = notice2Exists ? '' : 'none';
-                    // 공지3 완료, 완료일 (index 9,10)
-                    if (ths[9]) ths[9].style.display = notice3Exists ? '' : 'none';
-                    if (ths[10]) ths[10].style.display = notice3Exists ? '' : 'none';
-                    // 공지4 완료, 완료일 (index 12,13)
-                    if (ths[12]) ths[12].style.display = notice4Exists ? '' : 'none';
-                    if (ths[13]) ths[13].style.display = notice4Exists ? '' : 'none';
-                }
-                
-                // 숨김 상태 저장 (displayNoticesPage에서 사용)
-                noticeHeaders.notice2Exists = notice2Exists;
-                noticeHeaders.notice3Exists = notice3Exists;
-                noticeHeaders.notice4Exists = notice4Exists;
             }
         }
 
@@ -5239,19 +5172,26 @@
             const group = document.getElementById('noticesGroup').value;
             const status = document.getElementById('noticesStatus').value;
             const search = document.getElementById('noticesSearch').value.toLowerCase();
-            const col3Name = noticeHeaders.col3 || 'col3';  // D열 - 공지1 완료
+            const col2Name = noticeHeaders.col2 || 'col2';  // C열 - 기홈
             
             let filtered = [...noticeData];
-            if (group) filtered = filtered.filter(n => n['그룹'] === group);
+            if (group) {
+                // 이너서클과 이너 모두 처리
+                if (group === '이너서클') {
+                    filtered = filtered.filter(n => n['그룹'] === '이너서클' || n['그룹'] === '이너');
+                } else {
+                    filtered = filtered.filter(n => n['그룹'] === group);
+                }
+            }
             
             if (status === 'completed') {
                 filtered = filtered.filter(n => {
-                    const val = (n[col3Name] || '').toString().trim().toUpperCase();
+                    const val = (n[col2Name] || '').toString().trim().toUpperCase();
                     return val === 'TRUE' || val === 'O';
                 });
             } else if (status === 'pending') {
                 filtered = filtered.filter(n => {
-                    const val = (n[col3Name] || '').toString().trim().toUpperCase();
+                    const val = (n[col2Name] || '').toString().trim().toUpperCase();
                     return val !== 'TRUE' && val !== 'O';
                 });
             }
@@ -5264,15 +5204,13 @@
             currentNoticesData = data;
             currentNoticesPage = 1;
             
-            // 인덱스 기반 컬럼명 (중복 헤더 문제 해결)
-            const col3Name = noticeHeaders.col3 || 'col3';  // D열 - 공지1 완료
-            const col6Name = noticeHeaders.col6 || 'col6';  // G열 - 공지2 완료  
-            const col9Name = noticeHeaders.col9 || 'col9';  // J열 - 공지3 완료
-            const col12Name = noticeHeaders.col12 || 'col12'; // M열 - 공지4 완료
+            // 시트 구조: A회원명, B그룹, C기홈, D완료일, E기업마당, F완료일
+            const col2Name = noticeHeaders.col2 || 'col2';  // C열 - 기홈
+            const col4Name = noticeHeaders.col4 || 'col4';  // E열 - 기업마당
             
             // 그룹별 인원 계산
             const group1Count = noticeData.filter(n => n['그룹'] === '지사장').length;
-            const group2Count = noticeData.filter(n => n['그룹'] === '이너서클').length;
+            const group2Count = noticeData.filter(n => n['그룹'] === '이너서클' || n['그룹'] === '이너').length;
             const group3Count = noticeData.filter(n => n['그룹'] === '기업회원').length;
             const group4Count = noticeData.filter(n => n['그룹'] === '컨설턴트회원').length;
             
@@ -5281,38 +5219,26 @@
             document.getElementById('noticesGroup3Count').textContent = group3Count + '명';
             document.getElementById('noticesGroup4Count').textContent = group4Count + '명';
             
-            // 완료율 계산 (대소문자, 공백 무시)
+            // 완료율 계산 (C열 기홈, E열 기업마당의 O 표시 기준)
             const completed1 = noticeData.filter(n => {
-                const val = (n[col3Name] || '').toString().trim().toUpperCase();
+                const val = (n[col2Name] || '').toString().trim().toUpperCase();
                 return val === 'TRUE' || val === 'O';
             }).length;
             const completed2 = noticeData.filter(n => {
-                const val = (n[col6Name] || '').toString().trim().toUpperCase();
-                return val === 'TRUE' || val === 'O';
-            }).length;
-            const completed3 = noticeData.filter(n => {
-                const val = (n[col9Name] || '').toString().trim().toUpperCase();
-                return val === 'TRUE' || val === 'O';
-            }).length;
-            const completed4 = noticeData.filter(n => {
-                const val = (n[col12Name] || '').toString().trim().toUpperCase();
+                const val = (n[col4Name] || '').toString().trim().toUpperCase();
                 return val === 'TRUE' || val === 'O';
             }).length;
             
             document.getElementById('noticesCompleted1').textContent = completed1 + '명';
             document.getElementById('noticesCompleted2').textContent = completed2 + '명';
-            document.getElementById('noticesCompleted3').textContent = completed3 + '명';
-            document.getElementById('noticesCompleted4').textContent = completed4 + '명';
             
             const totalCount = noticeData.length || 1; // 0으로 나누기 방지
             document.getElementById('noticesRate1').textContent = Math.round((completed1 / totalCount) * 100) + '%';
             document.getElementById('noticesRate2').textContent = Math.round((completed2 / totalCount) * 100) + '%';
-            document.getElementById('noticesRate3').textContent = Math.round((completed3 / totalCount) * 100) + '%';
-            document.getElementById('noticesRate4').textContent = Math.round((completed4 / totalCount) * 100) + '%';
             
             if (data.length === 0) {
                 document.getElementById('noticesTableBody').innerHTML = 
-                    '<tr><td colspan="15" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
+                    '<tr><td colspan="6" class="empty-state"><div class="empty-state-icon">🔍</div><div>검색 결과가 없습니다</div></td></tr>';
                 document.getElementById('noticesTablePagination').innerHTML = '';
                 return;
             }
@@ -5333,59 +5259,30 @@
             
             // 테이블 데이터 표시
             document.getElementById('noticesTableBody').innerHTML = currentPageData.map(notice => {
-                // 인덱스 기반 컬럼명 (중복 헤더 문제 해결)
-                const col2Name = noticeHeaders.col2 || 'col2';    // C열 - 공지1 내용
-                const col3Name = noticeHeaders.col3 || 'col3';    // D열 - 공지1 완료
-                const col4Name = noticeHeaders.col4 || 'col4';    // E열 - 공지1 일자
-                const col5Name = noticeHeaders.col5 || 'col5';    // F열 - 공지2 내용
-                const col6Name = noticeHeaders.col6 || 'col6';    // G열 - 공지2 완료
-                const col7Name = noticeHeaders.col7 || 'col7';    // H열 - 공지2 일자
-                const col8Name = noticeHeaders.col8 || 'col8';    // I열 - 공지3 내용
-                const col9Name = noticeHeaders.col9 || 'col9';    // J열 - 공지3 완료
-                const col10Name = noticeHeaders.col10 || 'col10'; // K열 - 공지3 일자
-                const col11Name = noticeHeaders.col11 || 'col11'; // L열 - 공지4 내용
-                const col12Name = noticeHeaders.col12 || 'col12'; // M열 - 공지4 완료
-                const col13Name = noticeHeaders.col13 || 'col13'; // N열 - 공지4 일자
+                // 시트 구조: A회원명, B그룹, C기홈, D완료일, E기업마당, F완료일
+                const col2Name = noticeHeaders.col2 || 'col2';    // C열 - 기홈(런칭+프로모션)
+                const col3Name = noticeHeaders.col3 || 'col3';    // D열 - 완료일
+                const col4Name = noticeHeaders.col4 || 'col4';    // E열 - 기업마당
+                const col5Name = noticeHeaders.col5 || 'col5';    // F열 - 완료일
                 
-                // 완료 표시: O 있으면 ✓, 없으면 빈칸
-                const value1 = (notice[col3Name] || '').toString().trim().toUpperCase();
+                // 기홈 완료 표시: O 있으면 ✓, 없으면 빈칸
+                const value1 = (notice[col2Name] || '').toString().trim().toUpperCase();
                 const check1 = (value1 === 'TRUE' || value1 === 'O') ? 
                     '<span class="status-check completed">✓</span>' : '-';
                 
-                const value2 = (notice[col6Name] || '').toString().trim().toUpperCase();
+                // 기업마당 완료 표시
+                const value2 = (notice[col4Name] || '').toString().trim().toUpperCase();
                 const check2 = (value2 === 'TRUE' || value2 === 'O') ? 
                     '<span class="status-check completed">✓</span>' : '-';
-                
-                const value3 = (notice[col9Name] || '').toString().trim().toUpperCase();
-                const check3 = (value3 === 'TRUE' || value3 === 'O') ? 
-                    '<span class="status-check completed">✓</span>' : '-';
-                
-                const value4 = (notice[col12Name] || '').toString().trim().toUpperCase();
-                const check4 = (value4 === 'TRUE' || value4 === 'O') ? 
-                    '<span class="status-check completed">✓</span>' : '-';
-                
-                // 숨김 처리용 스타일
-                const hide2 = noticeHeaders.notice2Exists === false ? 'style="display:none;"' : '';
-                const hide3 = noticeHeaders.notice3Exists === false ? 'style="display:none;"' : '';
-                const hide4 = noticeHeaders.notice4Exists === false ? 'style="display:none;"' : '';
                 
                 return `
                     <tr>
                         <td class="text-bold">${notice['회원명'] || '-'}</td>
                         <td>${notice['그룹'] || '-'}</td>
-                        <td>${notice[col2Name] || '-'}</td>
                         <td class="checkbox-cell">${check1}</td>
-                        <td>${notice[col4Name] || '-'}</td>
-                        <td ${hide2}>${notice[col5Name] || '-'}</td>
-                        <td ${hide2} class="checkbox-cell">${check2}</td>
-                        <td ${hide2}>${notice[col7Name] || '-'}</td>
-                        <td ${hide3}>${notice[col8Name] || '-'}</td>
-                        <td ${hide3} class="checkbox-cell">${check3}</td>
-                        <td ${hide3}>${notice[col10Name] || '-'}</td>
-                        <td ${hide4}>${notice[col11Name] || '-'}</td>
-                        <td ${hide4} class="checkbox-cell">${check4}</td>
-                        <td ${hide4}>${notice[col13Name] || '-'}</td>
-                        <td>${notice['비고'] || '-'}</td>
+                        <td>${notice[col3Name] || '-'}</td>
+                        <td class="checkbox-cell">${check2}</td>
+                        <td>${notice[col5Name] || '-'}</td>
                     </tr>
                 `;
             }).join('');
