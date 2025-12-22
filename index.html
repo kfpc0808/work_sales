@@ -2519,10 +2519,10 @@
         let prospectsData = []; // 가망관리 데이터
         let prospectsSortState = {
             A: { field: 'name', order: 'asc' },
-            C: { field: 'name', order: 'asc' },
-            E: { field: 'name', order: 'asc' },
+            D: { field: 'name', order: 'asc' },
             G: { field: 'name', order: 'asc' },
-            I: { field: 'name', order: 'asc' }
+            J: { field: 'name', order: 'asc' },
+            M: { field: 'name', order: 'asc' }
         }; // 정렬 상태 (field: name/date/memo, order: asc/desc)
         let dashboardInfo = []; // 대시보드 정보 (오늘할일, 예정업무, 영업전략, 프로모션, 업무오더)
         let currentPeriodData = []; // 현재 조회 기간의 매출 데이터
@@ -2898,7 +2898,7 @@
                 container.innerHTML = '<div class="loading" style="grid-column: 1 / -1; text-align: center; padding: 40px;"><div class="spinner"></div>데이터 로딩 중...</div>';
                 
                 // 직접 API 호출
-                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/sheet8!A:J?key=${CONFIG.API_KEY}`;
+                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/sheet8!A:O?key=${CONFIG.API_KEY}`;
                 console.log('👥 API URL:', url);
                 
                 const response = await fetch(url, {
@@ -2941,13 +2941,13 @@
             const headers = prospectsData[0]; // 1행: 헤더
             const rows = prospectsData.slice(1); // 2행부터 데이터
             
-            // 5개 상품 그룹 정의 (A-B, C-D, E-F, G-H, I-J)
+            // 5개 상품 그룹 정의 (A-B-C, D-E-F, G-H-I, J-K-L, M-N-O)
             const groups = [
-                { nameCol: 0, memoCol: 1, title: headers[0] || '지사', color: '#3498db' },
-                { nameCol: 2, memoCol: 3, title: headers[2] || '이너서클', color: '#27ae60' },
-                { nameCol: 4, memoCol: 5, title: headers[4] || '컨홈회원', color: '#e67e22' },
-                { nameCol: 6, memoCol: 7, title: headers[6] || '기업회원', color: '#9b59b6' },
-                { nameCol: 8, memoCol: 9, title: headers[8] || 'STAR', color: '#e74c3c' }
+                { nameCol: 0, dateCol: 1, memoCol: 2, title: headers[0] || '지사', color: '#3498db' },
+                { nameCol: 3, dateCol: 4, memoCol: 5, title: headers[3] || '이너서클', color: '#27ae60' },
+                { nameCol: 6, dateCol: 7, memoCol: 8, title: headers[6] || '컨홈회원', color: '#e67e22' },
+                { nameCol: 9, dateCol: 10, memoCol: 11, title: headers[9] || '기업회원', color: '#9b59b6' },
+                { nameCol: 12, dateCol: 13, memoCol: 14, title: headers[12] || 'STAR', color: '#e74c3c' }
             ];
             
             let html = '';
@@ -2957,9 +2957,10 @@
                 let items = [];
                 rows.forEach(row => {
                     const name = row[group.nameCol] || '';
+                    const date = row[group.dateCol] || '';
                     const memo = row[group.memoCol] || '';
                     if (name.trim()) {
-                        items.push({ name, memo });
+                        items.push({ name, date, memo });
                     }
                 });
                 
@@ -2968,29 +2969,14 @@
                     const term = searchTerm.toLowerCase();
                     items = items.filter(item => 
                         item.name.toLowerCase().includes(term) || 
+                        item.date.toLowerCase().includes(term) ||
                         item.memo.toLowerCase().includes(term)
                     );
                 }
                 
-                // 정렬 키 (A, C, E, G, I)
-                const sortKey = ['A', 'C', 'E', 'G', 'I'][groupIndex];
+                // 정렬 키 (A, D, G, J, M)
+                const sortKey = ['A', 'D', 'G', 'J', 'M'][groupIndex];
                 const sortState = prospectsSortState[sortKey];
-                
-                // 날짜 추출 함수 (메모에서 날짜 패턴 찾기)
-                const extractDate = (memo) => {
-                    if (!memo) return '';
-                    // 12/23, 12월 23일, 2024.12.23 등 패턴 찾기
-                    const patterns = [
-                        /(\d{1,2})\/(\d{1,2})/,  // 12/23
-                        /(\d{1,2})월\s*(\d{1,2})일?/,  // 12월 23일
-                        /\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}/  // 2024-12-23
-                    ];
-                    for (let pattern of patterns) {
-                        const match = memo.match(pattern);
-                        if (match) return match[0];
-                    }
-                    return '';
-                };
                 
                 // 정렬
                 items.sort((a, b) => {
@@ -2999,9 +2985,7 @@
                     if (sortState.field === 'name') {
                         compareValue = a.name.localeCompare(b.name, 'ko');
                     } else if (sortState.field === 'date') {
-                        const dateA = extractDate(a.memo);
-                        const dateB = extractDate(b.memo);
-                        compareValue = dateA.localeCompare(dateB);
+                        compareValue = (a.date || '').localeCompare(b.date || '');
                     } else if (sortState.field === 'memo') {
                         compareValue = (a.memo || '').localeCompare(b.memo || '', 'ko');
                     }
@@ -3039,8 +3023,9 @@
                         <div class="prospect-list" style="max-height: 400px; overflow-y: auto;">
                             ${items.length > 0 ? items.map(item => `
                                 <div class="prospect-item" style="padding: 10px 15px; border-bottom: 1px solid #eee;">
-                                    <div style="font-weight: 600; color: #2c3e50; margin-bottom: 3px;">${escapeHTML(item.name)}</div>
-                                    ${item.memo ? `<div style="font-size: 12px; color: #7f8c8d;">${escapeHTML(item.memo)}</div>` : ''}
+                                    <div style="font-weight: 600; color: #2c3e50; margin-bottom: 4px;">${escapeHTML(item.name)}</div>
+                                    ${item.date ? `<div style="font-size: 12px; color: #3498db; margin-bottom: 3px;">📅 ${escapeHTML(item.date)}</div>` : ''}
+                                    ${item.memo ? `<div style="font-size: 12px; color: #7f8c8d;">💬 ${escapeHTML(item.memo)}</div>` : ''}
                                 </div>
                             `).join('') : '<div style="padding: 20px; text-align: center; color: #999;">데이터 없음</div>'}
                         </div>
