@@ -2998,21 +2998,23 @@
                             <span style="font-weight: bold; font-size: 15px;">${group.title}</span>
                             <span style="font-size: 12px; opacity: 0.9;">${items.length}명</span>
                         </div>
-                        <div style="overflow-x: auto;">
+                        <table class="prospect-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                    <th onclick="sortProspectsByField('${sortKey}', 'name')" style="padding: 10px 15px; text-align: center; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap; width: 90px;">
+                                        성명${getArrow('name')}
+                                    </th>
+                                    <th onclick="sortProspectsByField('${sortKey}', 'date')" style="padding: 10px 15px; text-align: center; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap; width: 90px;">
+                                        일자${getArrow('date')}
+                                    </th>
+                                    <th onclick="sortProspectsByField('${sortKey}', 'memo')" style="padding: 10px 15px; text-align: center; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none;">
+                                        비고${getArrow('memo')}
+                                    </th>
+                                </tr>
+                            </thead>
+                        </table>
+                        <div style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
                             <table class="prospect-table" style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                                        <th onclick="sortProspectsByField('${sortKey}', 'name')" style="padding: 10px 15px; text-align: center; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap; width: 90px;">
-                                            성명${getArrow('name')}
-                                        </th>
-                                        <th onclick="sortProspectsByField('${sortKey}', 'date')" style="padding: 10px 15px; text-align: center; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap; width: 90px;">
-                                            일자${getArrow('date')}
-                                        </th>
-                                        <th onclick="sortProspectsByField('${sortKey}', 'memo')" style="padding: 10px 15px; text-align: center; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none;">
-                                            비고${getArrow('memo')}
-                                        </th>
-                                    </tr>
-                                </thead>
                                 <tbody>
                                     ${items.length > 0 ? items.map(item => `
                                         <tr style="border-bottom: 1px solid #eee;">
