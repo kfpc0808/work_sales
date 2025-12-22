@@ -3002,13 +3002,13 @@
                             <table class="prospect-table" style="width: 100%; border-collapse: collapse;">
                                 <thead>
                                     <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                                        <th onclick="sortProspectsByField('${sortKey}', 'name')" style="padding: 10px 15px; text-align: left; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap;">
+                                        <th onclick="sortProspectsByField('${sortKey}', 'name')" style="padding: 10px 15px; text-align: center; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap; width: 150px;">
                                             성명${getArrow('name')}
                                         </th>
-                                        <th onclick="sortProspectsByField('${sortKey}', 'date')" style="padding: 10px 15px; text-align: left; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap; width: 120px;">
+                                        <th onclick="sortProspectsByField('${sortKey}', 'date')" style="padding: 10px 15px; text-align: center; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap; width: 90px;">
                                             일자${getArrow('date')}
                                         </th>
-                                        <th onclick="sortProspectsByField('${sortKey}', 'memo')" style="padding: 10px 15px; text-align: left; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none;">
+                                        <th onclick="sortProspectsByField('${sortKey}', 'memo')" style="padding: 10px 15px; text-align: center; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none;">
                                             비고${getArrow('memo')}
                                         </th>
                                     </tr>
@@ -3016,8 +3016,8 @@
                                 <tbody>
                                     ${items.length > 0 ? items.map(item => `
                                         <tr style="border-bottom: 1px solid #eee;">
-                                            <td style="padding: 10px 15px; font-weight: 500; color: #2c3e50; white-space: nowrap;">${escapeHTML(item.name)}</td>
-                                            <td style="padding: 10px 15px; color: #3498db; font-size: 13px; white-space: nowrap;">${escapeHTML(item.date || '-')}</td>
+                                            <td style="padding: 10px 15px; font-weight: 500; color: #2c3e50; white-space: nowrap; width: 150px;">${escapeHTML(item.name)}</td>
+                                            <td style="padding: 10px 15px; color: #3498db; font-size: 13px; text-align: center; white-space: nowrap; width: 90px;">${escapeHTML(item.date || '-')}</td>
                                             <td style="padding: 10px 15px; color: #6c757d; font-size: 13px;">${escapeHTML(item.memo || '-')}</td>
                                         </tr>
                                     `).join('') : `
