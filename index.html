@@ -1921,7 +1921,7 @@
         /* 가망관리 탭 스타일 */
         #prospectsContainer {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 20px;
         }
         
@@ -2517,7 +2517,13 @@
         let noticeHeaders = {}; // 공지 시트 헤더 정보
         let scheduleData = []; // 월간 일정 데이터
         let prospectsData = []; // 가망관리 데이터
-        let prospectsSortOrder = { A: 'asc', C: 'asc', E: 'asc', G: 'asc' }; // 정렬 상태
+        let prospectsSortState = {
+            A: { field: 'name', order: 'asc' },
+            C: { field: 'name', order: 'asc' },
+            E: { field: 'name', order: 'asc' },
+            G: { field: 'name', order: 'asc' },
+            I: { field: 'name', order: 'asc' }
+        }; // 정렬 상태 (field: name/date/memo, order: asc/desc)
         let dashboardInfo = []; // 대시보드 정보 (오늘할일, 예정업무, 영업전략, 프로모션, 업무오더)
         let currentPeriodData = []; // 현재 조회 기간의 매출 데이터
         let chartInstances = {};
@@ -2892,7 +2898,7 @@
                 container.innerHTML = '<div class="loading" style="grid-column: 1 / -1; text-align: center; padding: 40px;"><div class="spinner"></div>데이터 로딩 중...</div>';
                 
                 // 직접 API 호출
-                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/sheet8!A:I?key=${CONFIG.API_KEY}`;
+                const url = `${BASE_URL}/${CONFIG.SHEETS_ID}/values/sheet8!A:J?key=${CONFIG.API_KEY}`;
                 console.log('👥 API URL:', url);
                 
                 const response = await fetch(url, {
@@ -2935,12 +2941,13 @@
             const headers = prospectsData[0]; // 1행: 헤더
             const rows = prospectsData.slice(1); // 2행부터 데이터
             
-            // 4개 상품 그룹 정의 (A-B, C-D, E-F, G-H)
+            // 5개 상품 그룹 정의 (A-B, C-D, E-F, G-H, I-J)
             const groups = [
                 { nameCol: 0, memoCol: 1, title: headers[0] || '지사', color: '#3498db' },
                 { nameCol: 2, memoCol: 3, title: headers[2] || '이너서클', color: '#27ae60' },
                 { nameCol: 4, memoCol: 5, title: headers[4] || '컨홈회원', color: '#e67e22' },
-                { nameCol: 6, memoCol: 7, title: headers[6] || '기업회원', color: '#9b59b6' }
+                { nameCol: 6, memoCol: 7, title: headers[6] || '기업회원', color: '#9b59b6' },
+                { nameCol: 8, memoCol: 9, title: headers[8] || 'STAR', color: '#e74c3c' }
             ];
             
             let html = '';
@@ -2965,24 +2972,69 @@
                     );
                 }
                 
-                // 정렬 키 (A, C, E, G)
-                const sortKey = ['A', 'C', 'E', 'G'][groupIndex];
-                const sortOrder = prospectsSortOrder[sortKey];
+                // 정렬 키 (A, C, E, G, I)
+                const sortKey = ['A', 'C', 'E', 'G', 'I'][groupIndex];
+                const sortState = prospectsSortState[sortKey];
+                
+                // 날짜 추출 함수 (메모에서 날짜 패턴 찾기)
+                const extractDate = (memo) => {
+                    if (!memo) return '';
+                    // 12/23, 12월 23일, 2024.12.23 등 패턴 찾기
+                    const patterns = [
+                        /(\d{1,2})\/(\d{1,2})/,  // 12/23
+                        /(\d{1,2})월\s*(\d{1,2})일?/,  // 12월 23일
+                        /\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}/  // 2024-12-23
+                    ];
+                    for (let pattern of patterns) {
+                        const match = memo.match(pattern);
+                        if (match) return match[0];
+                    }
+                    return '';
+                };
                 
                 // 정렬
                 items.sort((a, b) => {
-                    const compare = a.name.localeCompare(b.name, 'ko');
-                    return sortOrder === 'asc' ? compare : -compare;
+                    let compareValue = 0;
+                    
+                    if (sortState.field === 'name') {
+                        compareValue = a.name.localeCompare(b.name, 'ko');
+                    } else if (sortState.field === 'date') {
+                        const dateA = extractDate(a.memo);
+                        const dateB = extractDate(b.memo);
+                        compareValue = dateA.localeCompare(dateB);
+                    } else if (sortState.field === 'memo') {
+                        compareValue = (a.memo || '').localeCompare(b.memo || '', 'ko');
+                    }
+                    
+                    return sortState.order === 'asc' ? compareValue : -compareValue;
                 });
+                
+                // 정렬 아이콘
+                const getArrow = (field) => {
+                    if (sortState.field === field) {
+                        return sortState.order === 'asc' ? '▲' : '▼';
+                    }
+                    return '⬍';
+                };
                 
                 html += `
                     <div class="prospect-group" style="background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
-                        <div class="prospect-group-header" style="background: ${group.color}; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="sortProspects('${sortKey}')">
-                            <span style="font-weight: bold; font-size: 15px;">${group.title}</span>
-                            <span style="font-size: 12px; opacity: 0.9;">
-                                ${items.length}명 
-                                <span style="margin-left: 5px;">${sortOrder === 'asc' ? '▲' : '▼'}</span>
-                            </span>
+                        <div class="prospect-group-header" style="background: ${group.color}; color: white; padding: 12px 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-weight: bold; font-size: 15px;">${group.title}</span>
+                                <span style="font-size: 12px; opacity: 0.9;">${items.length}명</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; font-size: 11px; opacity: 0.95;">
+                                <button onclick="sortProspectsByField('${sortKey}', 'name')" style="flex: 1; background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                    성명 ${getArrow('name')}
+                                </button>
+                                <button onclick="sortProspectsByField('${sortKey}', 'date')" style="flex: 1; background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                    일자 ${getArrow('date')}
+                                </button>
+                                <button onclick="sortProspectsByField('${sortKey}', 'memo')" style="flex: 1; background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                    비고 ${getArrow('memo')}
+                                </button>
+                            </div>
                         </div>
                         <div class="prospect-list" style="max-height: 400px; overflow-y: auto;">
                             ${items.length > 0 ? items.map(item => `
@@ -2999,14 +3051,26 @@
             container.innerHTML = html;
         }
         
-        // 가망관리 정렬
-        function sortProspects(column) {
-            // 정렬 순서 토글
-            prospectsSortOrder[column] = prospectsSortOrder[column] === 'asc' ? 'desc' : 'asc';
+        // 가망관리 정렬 (필드별)
+        function sortProspectsByField(column, field) {
+            const currentState = prospectsSortState[column];
+            
+            // 같은 필드 클릭 시 순서 토글, 다른 필드 클릭 시 오름차순
+            if (currentState.field === field) {
+                currentState.order = currentState.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentState.field = field;
+                currentState.order = 'asc';
+            }
             
             // 현재 검색어 가져오기
             const searchTerm = document.getElementById('prospectSearchInput').value;
             renderProspects(searchTerm);
+        }
+        
+        // 가망관리 정렬 (구버전 호환)
+        function sortProspects(column) {
+            sortProspectsByField(column, 'name');
         }
         
         // 가망관리 검색
