@@ -1920,56 +1920,45 @@
         
         /* 가망관리 탭 스타일 */
         #prospectsContainer {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
         }
         
         .prospect-group {
-            min-height: 200px;
+            min-height: auto;
         }
         
         .prospect-group-header:hover {
-            opacity: 0.9;
+            opacity: 0.95;
         }
         
-        .prospect-item:hover {
+        .prospect-table tbody tr:hover {
             background: #f8f9fa;
         }
         
-        .prospect-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .prospect-list::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 3px;
+        .prospect-table th:hover {
+            background: #e9ecef;
         }
         
         /* 가망관리 탭 모바일 */
-        @media (max-width: 1024px) {
-            #prospectsContainer {
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 15px !important;
+        @media (max-width: 768px) {
+            .prospect-table {
+                font-size: 12px;
             }
-        }
-        
-        @media (max-width: 600px) {
-            #prospectsContainer {
-                grid-template-columns: 1fr !important;
-                gap: 12px !important;
+            
+            .prospect-table th,
+            .prospect-table td {
+                padding: 8px 10px !important;
+            }
+            
+            .prospect-table th {
+                font-size: 12px !important;
             }
             
             .prospect-group-header {
                 padding: 10px 12px !important;
-            }
-            
-            .prospect-group-header span:first-child {
                 font-size: 14px !important;
-            }
-            
-            .prospect-item {
-                padding: 8px 12px !important;
             }
             
             #prospectSearchInput {
@@ -2918,6 +2907,8 @@
                 
                 if (result.values && result.values.length > 1) {
                     prospectsData = result.values;
+                    console.log('👥 가망관리 원본 데이터:', prospectsData);
+                    console.log('👥 첫 5행 샘플:', prospectsData.slice(0, 5));
                     renderProspects();
                     showToast('가망관리 데이터를 불러왔습니다.');
                 } else {
@@ -2996,38 +2987,46 @@
                 // 정렬 아이콘
                 const getArrow = (field) => {
                     if (sortState.field === field) {
-                        return sortState.order === 'asc' ? '▲' : '▼';
+                        return sortState.order === 'asc' ? ' ▲' : ' ▼';
                     }
-                    return '⬍';
+                    return '';
                 };
                 
                 html += `
-                    <div class="prospect-group" style="background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
-                        <div class="prospect-group-header" style="background: ${group.color}; color: white; padding: 12px 15px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span style="font-weight: bold; font-size: 15px;">${group.title}</span>
-                                <span style="font-size: 12px; opacity: 0.9;">${items.length}명</span>
-                            </div>
-                            <div style="display: flex; gap: 8px; font-size: 11px; opacity: 0.95;">
-                                <button onclick="sortProspectsByField('${sortKey}', 'name')" style="flex: 1; background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                    성명 ${getArrow('name')}
-                                </button>
-                                <button onclick="sortProspectsByField('${sortKey}', 'date')" style="flex: 1; background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                    일자 ${getArrow('date')}
-                                </button>
-                                <button onclick="sortProspectsByField('${sortKey}', 'memo')" style="flex: 1; background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                    비고 ${getArrow('memo')}
-                                </button>
-                            </div>
+                    <div class="prospect-group" style="background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 20px;">
+                        <div class="prospect-group-header" style="background: ${group.color}; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: bold; font-size: 15px;">${group.title}</span>
+                            <span style="font-size: 12px; opacity: 0.9;">${items.length}명</span>
                         </div>
-                        <div class="prospect-list" style="max-height: 400px; overflow-y: auto;">
-                            ${items.length > 0 ? items.map(item => `
-                                <div class="prospect-item" style="padding: 10px 15px; border-bottom: 1px solid #eee;">
-                                    <div style="font-weight: 600; color: #2c3e50; margin-bottom: 4px;">${escapeHTML(item.name)}</div>
-                                    ${item.date ? `<div style="font-size: 12px; color: #3498db; margin-bottom: 3px;">📅 ${escapeHTML(item.date)}</div>` : ''}
-                                    ${item.memo ? `<div style="font-size: 12px; color: #7f8c8d;">💬 ${escapeHTML(item.memo)}</div>` : ''}
-                                </div>
-                            `).join('') : '<div style="padding: 20px; text-align: center; color: #999;">데이터 없음</div>'}
+                        <div style="overflow-x: auto;">
+                            <table class="prospect-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                        <th onclick="sortProspectsByField('${sortKey}', 'name')" style="padding: 10px 15px; text-align: left; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap;">
+                                            성명${getArrow('name')}
+                                        </th>
+                                        <th onclick="sortProspectsByField('${sortKey}', 'date')" style="padding: 10px 15px; text-align: left; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none; white-space: nowrap; width: 120px;">
+                                            일자${getArrow('date')}
+                                        </th>
+                                        <th onclick="sortProspectsByField('${sortKey}', 'memo')" style="padding: 10px 15px; text-align: left; font-size: 13px; font-weight: 600; color: #495057; cursor: pointer; user-select: none;">
+                                            비고${getArrow('memo')}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${items.length > 0 ? items.map(item => `
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 10px 15px; font-weight: 500; color: #2c3e50; white-space: nowrap;">${escapeHTML(item.name)}</td>
+                                            <td style="padding: 10px 15px; color: #3498db; font-size: 13px; white-space: nowrap;">${escapeHTML(item.date || '-')}</td>
+                                            <td style="padding: 10px 15px; color: #6c757d; font-size: 13px;">${escapeHTML(item.memo || '-')}</td>
+                                        </tr>
+                                    `).join('') : `
+                                        <tr>
+                                            <td colspan="3" style="padding: 30px; text-align: center; color: #999;">데이터 없음</td>
+                                        </tr>
+                                    `}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 `;
