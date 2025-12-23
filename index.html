@@ -3068,8 +3068,10 @@
         // 월간 일정 데이터 로딩 함수
         async function getScheduleData() {
             try {
+                console.log('🔵 월간 일정 데이터 로딩 시작...');
                 // 1단계: 시트 메타데이터를 가져와서 GID에 해당하는 시트 이름 찾기
                 const metadataUrl = `${BASE_URL}/${CONFIG.SCHEDULE_SHEETS_ID}?key=${CONFIG.API_KEY}`;
+                console.log('🔵 메타데이터 URL:', metadataUrl);
                 
                 const metadataResponse = await fetch(metadataUrl, {
                     cache: 'no-store',
@@ -3081,12 +3083,19 @@
                 
                 if (!metadataResponse.ok) throw new Error(`메타데이터 로딩 실패: ${metadataResponse.status}`);
                 const metadata = await metadataResponse.json();
+                console.log('🔵 메타데이터 응답:', metadata);
                 
                 // GID로 시트 찾기
                 const targetGid = parseInt(CONFIG.SCHEDULE_GID);
+                console.log('🔵 찾을 GID:', targetGid);
                 let sheetTitle = null;
                 
                 if (metadata.sheets && metadata.sheets.length > 0) {
+                    console.log('🔵 사용 가능한 시트들:', metadata.sheets.map(s => ({
+                        title: s.properties.title,
+                        id: s.properties.sheetId
+                    })));
+                    
                     for (let sheet of metadata.sheets) {
                         if (sheet.properties && sheet.properties.sheetId === targetGid) {
                             sheetTitle = sheet.properties.title;
@@ -3097,16 +3106,19 @@
                     // GID로 못 찾으면 첫 번째 시트 사용
                     if (!sheetTitle) {
                         sheetTitle = metadata.sheets[0].properties.title;
-                        console.warn('GID로 시트를 찾을 수 없어 첫 번째 시트 사용:', sheetTitle);
+                        console.warn('⚠️ GID로 시트를 찾을 수 없어 첫 번째 시트 사용:', sheetTitle);
+                    } else {
+                        console.log('✅ GID로 시트 찾음:', sheetTitle);
                     }
                 }
                 
                 if (!sheetTitle) throw new Error('시트를 찾을 수 없습니다.');
                 
-                console.log('사용할 시트:', sheetTitle);
+                console.log('🔵 사용할 시트:', sheetTitle);
                 
                 // 2단계: 서식 포함 데이터 가져오기
                 const dataUrl = `${BASE_URL}/${CONFIG.SCHEDULE_SHEETS_ID}?key=${CONFIG.API_KEY}&includeGridData=true&ranges=${encodeURIComponent(sheetTitle)}`;
+                console.log('🔵 데이터 URL:', dataUrl);
                 
                 const fetchPromise = fetch(dataUrl, {
                     cache: 'no-store',
@@ -3124,18 +3136,24 @@
                 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
+                console.log('🔵 데이터 응답:', data);
                 
-                if (!data.sheets || data.sheets.length === 0) return [];
+                if (!data.sheets || data.sheets.length === 0) {
+                    console.warn('⚠️ 시트 데이터가 없습니다');
+                    return [];
+                }
                 
                 const sheet = data.sheets[0];
+                console.log('🔵 첫 번째 시트:', sheet);
                 
                 // 안전한 경로 체크
                 if (!sheet.data || !sheet.data[0] || !sheet.data[0].rowData) {
-                    console.warn('rowData가 없습니다.');
+                    console.warn('⚠️ rowData가 없습니다.');
                     return [];
                 }
                 
                 const rowData = sheet.data[0].rowData;
+                console.log('🔵 rowData 길이:', rowData.length);
                 
                 // 각 행의 데이터와 서식 정보 추출
                 const formattedData = rowData.map(row => {
@@ -3160,6 +3178,8 @@
                     return { cells };
                 });
                 
+                console.log('✅ 월간 일정 데이터 로딩 완료. 행 수:', formattedData.length);
+                console.log('🔵 첫 5행 샘플:', formattedData.slice(0, 5));
                 return formattedData;
                 
             } catch (error) {
@@ -3199,6 +3219,8 @@
                 monthlyGoals = monthlyResult.data;
                 weeklyGoals = weeklyResult.data;
                 scheduleData = scheduleResult;  // 월간 일정 (원본 배열 형태)
+                console.log('🟢 scheduleResult:', scheduleResult);
+                console.log('🟢 scheduleData 길이:', scheduleData.length);
                 // 회원명이 있는 행만 필터링
                 callHistory = callsResult.data.filter(call => 
                     call['회원명'] && 
@@ -5778,54 +5800,47 @@
         function parseScheduleData() {
             // scheduleData를 주 단위로 파싱
             if (!scheduleData || scheduleData.length === 0) {
+                console.warn('⚠️ scheduleData가 비어있습니다');
                 allWeeks = [];
                 weekHeaderRow = null;
                 return;
             }
             
+            console.log('🔵 parseScheduleData 시작. 전체 행 수:', scheduleData.length);
+            
             allWeeks = [];
             weekHeaderRow = null;
             let currentWeek = [];
-            let isFirstS = true;
             
-            for (let i = 0; i < scheduleData.length; i++) {
+            // 첫 번째 행을 헤더로 사용
+            if (scheduleData.length > 0) {
+                weekHeaderRow = scheduleData[0];
+                console.log('✅ 첫 행을 헤더로 사용:', weekHeaderRow.cells.slice(0, 6).map(c => c.value || '(빈값)').join(' | '));
+            }
+            
+            for (let i = 1; i < scheduleData.length; i++) {  // 1행부터 시작 (0행은 헤더)
                 const row = scheduleData[i];
                 
-                // S 열 (첫 번째 셀)이 "S"이면
-                if (row.cells && row.cells[0] && row.cells[0].value === 'S') {
-                    if (isFirstS) {
-                        // 첫 번째 S는 고정 헤더로 저장
-                        weekHeaderRow = row;
-                        isFirstS = false;
-                        console.log('✅ 요일 헤더 저장:', row.cells.map(c => c.value).join(', '));
-                    } else {
-                        // 두 번째 S부터는 새 주 시작 (이전 주 저장)
+                // === 날짜 행 감지 (A열 비어있고 B~F열에 날짜 패턴) ===
+                const aCell = row.cells && row.cells[0] ? (row.cells[0].value || '') : '';
+                
+                if (!aCell.trim()) {
+                    // B~F열 확인
+                    let dateCount = 0;
+                    for (let j = 1; j <= 5; j++) {
+                        const cellValue = row.cells && row.cells[j] ? (row.cells[j].value || '') : '';
+                        if (/\d+\/\d+/.test(cellValue)) {
+                            dateCount++;
+                        }
+                    }
+                    
+                    // 3개 이상 날짜 패턴이면 새 주 시작
+                    if (dateCount >= 3) {
                         if (currentWeek.length > 0) {
                             allWeeks.push(currentWeek);
-                            console.log(`   ${allWeeks.length}주 저장 (${currentWeek.length}행)`);
+                            console.log(`   ${allWeeks.length}주 저장 (${currentWeek.length}행) - 날짜 행 감지`);
                         }
-                        currentWeek = [];
-                    }
-                } else {
-                    // === 날짜 행 감지 (A열 비어있고 B~F열에 날짜 패턴) ===
-                    const aCell = row.cells[0]?.value || '';
-                    if (!aCell.trim()) {
-                        // B~F열 확인
-                        let dateCount = 0;
-                        for (let j = 1; j <= 5; j++) {
-                            const cellValue = row.cells[j]?.value || '';
-                            if (/\d+\/\d+/.test(cellValue)) {
-                                dateCount++;
-                            }
-                        }
-                        
-                        // 3개 이상 날짜 패턴이면 새 주 시작
-                        if (dateCount >= 3) {
-                            if (currentWeek.length > 0) {
-                                allWeeks.push(currentWeek);
-                                console.log(`   ${allWeeks.length}주 저장 (${currentWeek.length}행) - 날짜 행 감지`);
-                            }
-                            currentWeek = [row]; // 날짜 행부터 시작
+                        currentWeek = [row]; // 날짜 행부터 시작
                             continue;
                         }
                     }
