@@ -5821,21 +5821,21 @@
             for (let i = 1; i < scheduleData.length; i++) {  // 1행부터 시작 (0행은 헤더)
                 const row = scheduleData[i];
                 
-                // === 날짜 행 감지 (A열 비어있고 B~G열에 날짜 패턴) ===
+                // === 날짜 행 감지 (A열 비어있고 B~F열에 날짜 패턴) ===
                 const aCell = row.cells && row.cells[0] ? (row.cells[0].value || '') : '';
                 
                 if (!aCell.trim()) {
-                    // B~G열 확인 (월~토)
+                    // B~F열 확인
                     let dateCount = 0;
-                    for (let j = 1; j <= 6; j++) {
+                    for (let j = 1; j <= 5; j++) {
                         const cellValue = row.cells && row.cells[j] ? (row.cells[j].value || '') : '';
                         if (/\d+\/\d+/.test(cellValue)) {
                             dateCount++;
                         }
                     }
                     
-                    // 4개 이상 날짜 패턴이면 새 주 시작
-                    if (dateCount >= 4) {
+                    // 3개 이상 날짜 패턴이면 새 주 시작
+                    if (dateCount >= 3) {
                         if (currentWeek.length > 0) {
                             allWeeks.push(currentWeek);
                             console.log(`   ${allWeeks.length}주 저장 (${currentWeek.length}행) - 날짜 행 감지`);
@@ -5971,9 +5971,9 @@
             let headerHTML = '<tr style="position: sticky; top: 0; z-index: 10;">';
             headerHTML += '<th style="min-width: 100px; background: #4A90E2; color: white; position: sticky; top: 0;">구분</th>';
             
-            // B~G열 (월~토) - 요일만 표시 (고정)
-            const dayNames = ['월', '화', '수', '목', '금', '토'];
-            for (let i = 1; i <= 6; i++) {
+            // B~F열 (월~금) - 요일만 표시 (고정)
+            const dayNames = ['월', '화', '수', '목', '금'];
+            for (let i = 1; i <= 5; i++) {
                 const dayCell = weekHeaderRow.cells[i];
                 const dayText = dayCell ? dayCell.value : dayNames[i-1];
                 
@@ -5997,8 +5997,8 @@
                 bodyHTML += `<tr style="background: ${dateBgColor}; font-weight: bold;">`;
                 bodyHTML += `<td style="background: ${dateBgColor}; color: ${dateTextColor}; text-align: center; padding: 12px 8px; font-weight: bold;">날짜</td>`;
                 
-                // B~G열 날짜 (월~토)
-                for (let j = 1; j <= 6; j++) {
+                // B~F열 날짜
+                for (let j = 1; j <= 5; j++) {
                     const cell = dateRow.cells[j];
                     const dateValue = cell ? cell.value : '';
                     const cellBgColor = cell?.bgColor || dateBgColor;
@@ -6019,10 +6019,10 @@
                 const category = categoryCell ? categoryCell.value : '';
                 
                 // === 날짜 행 자동 감지 ===
-                // A열이 비어있고 B~G열에 날짜 패턴(예: 11/17)이 있으면 날짜 행으로 판단
+                // A열이 비어있고 B~F열에 날짜 패턴(예: 11/17)이 있으면 날짜 행으로 판단
                 let isDateRow = false;
                 if (!category || !category.trim()) {
-                    for (let j = 1; j <= 6; j++) {
+                    for (let j = 1; j <= 5; j++) {
                         const cell = row.cells[j];
                         if (cell && cell.value && /\d+\/\d+/.test(cell.value)) {
                             isDateRow = true;
@@ -6039,8 +6039,8 @@
                     bodyHTML += `<tr style="background: ${dateBgColor}; font-weight: bold;">`;
                     bodyHTML += `<td style="background: ${dateBgColor}; color: ${dateTextColor}; text-align: center; padding: 12px 8px; font-weight: bold;">날짜</td>`;
                     
-                    // B~G열 날짜 (월~토)
-                    for (let j = 1; j <= 6; j++) {
+                    // B~F열 날짜
+                    for (let j = 1; j <= 5; j++) {
                         const cell = row.cells[j];
                         const dateValue = cell ? cell.value : '';
                         const cellBgColor = cell?.bgColor || dateBgColor;
@@ -6063,8 +6063,8 @@
                 bodyHTML += `<tr>`;
                 bodyHTML += `<td style="background: ${categoryBgColor}; color: ${categoryTextColor}; ${categoryBold} text-align: center; padding: 12px 8px;">${category}</td>`;
                 
-                // B~G열 (월~토) - 인덱스 1~6
-                for (let j = 1; j <= 6; j++) {
+                // B~F열 (월~금) - 인덱스 1~5
+                for (let j = 1; j <= 5; j++) {
                     const cell = row.cells[j];
                     
                     if (!cell) {
@@ -6103,7 +6103,7 @@
             }
             
             if (bodyHTML === '') {
-                bodyHTML = '<tr><td colspan="7" class="empty-state">해당 주의 일정이 없습니다.</td></tr>';
+                bodyHTML = '<tr><td colspan="6" class="empty-state">해당 주의 일정이 없습니다.</td></tr>';
             }
             
             tbody.innerHTML = bodyHTML;
