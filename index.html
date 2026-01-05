@@ -3388,17 +3388,21 @@
             // 일반 데이터 합산
             todayData.forEach(row => {
                 todayConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
-                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']) +
+                                parseNumber(row['STAR확정']);
                 todayExpected += parseNumber(row['컨홈예상']) + parseNumber(row['기홈예상']) + 
-                               parseNumber(row['지사예상']) + parseNumber(row['이너예상']);
+                               parseNumber(row['지사예상']) + parseNumber(row['이너예상']) +
+                               parseNumber(row['STAR예상']);
             });
             
             // 목표 행의 확정/예상 금액도 포함
             if (todayGoalRow) {
                 todayConfirmed += parseNumber(todayGoalRow['컨홈확정']) + parseNumber(todayGoalRow['기홈확정']) + 
-                                parseNumber(todayGoalRow['지사확정']) + parseNumber(todayGoalRow['이너확정']);
+                                parseNumber(todayGoalRow['지사확정']) + parseNumber(todayGoalRow['이너확정']) +
+                                parseNumber(todayGoalRow['STAR확정']);
                 todayExpected += parseNumber(todayGoalRow['컨홈예상']) + parseNumber(todayGoalRow['기홈예상']) + 
-                               parseNumber(todayGoalRow['지사예상']) + parseNumber(todayGoalRow['이너예상']);
+                               parseNumber(todayGoalRow['지사예상']) + parseNumber(todayGoalRow['이너예상']) +
+                               parseNumber(todayGoalRow['STAR예상']);
             }
             
             // 이번 주 계산
@@ -3436,13 +3440,15 @@
             // 일반 데이터 합산
             weekData.forEach(row => {
                 weekConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
-                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']) +
+                                parseNumber(row['STAR확정']);
             });
             
             // 목표 행의 확정 금액도 포함
             weekGoalRows.forEach(row => {
                 weekConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
-                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                                parseNumber(row['지사확정']) + parseNumber(row['이너확정']) +
+                                parseNumber(row['STAR확정']);
             });
             
             // 주간 목표 (현재 주)
@@ -3454,7 +3460,8 @@
                 weekGoal = parseNumber(weekGoalData['주목표']);
             } else {
                 weekGoal = parseNumber(weekGoalData['컨홈목표']) + parseNumber(weekGoalData['기홈목표']) + 
-                          parseNumber(weekGoalData['지사목표']) + parseNumber(weekGoalData['이너목표']);
+                          parseNumber(weekGoalData['지사목표']) + parseNumber(weekGoalData['이너목표']) +
+                          parseNumber(weekGoalData['STAR목표']);
             }
             const weekRate = weekGoal > 0 ? Math.round((weekConfirmed / weekGoal) * 100) : 0;
             
@@ -3493,13 +3500,15 @@
             // 일반 데이터 합산
             monthData.forEach(row => {
                 monthConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
-                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']) +
+                                 parseNumber(row['STAR확정']);
             });
             
             // 목표 행의 확정 금액도 포함
             monthGoalRows.forEach(row => {
                 monthConfirmed += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
-                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                                 parseNumber(row['지사확정']) + parseNumber(row['이너확정']) +
+                                 parseNumber(row['STAR확정']);
             });
             
             // 월간 목표 (현재 월)
@@ -3511,7 +3520,8 @@
                 monthGoal = parseNumber(monthGoalData['월목표']);
             } else {
                 monthGoal = parseNumber(monthGoalData['컨홈목표']) + parseNumber(monthGoalData['기홈목표']) + 
-                           parseNumber(monthGoalData['지사목표']) + parseNumber(monthGoalData['이너목표']);
+                           parseNumber(monthGoalData['지사목표']) + parseNumber(monthGoalData['이너목표']) +
+                           parseNumber(monthGoalData['STAR목표']);
             }
             const monthRate = monthGoal > 0 ? Math.round((monthConfirmed / monthGoal) * 100) : 0;
             
@@ -3551,7 +3561,8 @@
                 '컨홈': 0,
                 '기홈': 0,
                 '지사': 0,
-                '이너': 0
+                '이너': 0,
+                'STAR': 0
             };
             
             weekData.forEach(row => {
@@ -3559,6 +3570,7 @@
                 weekConfirmed['기홈'] += parseNumber(row['기홈확정']);
                 weekConfirmed['지사'] += parseNumber(row['지사확정']);
                 weekConfirmed['이너'] += parseNumber(row['이너확정']);
+                weekConfirmed['STAR'] += parseNumber(row['STAR확정']);
             });
             
             // 주간 목표 (현재 주)
@@ -3567,7 +3579,8 @@
                 '컨홈': parseNumber(weekGoalData['컨홈목표']),
                 '기홈': parseNumber(weekGoalData['기홈목표']),
                 '지사': parseNumber(weekGoalData['지사목표']),
-                '이너': parseNumber(weekGoalData['이너목표'])
+                '이너': parseNumber(weekGoalData['이너목표']),
+                'STAR': parseNumber(weekGoalData['STAR목표'])
             };
             
             // 달성률 계산
@@ -3575,7 +3588,8 @@
                 { name: '컨홈', key: '컨홈' },
                 { name: '기홈', key: '기홈' },
                 { name: '지사', key: '지사' },
-                { name: '이너', key: '이너' }
+                { name: '이너', key: '이너' },
+                { name: 'STAR', key: 'STAR' }
             ].map(p => {
                 const confirmed = weekConfirmed[p.key];
                 const goal = weekGoals[p.key];
@@ -3620,14 +3634,16 @@
                     dailyTotals[dateStr] = 0;
                 }
                 dailyTotals[dateStr] += parseNumber(row['컨홈확정']) + parseNumber(row['기홈확정']) + 
-                                       parseNumber(row['지사확정']) + parseNumber(row['이너확정']);
+                                       parseNumber(row['지사확정']) + parseNumber(row['이너확정']) +
+                                       parseNumber(row['STAR확정']);
             });
             
             // 요일별 데이터
             const days = ['월', '화', '수', '목', '금'];
             const goalData = weeklyGoals[0] || {};
             const dailyGoal = (parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
-                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표'])) / 5;
+                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']) +
+                             parseNumber(goalData['STAR목표'])) / 5;
             
             const goalValues = [];
             const actualValues = [];
@@ -3851,7 +3867,8 @@
                 '컨홈': { expected: 0, confirmed: 0 },
                 '기홈': { expected: 0, confirmed: 0 },
                 '지사': { expected: 0, confirmed: 0 },
-                '이너': { expected: 0, confirmed: 0 }
+                '이너': { expected: 0, confirmed: 0 },
+                'STAR': { expected: 0, confirmed: 0 }
             };
             
             let 비고Total = 0;
@@ -3863,12 +3880,14 @@
                 totals['기홈'].expected += parseNumber(row['기홈예상']);
                 totals['지사'].expected += parseNumber(row['지사예상']);
                 totals['이너'].expected += parseNumber(row['이너예상']);
+                totals['STAR'].expected += parseNumber(row['STAR예상']);
                 
                 // 확정 컬럼 합산
                 totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
                 totals['기홈'].confirmed += parseNumber(row['기홈확정']);
                 totals['지사'].confirmed += parseNumber(row['지사확정']);
                 totals['이너'].confirmed += parseNumber(row['이너확정']);
+                totals['STAR'].confirmed += parseNumber(row['STAR확정']);
             });
             
             // 전체 합계
@@ -3888,6 +3907,7 @@
                     goalData['기홈목표'] = (goalData['기홈목표'] || 0) + parseNumber(row['기홈목표']);
                     goalData['지사목표'] = (goalData['지사목표'] || 0) + parseNumber(row['지사목표']);
                     goalData['이너목표'] = (goalData['이너목표'] || 0) + parseNumber(row['이너목표']);
+                    goalData['STAR목표'] = (goalData['STAR목표'] || 0) + parseNumber(row['STAR목표']);
                 });
             } else {
                 // 목표 행이 없으면 0으로 설정
@@ -3895,10 +3915,12 @@
                 goalData['기홈목표'] = 0;
                 goalData['지사목표'] = 0;
                 goalData['이너목표'] = 0;
+                goalData['STAR목표'] = 0;
             }
             
             const totalGoal = parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
-                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']);
+                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']) +
+                             parseNumber(goalData['STAR목표']);
             const achievementRate = totalGoal > 0 ? Math.round((totalConfirmed / totalGoal) * 100) : 0;
             
             // UI 업데이트
@@ -3914,6 +3936,7 @@
                 { name: '기홈', key: '기홈', goalKey: '기홈목표', hasData: true },
                 { name: '지사', key: '지사', goalKey: '지사목표', hasData: true },
                 { name: '이너', key: '이너', goalKey: '이너목표', hasData: true },
+                { name: 'STAR', key: 'STAR', goalKey: 'STAR목표', hasData: true },
                 { name: '컨홈정기', key: '컨홈정기', goalKey: '컨홈정기', hasData: false },
                 { name: '기홈정기', key: '기홈정기', goalKey: '기홈정기', hasData: false },
                 { name: '이너정기', key: '이너정기', goalKey: '이너정기', hasData: false },
@@ -3982,7 +4005,8 @@
                 totalWeeklyGoal = parseNumber(weeklyGoalData['컨홈목표']) + 
                                  parseNumber(weeklyGoalData['기홈목표']) + 
                                  parseNumber(weeklyGoalData['지사목표']) + 
-                                 parseNumber(weeklyGoalData['이너목표']);
+                                 parseNumber(weeklyGoalData['이너목표']) +
+                                 parseNumber(weeklyGoalData['STAR목표']);
             }
             
             let totalMonthlyGoal = 0;
@@ -3994,7 +4018,8 @@
                 totalMonthlyGoal = parseNumber(monthlyGoalData['컨홈목표']) + 
                                   parseNumber(monthlyGoalData['기홈목표']) + 
                                   parseNumber(monthlyGoalData['지사목표']) + 
-                                  parseNumber(monthlyGoalData['이너목표']);
+                                  parseNumber(monthlyGoalData['이너목표']) +
+                                  parseNumber(monthlyGoalData['STAR목표']);
             }
             
             // 합계 달성률 계산 (목표가 0일 때 처리)
@@ -4099,7 +4124,8 @@
                 { name: '컨홈', goalKey: '컨홈목표', achievementKey: '컨홈달성' },
                 { name: '기홈', goalKey: '기홈목표', achievementKey: '기홈달성' },
                 { name: '지사', goalKey: '지사목표', achievementKey: '지사달성' },
-                { name: '이너', goalKey: '이너목표', achievementKey: '이너달성' }
+                { name: '이너', goalKey: '이너목표', achievementKey: '이너달성' },
+                { name: 'STAR', goalKey: 'STAR목표', achievementKey: 'STAR달성' }
             ];
             
             let totalGoal = 0;
@@ -4268,7 +4294,8 @@
                 '컨홈': { expected: 0, confirmed: 0 },
                 '기홈': { expected: 0, confirmed: 0 },
                 '지사': { expected: 0, confirmed: 0 },
-                '이너': { expected: 0, confirmed: 0 }
+                '이너': { expected: 0, confirmed: 0 },
+                'STAR': { expected: 0, confirmed: 0 }
             };
             
             // 예상과 확정은 모든 회원 데이터 합산 (목표 행 제외)
@@ -4278,12 +4305,14 @@
                 totals['기홈'].expected += parseNumber(row['기홈예상']);
                 totals['지사'].expected += parseNumber(row['지사예상']);
                 totals['이너'].expected += parseNumber(row['이너예상']);
+                totals['STAR'].expected += parseNumber(row['STAR예상']);
                 
                 // 확정 컬럼 합산
                 totals['컨홈'].confirmed += parseNumber(row['컨홈확정']);
                 totals['기홈'].confirmed += parseNumber(row['기홈확정']);
                 totals['지사'].confirmed += parseNumber(row['지사확정']);
                 totals['이너'].confirmed += parseNumber(row['이너확정']);
+                totals['STAR'].confirmed += parseNumber(row['STAR확정']);
             });
             
             console.log('합계:', totals);
@@ -4302,13 +4331,15 @@
                 goalData['기홈목표'] = parseNumber(goalRow['기홈목표']);
                 goalData['지사목표'] = parseNumber(goalRow['지사목표']);
                 goalData['이너목표'] = parseNumber(goalRow['이너목표']);
+                goalData['STAR목표'] = parseNumber(goalRow['STAR목표']);
                 console.log('일일 목표:', goalData);
             } else {
                 console.log('목표 행을 찾을 수 없습니다!');
             }
             
             const totalGoal = parseNumber(goalData['컨홈목표']) + parseNumber(goalData['기홈목표']) + 
-                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']);
+                             parseNumber(goalData['지사목표']) + parseNumber(goalData['이너목표']) +
+                             parseNumber(goalData['STAR목표']);
             
             // 주목표와 월목표 데이터 (현재 날짜 기준)
             const weeklyGoalData = getCurrentWeekGoal(targetDate);
@@ -4323,6 +4354,7 @@
                 { name: '기홈', key: '기홈', goalKey: '기홈목표', hasData: true },
                 { name: '지사', key: '지사', goalKey: '지사목표', hasData: true },
                 { name: '이너', key: '이너', goalKey: '이너목표', hasData: true },
+                { name: 'STAR', key: 'STAR', goalKey: 'STAR목표', hasData: true },
                 { name: '컨홈정기', key: '컨홈정기', goalKey: '컨홈정기', hasData: false },
                 { name: '기홈정기', key: '기홈정기', goalKey: '기홈정기', hasData: false },
                 { name: '이너정기', key: '이너정기', goalKey: '이너정기', hasData: false },
@@ -4395,7 +4427,8 @@
                 totalWeeklyGoal = parseNumber(weeklyGoalData['컨홈목표']) + 
                                  parseNumber(weeklyGoalData['기홈목표']) + 
                                  parseNumber(weeklyGoalData['지사목표']) + 
-                                 parseNumber(weeklyGoalData['이너목표']);
+                                 parseNumber(weeklyGoalData['이너목표']) +
+                                 parseNumber(weeklyGoalData['STAR목표']);
                 console.log('개별 합산 사용:', totalWeeklyGoal);
             }
             
@@ -4416,7 +4449,8 @@
                 totalMonthlyGoal = parseNumber(monthlyGoalData['컨홈목표']) + 
                                   parseNumber(monthlyGoalData['기홈목표']) + 
                                   parseNumber(monthlyGoalData['지사목표']) + 
-                                  parseNumber(monthlyGoalData['이너목표']);
+                                  parseNumber(monthlyGoalData['이너목표']) +
+                                  parseNumber(monthlyGoalData['STAR목표']);
                 console.log('개별 합산 사용:', totalMonthlyGoal);
             }
             
