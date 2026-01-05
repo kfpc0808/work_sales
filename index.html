@@ -2167,25 +2167,37 @@
 
             <!-- 주별 목표관리현황 -->
             <div class="section">
-                <div class="section-title">
-                    📊 주별 목표관리현황
-                    <span id="weeklyGoalPeriod" style="float: right; font-size: 14px; font-weight: normal; color: var(--text-secondary);"></span>
+                <div class="section-title" style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <span>📊 주별 목표관리현황</span>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+                        <select id="weeklyGoalStartSelector" onchange="updateWeeklyGoalByRange()" style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 13px; background: var(--card-bg); cursor: pointer;">
+                            <option value="">시작 주차</option>
+                        </select>
+                        <span style="font-size: 13px; color: var(--text-secondary);">~</span>
+                        <select id="weeklyGoalEndSelector" onchange="updateWeeklyGoalByRange()" style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 13px; background: var(--card-bg); cursor: pointer;">
+                            <option value="">종료 주차</option>
+                        </select>
+                        <button onclick="resetWeeklyGoalRange()" style="padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 13px; background: #f0f0f0; cursor: pointer;">현재주</button>
+                    </div>
                 </div>
-                <div class="table-container">
-                    <table id="weeklyGoalTable">
-                        <thead>
-                            <tr>
-                                <th>구분</th>
-                                <th class="text-right">주간목표</th>
-                                <th class="text-right">주간달성</th>
-                                <th class="text-center">달성률</th>
-                                <th class="text-right">진행바</th>
-                            </tr>
-                        </thead>
-                        <tbody id="weeklyGoalTableBody">
-                            <tr><td colspan="5" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
-                        </tbody>
-                    </table>
+                <div id="weeklyGoalContainer">
+                    <!-- 동적으로 주차별 테이블이 생성됩니다 -->
+                    <div class="table-container">
+                        <table id="weeklyGoalTable">
+                            <thead>
+                                <tr>
+                                    <th>구분</th>
+                                    <th class="text-right">주간목표</th>
+                                    <th class="text-right">주간달성</th>
+                                    <th class="text-center">달성률</th>
+                                    <th class="text-right">진행바</th>
+                                </tr>
+                            </thead>
+                            <tbody id="weeklyGoalTableBody">
+                                <tr><td colspan="5" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -4105,19 +4117,128 @@
 
         // 주별 목표관리현황 업데이트
         function updateWeeklyGoalStatus() {
-            const weeklyGoalData = getCurrentWeekGoal();
-            const tbody = document.getElementById('weeklyGoalTableBody');
+            // 드롭다운 옵션 초기화
+            initWeeklyGoalSelectors();
             
-            if (!weeklyGoalData || Object.keys(weeklyGoalData).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">주간 목표 데이터가 없습니다.</td></tr>';
+            // 현재 주 기준으로 표시
+            resetWeeklyGoalRange();
+        }
+        
+        // 주차 선택 드롭다운 초기화
+        function initWeeklyGoalSelectors() {
+            const startSelector = document.getElementById('weeklyGoalStartSelector');
+            const endSelector = document.getElementById('weeklyGoalEndSelector');
+            
+            if (!startSelector || !endSelector) return;
+            if (!weeklyGoals || weeklyGoals.length === 0) return;
+            
+            // 기존 옵션 제거 (첫 번째 placeholder 제외)
+            startSelector.innerHTML = '<option value="">시작 주차</option>';
+            endSelector.innerHTML = '<option value="">종료 주차</option>';
+            
+            // weeklyGoals 배열의 각 주차를 옵션으로 추가
+            weeklyGoals.forEach((row, index) => {
+                const weekInfo = row['주차'] || `${index + 1}주차`;
+                const startDate = row['시작일'] || '';
+                const endDate = row['종료일'] || '';
+                const label = `${weekInfo} (${startDate}~${endDate})`;
+                
+                startSelector.innerHTML += `<option value="${index}">${label}</option>`;
+                endSelector.innerHTML += `<option value="${index}">${label}</option>`;
+            });
+            
+            // 현재 주 찾아서 기본 선택
+            const currentWeekIndex = findCurrentWeekIndex();
+            if (currentWeekIndex >= 0) {
+                startSelector.value = currentWeekIndex;
+                endSelector.value = currentWeekIndex;
+            }
+        }
+        
+        // 현재 주 인덱스 찾기
+        function findCurrentWeekIndex() {
+            if (!weeklyGoals || weeklyGoals.length === 0) return -1;
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            for (let i = 0; i < weeklyGoals.length; i++) {
+                const row = weeklyGoals[i];
+                const startDate = parseSimpleDate(row['시작일'] || '');
+                const endDate = parseSimpleDate(row['종료일'] || '');
+                
+                if (startDate && endDate) {
+                    startDate.setHours(0, 0, 0, 0);
+                    endDate.setHours(23, 59, 59, 999);
+                    
+                    if (today >= startDate && today <= endDate) {
+                        return i;
+                    }
+                }
+            }
+            
+            return 0; // 못 찾으면 첫 번째
+        }
+        
+        // 현재 주로 리셋
+        function resetWeeklyGoalRange() {
+            const currentWeekIndex = findCurrentWeekIndex();
+            const startSelector = document.getElementById('weeklyGoalStartSelector');
+            const endSelector = document.getElementById('weeklyGoalEndSelector');
+            
+            if (startSelector && endSelector && currentWeekIndex >= 0) {
+                startSelector.value = currentWeekIndex;
+                endSelector.value = currentWeekIndex;
+            }
+            
+            updateWeeklyGoalByRange();
+        }
+        
+        // 주차 범위 선택 시 업데이트
+        function updateWeeklyGoalByRange() {
+            const container = document.getElementById('weeklyGoalContainer');
+            const startSelector = document.getElementById('weeklyGoalStartSelector');
+            const endSelector = document.getElementById('weeklyGoalEndSelector');
+            
+            if (!container || !weeklyGoals || weeklyGoals.length === 0) {
+                container.innerHTML = '<div class="empty-state">주간 목표 데이터가 없습니다.</div>';
                 return;
             }
             
-            // 주차 정보 표시
-            const weekInfo = weeklyGoalData['주차'] || '';
+            let startIndex = parseInt(startSelector.value);
+            let endIndex = parseInt(endSelector.value);
+            
+            // 값이 없으면 현재 주
+            if (isNaN(startIndex)) startIndex = findCurrentWeekIndex();
+            if (isNaN(endIndex)) endIndex = findCurrentWeekIndex();
+            
+            // 시작이 종료보다 크면 swap
+            if (startIndex > endIndex) {
+                [startIndex, endIndex] = [endIndex, startIndex];
+                startSelector.value = startIndex;
+                endSelector.value = endIndex;
+            }
+            
+            // 선택된 범위의 주차들을 모두 렌더링
+            let html = '';
+            for (let i = startIndex; i <= endIndex; i++) {
+                if (i >= 0 && i < weeklyGoals.length) {
+                    html += renderWeeklyGoalTable(weeklyGoals[i], i);
+                }
+            }
+            
+            container.innerHTML = html || '<div class="empty-state">선택된 주차의 데이터가 없습니다.</div>';
+        }
+        
+        // 단일 주차 테이블 렌더링
+        function renderWeeklyGoalTable(weeklyGoalData, index) {
+            if (!weeklyGoalData || Object.keys(weeklyGoalData).length === 0) {
+                return '';
+            }
+            
+            const weekInfo = weeklyGoalData['주차'] || `${index + 1}주차`;
             const startDate = weeklyGoalData['시작일'] || '';
             const endDate = weeklyGoalData['종료일'] || '';
-            document.getElementById('weeklyGoalPeriod').textContent = `${weekInfo} (${startDate} ~ ${endDate})`;
             
             // 상품별 목표 및 달성 데이터
             const products = [
@@ -4130,7 +4251,7 @@
             
             let totalGoal = 0;
             let totalAchievement = 0;
-            let html = '';
+            let rowsHtml = '';
             
             products.forEach(product => {
                 const goal = parseNumber(weeklyGoalData[product.goalKey]);
@@ -4139,10 +4260,8 @@
                 totalGoal += goal;
                 totalAchievement += achievement;
                 
-                // 달성률 계산
                 const rate = goal > 0 ? Math.round((achievement / goal) * 100) : 0;
                 
-                // 달성률에 따른 색상 클래스
                 let rateClass = 'low';
                 let progressClass = 'danger';
                 if (rate >= 90) {
@@ -4153,10 +4272,9 @@
                     progressClass = 'warning';
                 }
                 
-                // 진행바 너비 (최대 100%)
                 const progressWidth = Math.min(rate, 100);
                 
-                html += `
+                rowsHtml += `
                     <tr>
                         <td class="text-bold">${product.name}</td>
                         <td class="text-right">${formatNumber(goal)}원</td>
@@ -4189,8 +4307,8 @@
             
             const totalProgressWidth = Math.min(totalRate, 100);
             
-            html += `
-                <tr>
+            rowsHtml += `
+                <tr style="background: #f8f9fa; border-top: 2px solid #dee2e6;">
                     <td class="text-bold">합계</td>
                     <td class="text-right">${formatNumber(totalGoal)}원</td>
                     <td class="text-right">${formatNumber(totalAchievement)}원</td>
@@ -4207,7 +4325,32 @@
                 </tr>
             `;
             
-            tbody.innerHTML = html;
+            // 현재 주인지 확인
+            const isCurrentWeek = (index === findCurrentWeekIndex());
+            const headerStyle = isCurrentWeek ? 'background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%); color: white;' : 'background: #f0f4f8; color: #333;';
+            
+            return `
+                <div class="table-container" style="margin-bottom: 20px;">
+                    <div style="padding: 12px 16px; ${headerStyle} border-radius: 8px 8px 0 0; font-weight: 600;">
+                        ${weekInfo} (${startDate} ~ ${endDate})
+                        ${isCurrentWeek ? '<span style="margin-left: 10px; font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 10px;">현재</span>' : ''}
+                    </div>
+                    <table id="weeklyGoalTable_${index}" style="border-radius: 0 0 8px 8px;">
+                        <thead>
+                            <tr>
+                                <th>구분</th>
+                                <th class="text-right">주간목표</th>
+                                <th class="text-right">주간달성</th>
+                                <th class="text-center">달성률</th>
+                                <th class="text-right">진행바</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
 
         function filterSalesProductByDate() {
