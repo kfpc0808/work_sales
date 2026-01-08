@@ -1095,28 +1095,50 @@
 
         /* 업무기록 테이블 컬럼 폭 조정 */
         .col-상품 {
-            width: 12%;
-            min-width: 100px;
+            width: 8%;
+            min-width: 70px;
         }
 
         .col-업무내용 {
-            width: 24%;
-            min-width: 180px;
+            width: 18%;
+            min-width: 150px;
         }
 
         .col-후속액션 {
-            width: 14%;
-            min-width: 120px;
+            width: 10%;
+            min-width: 100px;
         }
 
         .col-완료 {
-            width: 50px;
+            width: 45px;
             text-align: center;
         }
 
         .col-비고 {
-            width: 12%;
-            min-width: 100px;
+            width: 8%;
+            min-width: 80px;
+        }
+
+        .col-예상금액 {
+            width: 8%;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .col-확정금액 {
+            width: 8%;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .col-가망 {
+            width: 50px;
+            text-align: center;
+        }
+
+        .col-공지 {
+            width: 10%;
+            min-width: 80px;
         }
 
         @media (max-width: 768px) {
@@ -1142,6 +1164,23 @@
             .col-비고 {
                 width: 10%;
                 min-width: 80px;
+            }
+            
+            .col-예상금액,
+            .col-확정금액 {
+                width: 7%;
+                min-width: 60px;
+                font-size: 11px;
+            }
+            
+            .col-가망 {
+                width: 35px;
+            }
+            
+            .col-공지 {
+                width: 8%;
+                min-width: 60px;
+                font-size: 11px;
             }
         }
 
@@ -2341,12 +2380,16 @@
                                 <th class="col-상품">상품</th>
                                 <th class="col-업무내용">업무내용</th>
                                 <th class="col-후속액션">후속액션</th>
-                                <th class="col-완료 text-center" onclick="sortCalls('완료')" style="cursor: pointer;">완료 <span id="sortArrow완료">↕</span></th>
+                                <th class="col-완료 text-center" onclick="sortCalls('완료')" style="cursor: pointer;">완료 ↕</th>
                                 <th class="col-비고">비고</th>
+                                <th class="col-예상금액 text-right">예상금액</th>
+                                <th class="col-확정금액 text-right">확정금액</th>
+                                <th class="col-가망 text-center">가망</th>
+                                <th class="col-공지">공지선택</th>
                             </tr>
                         </thead>
                         <tbody id="callsTableBody">
-                            <tr><td colspan="9" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                            <tr><td colspan="13" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -5308,6 +5351,10 @@
                     <td class="col-후속액션">${call['후속액션'] || '-'}</td>
                     <td class="checkbox-cell">${checkComplete}</td>
                     <td class="col-비고">${call['비고'] || '-'}</td>
+                    <td class="col-예상금액 text-right">${call['예상금액'] ? formatNumber(call['예상금액']) : '-'}</td>
+                    <td class="col-확정금액 text-right">${call['확정금액'] ? formatNumber(call['확정금액']) : '-'}</td>
+                    <td class="checkbox-cell">${(call['가망'] === 'TRUE' || call['가망'] === true || call['가망'] === 'O') ? '<span class="status-check completed">✓</span>' : '-'}</td>
+                    <td class="col-공지">${call['공지선택'] || '-'}</td>
                 </tr>
             `;
             }).join('');
