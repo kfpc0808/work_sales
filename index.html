@@ -5813,7 +5813,9 @@
         }
 
         function formatNumber(num) {
-            return Math.round(num).toLocaleString('ko-KR');
+    const n = parseFloat(String(num).replace(/,/g, ''));
+    if (isNaN(n)) return '-';
+    return Math.round(n).toLocaleString('ko-KR');
         }
 
         function parseNumber(str) {
