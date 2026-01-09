@@ -2273,6 +2273,7 @@
                                 <th colspan="3" class="text-center">기홈</th>
                                 <th colspan="3" class="text-center">지사</th>
                                 <th colspan="3" class="text-center">이너</th>
+                                <th colspan="3" class="text-center">STAR</th>
                                 <th rowspan="2">비고</th>
                             </tr>
                             <tr>
@@ -2288,10 +2289,13 @@
                                 <th class="text-right">진행</th>
                                 <th class="text-right">예상</th>
                                 <th class="text-right">확정</th>
+                                <th class="text-right">진행</th>
+                                <th class="text-right">예상</th>
+                                <th class="text-right">확정</th>
                             </tr>
                         </thead>
                         <tbody id="salesDetailBody">
-                            <tr><td colspan="15" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                            <tr><td colspan="18" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -4810,7 +4814,7 @@
             currentPeriodData = periodData;
             
             if (!periodData || periodData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="15" class="empty-state">조회 기간 내 데이터가 없습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="18" class="empty-state">조회 기간 내 데이터가 없습니다.</td></tr>';
                 // 드롭다운 초기화
                 document.getElementById('salesDetailDateFilter').innerHTML = '<option value="all">전체</option>';
                 return;
@@ -4880,7 +4884,7 @@
             const tbody = document.getElementById('salesDetailBody');
             
             if (!periodData || periodData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="15" class="empty-state">해당 일자의 데이터가 없습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="18" class="empty-state">해당 일자의 데이터가 없습니다.</td></tr>';
                 return;
             }
             
@@ -4906,7 +4910,7 @@
             });
             
             if (actualData.length === 0 && goalRows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="15" class="empty-state">해당 일자의 데이터가 없습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="18" class="empty-state">해당 일자의 데이터가 없습니다.</td></tr>';
                 return;
             }
             
@@ -4939,6 +4943,7 @@
                     기홈진행: 0, 기홈예상: 0, 기홈확정: 0,
                     지사진행: 0, 지사예상: 0, 지사확정: 0,
                     이너진행: 0, 이너예상: 0, 이너확정: 0,
+                    STAR진행: 0, STAR예상: 0, STAR확정: 0,
                     비고: 0
                 };
                 
@@ -4954,6 +4959,7 @@
                     dateTotal.기홈확정 += parseNumber(dateGoalRow['기홈확정']);
                     dateTotal.지사확정 += parseNumber(dateGoalRow['지사확정']);
                     dateTotal.이너확정 += parseNumber(dateGoalRow['이너확정']);
+                    dateTotal.STAR확정 += parseNumber(dateGoalRow['STAR확정']);
                 }
                 
                 rows.forEach((row, index) => {
@@ -4974,6 +4980,9 @@
                     const 이너진행 = parseNumber(row['이너진행']);
                     const 이너예상 = parseNumber(row['이너예상']);
                     const 이너확정 = parseNumber(row['이너확정']);
+                    const STAR진행 = parseNumber(row['STAR진행']);
+                    const STAR예상 = parseNumber(row['STAR예상']);
+                    const STAR확정 = parseNumber(row['STAR확정']);
                     const 비고Raw = row['비고'] || '';  // 원본 값 (숫자 또는 텍스트)
                     const 비고 = parseNumber(row['비고']);  // 숫자로 파싱 (합계용)
                     
@@ -4990,6 +4999,9 @@
                     dateTotal.이너진행 += 이너진행;
                     dateTotal.이너예상 += 이너예상;
                     dateTotal.이너확정 += 이너확정;
+                    dateTotal.STAR진행 += STAR진행;
+                    dateTotal.STAR예상 += STAR예상;
+                    dateTotal.STAR확정 += STAR확정;
                     dateTotal.비고 += 비고;
                     
                     html += '<tr>';
@@ -5010,6 +5022,9 @@
                         <td class="text-right">${이너진행 ? formatNumber(이너진행) : '-'}</td>
                         <td class="text-right">${이너예상 ? formatNumber(이너예상) : '-'}</td>
                         <td class="text-right">${이너확정 ? formatNumber(이너확정) : '-'}</td>
+                        <td class="text-right">${STAR진행 ? formatNumber(STAR진행) : '-'}</td>
+                        <td class="text-right">${STAR예상 ? formatNumber(STAR예상) : '-'}</td>
+                        <td class="text-right">${STAR확정 ? formatNumber(STAR확정) : '-'}</td>
                         <td class="text-right">${비고Raw || '-'}</td>
                     `;
                     html += '</tr>';
@@ -5031,6 +5046,9 @@
                         <td class="text-right">${formatNumber(dateTotal.이너진행)}</td>
                         <td class="text-right">${formatNumber(dateTotal.이너예상)}</td>
                         <td class="text-right">${formatNumber(dateTotal.이너확정)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.STAR진행)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.STAR예상)}</td>
+                        <td class="text-right">${formatNumber(dateTotal.STAR확정)}</td>
                         <td class="text-right">${dateTotal.비고 ? formatNumber(dateTotal.비고) : '-'}</td>
                     </tr>
                 `;
@@ -5042,6 +5060,7 @@
                 기홈진행: 0, 기홈예상: 0, 기홈확정: 0,
                 지사진행: 0, 지사예상: 0, 지사확정: 0,
                 이너진행: 0, 이너예상: 0, 이너확정: 0,
+                STAR진행: 0, STAR예상: 0, STAR확정: 0,
                 비고: 0
             };
             
@@ -5059,6 +5078,9 @@
                 grandTotal.이너진행 += parseNumber(row['이너진행']);
                 grandTotal.이너예상 += parseNumber(row['이너예상']);
                 grandTotal.이너확정 += parseNumber(row['이너확정']);
+                grandTotal.STAR진행 += parseNumber(row['STAR진행']);
+                grandTotal.STAR예상 += parseNumber(row['STAR예상']);
+                grandTotal.STAR확정 += parseNumber(row['STAR확정']);
                 grandTotal.비고 += parseNumber(row['비고']);
             });
             
@@ -5068,6 +5090,7 @@
                 grandTotal.기홈확정 += parseNumber(row['기홈확정']);
                 grandTotal.지사확정 += parseNumber(row['지사확정']);
                 grandTotal.이너확정 += parseNumber(row['이너확정']);
+                grandTotal.STAR확정 += parseNumber(row['STAR확정']);
             });
             
             // 목표 데이터 가져오기
@@ -5075,7 +5098,7 @@
             const selectedDate = document.getElementById('salesDetailDateFilter').value;
             
             // 일일 목표 (선택된 날짜 또는 조회 기간의 목표 행)
-            let dailyGoal = { 컨홈: 0, 기홈: 0, 지사: 0, 이너: 0 };
+            let dailyGoal = { 컨홈: 0, 기홈: 0, 지사: 0, 이너: 0, STAR: 0 };
             if (selectedDate !== 'all') {
                 // 특정 날짜 선택 시 해당 날짜의 목표 (salesData에서 찾기)
                 const goalRow = salesData.find(row => {
@@ -5088,6 +5111,7 @@
                     dailyGoal.기홈 = parseNumber(goalRow['기홈목표']);
                     dailyGoal.지사 = parseNumber(goalRow['지사목표']);
                     dailyGoal.이너 = parseNumber(goalRow['이너목표']);
+                    dailyGoal.STAR = parseNumber(goalRow['STAR목표']);
                 }
             } else if (period === 'today') {
                 // "오늘" 선택 시
@@ -5106,6 +5130,7 @@
                     dailyGoal.기홈 = parseNumber(goalRow['기홈목표']);
                     dailyGoal.지사 = parseNumber(goalRow['지사목표']);
                     dailyGoal.이너 = parseNumber(goalRow['이너목표']);
+                    dailyGoal.STAR = parseNumber(goalRow['STAR목표']);
                 }
             }
             
@@ -5117,7 +5142,8 @@
                 컨홈: parseNumber(weeklyGoalData['컨홈목표']),
                 기홈: parseNumber(weeklyGoalData['기홈목표']),
                 지사: parseNumber(weeklyGoalData['지사목표']),
-                이너: parseNumber(weeklyGoalData['이너목표'])
+                이너: parseNumber(weeklyGoalData['이너목표']),
+                STAR: parseNumber(weeklyGoalData['STAR목표'])
             };
             
             // 주목표 합계 계산
@@ -5126,14 +5152,15 @@
             } else if (weeklyGoalData['주목표'] !== undefined && weeklyGoalData['주목표'] !== null && weeklyGoalData['주목표'] !== '') {
                 weeklyGoal.합계 = parseNumber(weeklyGoalData['주목표']);
             } else {
-                weeklyGoal.합계 = weeklyGoal.컨홈 + weeklyGoal.기홈 + weeklyGoal.지사 + weeklyGoal.이너;
+                weeklyGoal.합계 = weeklyGoal.컨홈 + weeklyGoal.기홈 + weeklyGoal.지사 + weeklyGoal.이너 + weeklyGoal.STAR;
             }
             
             const monthlyGoal = {
                 컨홈: parseNumber(monthlyGoalData['컨홈목표']),
                 기홈: parseNumber(monthlyGoalData['기홈목표']),
                 지사: parseNumber(monthlyGoalData['지사목표']),
-                이너: parseNumber(monthlyGoalData['이너목표'])
+                이너: parseNumber(monthlyGoalData['이너목표']),
+                STAR: parseNumber(monthlyGoalData['STAR목표'])
             };
             
             // 월목표 합계 계산
@@ -5142,7 +5169,7 @@
             } else if (monthlyGoalData['월목표'] !== undefined && monthlyGoalData['월목표'] !== null && monthlyGoalData['월목표'] !== '') {
                 monthlyGoal.합계 = parseNumber(monthlyGoalData['월목표']);
             } else {
-                monthlyGoal.합계 = monthlyGoal.컨홈 + monthlyGoal.기홈 + monthlyGoal.지사 + monthlyGoal.이너;
+                monthlyGoal.합계 = monthlyGoal.컨홈 + monthlyGoal.기홈 + monthlyGoal.지사 + monthlyGoal.이너 + monthlyGoal.STAR;
             }
             
             // 전체 합계 행
@@ -5161,6 +5188,9 @@
                     <td class="text-right">${formatNumber(grandTotal.이너진행)}</td>
                     <td class="text-right">${formatNumber(grandTotal.이너예상)}</td>
                     <td class="text-right">${formatNumber(grandTotal.이너확정)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.STAR진행)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.STAR예상)}</td>
+                    <td class="text-right">${formatNumber(grandTotal.STAR확정)}</td>
                     <td class="text-right">${grandTotal.비고 ? formatNumber(grandTotal.비고) : '-'}</td>
                 </tr>
             `;
@@ -5174,6 +5204,7 @@
                         <td colspan="3" class="text-right">${formatNumber(dailyGoal.기홈)}</td>
                         <td colspan="3" class="text-right">${formatNumber(dailyGoal.지사)}</td>
                         <td colspan="3" class="text-right">${formatNumber(dailyGoal.이너)}</td>
+                        <td colspan="3" class="text-right">${formatNumber(dailyGoal.STAR || 0)}</td>
                         <td class="text-right">-</td>
                     </tr>
                 `;
@@ -5187,6 +5218,7 @@
                     <td colspan="3" class="text-right">${formatNumber(weeklyGoal.기홈)}</td>
                     <td colspan="3" class="text-right">${formatNumber(weeklyGoal.지사)}</td>
                     <td colspan="3" class="text-right">${formatNumber(weeklyGoal.이너)}</td>
+                    <td colspan="3" class="text-right">${formatNumber(weeklyGoal.STAR || 0)}</td>
                     <td class="text-right">-</td>
                 </tr>
             `;
@@ -5199,6 +5231,7 @@
                     <td colspan="3" class="text-right">${formatNumber(monthlyGoal.기홈)}</td>
                     <td colspan="3" class="text-right">${formatNumber(monthlyGoal.지사)}</td>
                     <td colspan="3" class="text-right">${formatNumber(monthlyGoal.이너)}</td>
+                    <td colspan="3" class="text-right">${formatNumber(monthlyGoal.STAR || 0)}</td>
                     <td class="text-right">-</td>
                 </tr>
             `;
