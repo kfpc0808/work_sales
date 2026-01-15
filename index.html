@@ -7647,10 +7647,28 @@
                 const content = row[5] || '';
                 const note = row[6] || '';
                 
-                const productSelect = `<select data-row="${index}" data-col="2" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
-                    <option value="">선택</option>
-                    ${productOptions.map(opt => `<option value="${opt}" ${product === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                </select>`;
+                // 기존 값이 목록에 없으면 직접입력 상태로 표시
+                const isCustomValue = product && !productOptions.includes(product);
+                
+                let productCell;
+                if (isCustomValue) {
+                    // 직접입력된 값이 있는 경우 - input 표시
+                    productCell = `<div id="productCell_${index}">
+                        <input type="text" value="${product}" data-row="${index}" data-col="2" onchange="updateStrategyCell(this)" style="width: calc(100% - 30px); padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button onclick="switchToSelect(${index})" style="padding: 4px 6px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">▼</button>
+                    </div>`;
+                } else {
+                    // 목록에 있는 값 또는 빈 값 - select 표시
+                    productCell = `<div id="productCell_${index}">
+                        <select data-row="${index}" data-col="2" onchange="handleProductSelect(this, ${index})" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">선택</option>
+                            ${productOptions.map(opt => `<option value="${opt}" ${product === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                            <option value="__직접입력__">직접입력</option>
+                        </select>
+                    </div>`;
+                }
+                
+                const productSelect = productCell;
                 
                 return `<tr data-index="${index}">
                     <td style="text-align: center;"><input type="text" value="${no}" data-row="${index}" data-col="0" onchange="updateStrategyCell(this)" style="width: 100%; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
@@ -7670,6 +7688,40 @@
             const row = parseInt(element.dataset.row);
             const col = parseInt(element.dataset.col);
             strategyData[row][col] = element.value;
+        }
+
+        // 상품 선택 핸들러 (직접입력 처리)
+        function handleProductSelect(selectElement, rowIndex) {
+            const value = selectElement.value;
+            
+            if (value === '__직접입력__') {
+                // 직접입력 선택 시 input으로 변경
+                const cell = document.getElementById('productCell_' + rowIndex);
+                cell.innerHTML = `
+                    <input type="text" value="" data-row="${rowIndex}" data-col="2" onchange="updateStrategyCell(this)" placeholder="직접 입력" style="width: calc(100% - 30px); padding: 4px; border: 1px solid #ddd; border-radius: 4px;" autofocus>
+                    <button onclick="switchToSelect(${rowIndex})" style="padding: 4px 6px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">▼</button>
+                `;
+                cell.querySelector('input').focus();
+                strategyData[rowIndex][2] = '';
+            } else {
+                // 일반 선택
+                strategyData[rowIndex][2] = value;
+            }
+        }
+
+        // 드롭다운으로 전환
+        function switchToSelect(rowIndex) {
+            const productOptions = ['지사', '이너', '기홈', '컨홈', 'STAR'];
+            const currentValue = strategyData[rowIndex][2] || '';
+            
+            const cell = document.getElementById('productCell_' + rowIndex);
+            cell.innerHTML = `
+                <select data-row="${rowIndex}" data-col="2" onchange="handleProductSelect(this, ${rowIndex})" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">선택</option>
+                    ${productOptions.map(opt => `<option value="${opt}" ${currentValue === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                    <option value="__직접입력__">직접입력</option>
+                </select>
+            `;
         }
 
         // 행 추가
