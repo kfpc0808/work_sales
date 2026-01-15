@@ -2081,10 +2081,10 @@
                         <thead>
                             <tr>
                                 <th style="width: 50px; text-align: center;">No</th>
-                                <th style="width: 80px;">성명</th>
-                                <th style="width: 80px;">상품</th>
-                                <th style="width: 80px;">추천인</th>
-                                <th style="width: 100px; text-align: right;">금액</th>
+                                <th style="width: 120px;">성명</th>
+                                <th style="width: 120px;">상품</th>
+                                <th style="width: 120px;">추천인</th>
+                                <th style="width: 120px; text-align: right;">금액</th>
                                 <th style="min-width: 150px;">내용</th>
                                 <th style="min-width: 100px;">비고</th>
                                 <th style="width: 50px; text-align: center;">삭제</th>
@@ -7647,26 +7647,14 @@
                 const content = row[5] || '';
                 const note = row[6] || '';
                 
-                // 기존 값이 목록에 없으면 직접입력 상태로 표시
-                const isCustomValue = product && !productOptions.includes(product);
+                // 금액 포맷 (콤마 추가)
+                const formattedAmount = amount ? Number(String(amount).replace(/,/g, '')).toLocaleString() : '';
                 
-                let productCell;
-                if (isCustomValue) {
-                    // 직접입력된 값이 있는 경우 - input 표시
-                    productCell = `<div id="productCell_${index}">
-                        <input type="text" value="${product}" data-row="${index}" data-col="2" onchange="updateStrategyCell(this)" style="width: calc(100% - 30px); padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
-                        <button onclick="switchToSelect(${index})" style="padding: 4px 6px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">▼</button>
-                    </div>`;
-                } else {
-                    // 목록에 있는 값 또는 빈 값 - select 표시
-                    productCell = `<div id="productCell_${index}">
-                        <select data-row="${index}" data-col="2" onchange="handleProductSelect(this, ${index})" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="">선택</option>
-                            ${productOptions.map(opt => `<option value="${opt}" ${product === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                            <option value="__직접입력__">직접입력</option>
-                        </select>
-                    </div>`;
-                }
+                // datalist 방식 - 드롭다운 + 직접입력 모두 가능
+                const productCell = `<input type="text" list="productList_${index}" value="${product}" data-row="${index}" data-col="2" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                    <datalist id="productList_${index}">
+                        ${productOptions.map(opt => `<option value="${opt}">`).join('')}
+                    </datalist>`;
                 
                 const productSelect = productCell;
                 
@@ -7675,7 +7663,7 @@
                     <td><input type="text" value="${name}" data-row="${index}" data-col="1" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
                     <td>${productSelect}</td>
                     <td><input type="text" value="${recommender}" data-row="${index}" data-col="3" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
-                    <td><input type="text" value="${amount}" data-row="${index}" data-col="4" onchange="updateStrategyCell(this)" style="width: 100%; text-align: right; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
+                    <td><input type="text" value="${formattedAmount}" data-row="${index}" data-col="4" onchange="updateAmountCell(this)" style="width: 100%; text-align: right; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
                     <td><input type="text" value="${content}" data-row="${index}" data-col="5" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
                     <td><input type="text" value="${note}" data-row="${index}" data-col="6" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
                     <td style="text-align: center;"><button onclick="deleteStrategyRow(${index})" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑</button></td>
@@ -7690,38 +7678,16 @@
             strategyData[row][col] = element.value;
         }
 
-        // 상품 선택 핸들러 (직접입력 처리)
-        function handleProductSelect(selectElement, rowIndex) {
-            const value = selectElement.value;
-            
-            if (value === '__직접입력__') {
-                // 직접입력 선택 시 input으로 변경
-                const cell = document.getElementById('productCell_' + rowIndex);
-                cell.innerHTML = `
-                    <input type="text" value="" data-row="${rowIndex}" data-col="2" onchange="updateStrategyCell(this)" placeholder="직접 입력" style="width: calc(100% - 30px); padding: 4px; border: 1px solid #ddd; border-radius: 4px;" autofocus>
-                    <button onclick="switchToSelect(${rowIndex})" style="padding: 4px 6px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">▼</button>
-                `;
-                cell.querySelector('input').focus();
-                strategyData[rowIndex][2] = '';
-            } else {
-                // 일반 선택
-                strategyData[rowIndex][2] = value;
-            }
-        }
-
-        // 드롭다운으로 전환
-        function switchToSelect(rowIndex) {
-            const productOptions = ['지사', '이너', '기홈', '컨홈', 'STAR'];
-            const currentValue = strategyData[rowIndex][2] || '';
-            
-            const cell = document.getElementById('productCell_' + rowIndex);
-            cell.innerHTML = `
-                <select data-row="${rowIndex}" data-col="2" onchange="handleProductSelect(this, ${rowIndex})" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
-                    <option value="">선택</option>
-                    ${productOptions.map(opt => `<option value="${opt}" ${currentValue === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                    <option value="__직접입력__">직접입력</option>
-                </select>
-            `;
+        // 금액 셀 업데이트 (콤마 포맷 적용)
+        function updateAmountCell(element) {
+            const row = parseInt(element.dataset.row);
+            const col = parseInt(element.dataset.col);
+            // 콤마 제거 후 숫자로 저장
+            const rawValue = element.value.replace(/,/g, '');
+            const numValue = parseInt(rawValue) || '';
+            strategyData[row][col] = numValue;
+            // 화면에는 콤마 포맷으로 표시
+            element.value = numValue ? numValue.toLocaleString() : '';
         }
 
         // 행 추가
