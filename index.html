@@ -2066,6 +2066,37 @@
                 </div>
             </div>
 
+            <!-- 영업전략 관리 테이블 섹션 -->
+            <div class="section">
+                <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <span>📊 영업 전략 관리</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="loadStrategyTable()" style="padding: 6px 12px; background: #17a2b8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">🔄 새로고침</button>
+                        <button onclick="addStrategyRow()" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">+ 행 추가</button>
+                        <button onclick="saveStrategyTable()" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">💾 저장</button>
+                    </div>
+                </div>
+                <div class="table-container" style="margin-top: 12px; max-height: 400px; overflow-y: auto;">
+                    <table id="strategyTable" style="min-width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px; text-align: center;">No</th>
+                                <th style="width: 80px;">성명</th>
+                                <th style="width: 80px;">상품</th>
+                                <th style="width: 80px;">추천인</th>
+                                <th style="width: 100px; text-align: right;">금액</th>
+                                <th style="min-width: 150px;">내용</th>
+                                <th style="min-width: 100px;">비고</th>
+                                <th style="width: 50px; text-align: center;">삭제</th>
+                            </tr>
+                        </thead>
+                        <tbody id="strategyTableBody">
+                            <tr><td colspan="8" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- 프로모션 & 업무오더 그리드 (PC: 가로 배치, 모바일: 세로 배치) -->
             <div class="promo-order-grid">
                 <!-- 프로모션 섹션 -->
@@ -7567,6 +7598,134 @@
                 initWeeklyPlan();
             }
         }
+
+        // ===== 영업 전략 관리 (sheet9) =====
+        let strategyData = [];
+        const STRATEGY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUs-8zf_3xGELOzDJr37OYcK2i5l-9GCvcwDptijxEPqISAhMY56WThG8AXRelmEfXpw/exec';
+
+        // 영업 전략 테이블 로드
+        async function loadStrategyTable() {
+            const tbody = document.getElementById('strategyTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="8" class="loading"><div class="spinner"></div>데이터 로딩 중...</td></tr>';
+            
+            try {
+                const response = await fetch(STRATEGY_SCRIPT_URL + '?action=getSheet9');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    strategyData = result.data.slice(1); // 헤더 제외
+                    renderStrategyTable();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #999;">데이터가 없습니다.</td></tr>';
+                }
+            } catch (error) {
+                console.error('영업 전략 로드 오류:', error);
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #dc3545;">로드 실패: ' + error.message + '</td></tr>';
+            }
+        }
+
+        // 영업 전략 테이블 렌더링
+        function renderStrategyTable() {
+            const tbody = document.getElementById('strategyTableBody');
+            if (!tbody) return;
+            
+            if (strategyData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #999;">데이터가 없습니다. [+ 행 추가] 버튼을 눌러 추가하세요.</td></tr>';
+                return;
+            }
+            
+            const productOptions = ['지사', '이너', '기홈', '컨홈', 'STAR'];
+            
+            tbody.innerHTML = strategyData.map((row, index) => {
+                const no = row[0] || '';
+                const name = row[1] || '';
+                const product = row[2] || '';
+                const recommender = row[3] || '';
+                const amount = row[4] || '';
+                const content = row[5] || '';
+                const note = row[6] || '';
+                
+                const productSelect = `<select data-row="${index}" data-col="2" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">선택</option>
+                    ${productOptions.map(opt => `<option value="${opt}" ${product === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                </select>`;
+                
+                return `<tr data-index="${index}">
+                    <td style="text-align: center;"><input type="text" value="${no}" data-row="${index}" data-col="0" onchange="updateStrategyCell(this)" style="width: 100%; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
+                    <td><input type="text" value="${name}" data-row="${index}" data-col="1" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
+                    <td>${productSelect}</td>
+                    <td><input type="text" value="${recommender}" data-row="${index}" data-col="3" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
+                    <td><input type="text" value="${amount}" data-row="${index}" data-col="4" onchange="updateStrategyCell(this)" style="width: 100%; text-align: right; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
+                    <td><input type="text" value="${content}" data-row="${index}" data-col="5" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
+                    <td><input type="text" value="${note}" data-row="${index}" data-col="6" onchange="updateStrategyCell(this)" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;"></td>
+                    <td style="text-align: center;"><button onclick="deleteStrategyRow(${index})" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑</button></td>
+                </tr>`;
+            }).join('');
+        }
+
+        // 셀 값 업데이트
+        function updateStrategyCell(element) {
+            const row = parseInt(element.dataset.row);
+            const col = parseInt(element.dataset.col);
+            strategyData[row][col] = element.value;
+        }
+
+        // 행 추가
+        function addStrategyRow() {
+            const newNo = strategyData.length + 1;
+            strategyData.push([newNo, '', '', '', '', '', '']);
+            renderStrategyTable();
+            showToast('새 행이 추가되었습니다. 저장 버튼을 눌러 저장하세요.');
+        }
+
+        // 행 삭제
+        function deleteStrategyRow(index) {
+            if (confirm('이 행을 삭제하시겠습니까?')) {
+                strategyData.splice(index, 1);
+                // No 재정렬
+                strategyData.forEach((row, i) => {
+                    row[0] = i + 1;
+                });
+                renderStrategyTable();
+                showToast('행이 삭제되었습니다. 저장 버튼을 눌러 저장하세요.');
+            }
+        }
+
+        // 테이블 저장
+        async function saveStrategyTable() {
+            try {
+                showToast('저장 중...');
+                
+                const response = await fetch(STRATEGY_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveSheet9',
+                        data: strategyData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('✅ 저장 완료!');
+                } else {
+                    showToast('❌ 저장 실패: ' + (result.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('저장 오류:', error);
+                showToast('❌ 저장 실패: ' + error.message);
+            }
+        }
+
+        // 페이지 로드 시 영업 전략 테이블 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadStrategyTable, 1000);
+        });
     </script>
 </body>
 </html>
